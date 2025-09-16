@@ -4559,7 +4559,51 @@ if (text.toLowerCase().startsWith('.sound')) {
     }
 }
 
+function ensureJid(j) {
+  if (!j) return '0@s.whatsapp.net';
+  if (j.includes('@')) return j;
+  // anggap input nomor; pakai normalizeJid dari kode kamu kalau ada
+  return (j.match(/^\d{7,}$/) ? (j.startsWith('62') ? j : '62' + j.replace(/^0+/, '')) : j) + '@s.whatsapp.net';
+}
 
+// Tambahkan ini di dalam sock.ev.on('messages.upsert', ...) di mana kamu proses command
+if (text.startsWith('.fakereply')) {
+  const raw = text.replace('.fakereply', '').trim();
+  if (!raw) {
+    await sock.sendMessage(from, { text: '⚠️ Format: .fakereply nomor|pesanFake|isiBalasan\nContoh: .fakereply 62812xxxx|Halo|Ini balasan' }, { quoted: msg });
+    return;
+  }
+
+  // split dengan '|'
+  const parts = raw.split('|').map(p => p.trim());
+  // interpretasi
+  let fakeSenderInput = parts[0] || '0';
+  let fakeMessage = parts[1] || (parts.length === 1 ? parts[0] : 'Pesan palsu');
+  let replyText = parts[2] || (parts.length === 1 ? `➡️ ${parts[0]}` : `Balasan untuk: ${fakeMessage}`);
+
+  // normalisasi JID (pakai normalizeJid milikmu jika ada)
+  let fakeJid = (typeof normalizeJid === 'function') ? normalizeJid(fakeSenderInput) : ensureJid(fakeSenderInput);
+
+  // bangun fake quoted object
+  const fakeQuoted = {
+    key: {
+      remoteJid: from,
+      fromMe: false,
+      id: 'FAKE_' + Date.now(),
+      participant: fakeJid
+    },
+    message: {
+      conversation: fakeMessage
+    }
+  };
+
+  try {
+    await sock.sendMessage(from, { text: replyText }, { quoted: fakeQuoted });
+  } catch (e) {
+    console.error('Error .fakereply:', e);
+    await sock.sendMessage(from, { text: '❌ Gagal kirim fake reply.' }, { quoted: msg });
+  }
+}
 
 if (text.trim() === '.info') {
     const teks = `╭───〔 📡 *INFORMASI JARR BOT* 〕───╮
