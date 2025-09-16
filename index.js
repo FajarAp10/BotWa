@@ -28,6 +28,9 @@ const antiLinkGroups = new Map();
 const antiStickerGroups = new Map();
 const antiFotoGroups = new Map();
 
+
+let historySiapa = {};
+
 const pdfLimit = new Map(); 
 const MAX_PDF = 3;
 const PDF_COOLDOWN = 60 * 60 * 1000; 
@@ -288,6 +291,7 @@ function addGroupSkor(jid, roomId, poin) {
     skorUser[roomId][realJid] += poin;
     simpanSkorKeFile();
 }
+
 
 
 const bankSoalTeracak = new Map();
@@ -1060,8 +1064,6 @@ if (currentPdfSession) {
     }
 }
 
-
-
 if (msg.message?.imageMessage) {
     const imageSenderKey = isGroup ? `${from}:${sender}` : sender;
     const session = pdfSessions.get(imageSenderKey);
@@ -1080,7 +1082,6 @@ if (msg.message?.imageMessage) {
 }
 
 
-
 function tambahSkor(jid, groupId, poin) {
   const realJid = normalizeJid(jid);
  
@@ -1091,7 +1092,7 @@ function tambahSkor(jid, groupId, poin) {
 }
 
 
-
+//mute
 if (isMuted(sender, from)) {
     try {
         await sock.sendMessage(from, { delete: msg.key }); // hapus pesannya
@@ -1115,7 +1116,7 @@ if (from.endsWith('@g.us') && antiLinkGroups.get(from)) {
 }
 
 const mtype = Object.keys(msg.message || {})[0];
-
+//stiker
 if (mtype === 'stickerMessage' && from.endsWith('@g.us')) {
     if (antiStickerGroups.has(from)) {
         try {
@@ -1134,6 +1135,7 @@ if (mtype === 'stickerMessage' && from.endsWith('@g.us')) {
     }
 }
 
+//gambar
 if (mtype === 'imageMessage' && from.endsWith('@g.us')) {
     if (antiFotoGroups.has(from)) {
         try {
@@ -1152,6 +1154,15 @@ if (mtype === 'imageMessage' && from.endsWith('@g.us')) {
     }
 }
 
+//fakereply
+function ensureJid(j) {
+  if (!j) return '0@s.whatsapp.net';
+  if (j.includes('@')) return j;
+  const raw = j.replace(/\D/g, ''); // ambil angka aja
+  const noPrefix = raw.startsWith('62') ? raw : raw.replace(/^0+/, '') || raw;
+  const with62 = noPrefix.startsWith('62') ? noPrefix : '62' + noPrefix;
+  return with62 + '@s.whatsapp.net';
+}
 
 if (text === '.shop') {
     const menu = `🎯 *FITUR SHOP* 🎯
@@ -2137,8 +2148,28 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
     }
 }
 
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+    const sesi = sesiTebakan.get(replyId);
 
+    if (sesi && sesi.tipe === "lagu") {
+        clearTimeout(sesi.timeout);
+        sesiTebakan.delete(replyId);
 
+        const userAnswer = textMessage.trim().toLowerCase();
+        if (userAnswer === sesi.jawaban) {
+            tambahSkor(sender, from, 20);
+            await sock.sendMessage(from, {
+                text: `✅ *Benar!* Itu adalah *${sesi.jawaban}* 🎉\n🏆 Kamu dapat *20 poin!*\n\nMau main lagi? Ketik *.tebak-lagu*`
+            });
+        } else {
+            await sock.sendMessage(from, {
+                text: `❌ *Salah!* Jawabanmu: *${userAnswer}*\n✅ Jawaban benar: *${sesi.jawaban}*`
+            });
+        }
+        return;
+    }
+}
         if (text.trim() === '.kuis') {
     const soal = ambilSoalAcak('kuis', soalKuis);
     const teksSoal = `🎓 *KUIS DIMULAI!*\n\n📌 *Soal:* ${soal.soal}\n\n${soal.pilihan.join('\n')}\n\n✍️ Jawab dengan huruf A/B/C/D dengan mereply pesan ini\n⏱️ Waktu 30 detik!`;
@@ -4328,8 +4359,24 @@ if (text.startsWith('.siapa')) {
             return;
         }
 
-        // Pilih random 1 member
-        const randomUser = participants[Math.floor(Math.random() * participants.length)];
+        // Inisialisasi history untuk grup ini
+        if (!historySiapa[from]) historySiapa[from] = [];
+
+        // Filter member yang belum pernah kepilih
+        let available = participants.filter(p => !historySiapa[from].includes(p));
+
+        // Kalau semua udah pernah, reset history
+        if (available.length === 0) {
+            historySiapa[from] = [];
+            available = [...participants];
+        }
+
+        // Pilih random dari available
+        const randomUser = available[Math.floor(Math.random() * available.length)];
+
+        // Simpan ke history
+        historySiapa[from].push(randomUser);
+
         const tag = `@${randomUser.split('@')[0]}`;
 
         await sock.sendMessage(from, {
@@ -4559,49 +4606,80 @@ if (text.toLowerCase().startsWith('.sound')) {
     }
 }
 
-function ensureJid(j) {
-  if (!j) return '0@s.whatsapp.net';
-  if (j.includes('@')) return j;
-  // anggap input nomor; pakai normalizeJid dari kode kamu kalau ada
-  return (j.match(/^\d{7,}$/) ? (j.startsWith('62') ? j : '62' + j.replace(/^0+/, '')) : j) + '@s.whatsapp.net';
-}
 
-// Tambahkan ini di dalam sock.ev.on('messages.upsert', ...) di mana kamu proses command
 if (text.startsWith('.fakereply')) {
   const raw = text.replace('.fakereply', '').trim();
-  if (!raw) {
-    await sock.sendMessage(from, { text: '⚠️ Format: .fakereply nomor|pesanFake|isiBalasan\nContoh: .fakereply 62812xxxx|Halo|Ini balasan' }, { quoted: msg });
-    return;
+
+  const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+  const parts = raw.split('|').map(p => p.trim()).filter(p => p.length > 0);
+
+  let fakeJid;
+  if (mentioned.length > 0) {
+
+    fakeJid = (typeof normalizeJid === 'function') ? normalizeJid(mentioned[0]) : ensureJid(mentioned[0]);
   }
 
-  // split dengan '|'
-  const parts = raw.split('|').map(p => p.trim());
-  // interpretasi
-  let fakeSenderInput = parts[0] || '0';
-  let fakeMessage = parts[1] || (parts.length === 1 ? parts[0] : 'Pesan palsu');
-  let replyText = parts[2] || (parts.length === 1 ? `➡️ ${parts[0]}` : `Balasan untuk: ${fakeMessage}`);
-
-  // normalisasi JID (pakai normalizeJid milikmu jika ada)
-  let fakeJid = (typeof normalizeJid === 'function') ? normalizeJid(fakeSenderInput) : ensureJid(fakeSenderInput);
-
-  // bangun fake quoted object
-  const fakeQuoted = {
-    key: {
-      remoteJid: from,
-      fromMe: false,
-      id: 'FAKE_' + Date.now(),
-      participant: fakeJid
-    },
-    message: {
-      conversation: fakeMessage
+  if (fakeJid) {
+    if (parts.length < 2) {
+      await sock.sendMessage(from, {
+        text: '⚠️ Format: .fakereply @user|pesanFake|isiBalasan'
+      }, { quoted: msg });
+      return;
     }
-  };
+    const fakeMessage = parts[parts.length - 2];
+    const replyText = parts[parts.length - 1];
 
-  try {
-    await sock.sendMessage(from, { text: replyText }, { quoted: fakeQuoted });
-  } catch (e) {
-    console.error('Error .fakereply:', e);
-    await sock.sendMessage(from, { text: '❌ Gagal kirim fake reply.' }, { quoted: msg });
+    const fakeQuoted = {
+      key: {
+        remoteJid: from,
+        fromMe: false,
+        id: 'FAKE_' + Date.now(),
+        participant: fakeJid
+      },
+      message: {
+        conversation: fakeMessage
+      }
+    };
+
+    try {
+      await sock.sendMessage(from, { text: replyText }, { quoted: fakeQuoted });
+    } catch (e) {
+      console.error('Error .fakereply (mention):', e);
+      await sock.sendMessage(from, { text: '❌ Gagal kirim fake reply.' }, { quoted: msg });
+    }
+    return;
+  } else {
+    if (parts.length < 3) {
+      await sock.sendMessage(from, {
+        text: '⚠️ Format: .fakereply nomor|pesanFake|isiBalasan'
+      }, { quoted: msg });
+      return;
+    }
+    const fakeSenderInput = parts[0];
+    const fakeMessage = parts[1];
+    const replyText = parts.slice(2).join('|'); // kalau isiBalasan mengandung '|' tetap aman
+
+    const fakeSenderJid = (typeof normalizeJid === 'function') ? normalizeJid(fakeSenderInput) : ensureJid(fakeSenderInput);
+
+    const fakeQuoted = {
+      key: {
+        remoteJid: from,
+        fromMe: false,
+        id: 'FAKE_' + Date.now(),
+        participant: fakeSenderJid
+      },
+      message: {
+        conversation: fakeMessage
+      }
+    };
+
+    try {
+      await sock.sendMessage(from, { text: replyText }, { quoted: fakeQuoted });
+    } catch (e) {
+      console.error('Error .fakereply (nomor):', e);
+      await sock.sendMessage(from, { text: '❌ Gagal kirim fake reply.' }, { quoted: msg });
+    }
+    return;
   }
 }
 
@@ -4708,6 +4786,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .jodoh → Cocoklogi cinta
 │ .cekkhodam → Cek khodam 
 │ .siapa → Target random
+│ .fakereply → Pesan palsu
 │
 ├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
 │ .ai <pertanyaan> → Tanya ke AI
