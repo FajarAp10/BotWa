@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+
+# Paksa npm mengabaikan peer dependency conflict
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
