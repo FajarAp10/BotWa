@@ -11,7 +11,7 @@ const pino = require('pino');
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode'); 
-const { Sticker } = require('wa-sticker-formatter');
+const { Sticker, StickerTypes } = require('wa-sticker-formatter');
 const { exec } = require('child_process');
 const ytdl = require("@distube/ytdl-core");
 const fs = require('fs');
@@ -20,6 +20,8 @@ const axios = require('axios');
 const FormData = require("form-data");
 const moment = require('moment-timezone');
 const sharp = require('sharp');
+const Jimp = require('jimp');
+ const fetch = require('node-fetch')
 const gtts = require('google-tts-api');
 const mime = require('mime-types');
 const { PDFDocument } = require('pdf-lib');
@@ -32,7 +34,7 @@ const antiFotoGroups = new Map();
 let historySiapa = {};
 
 const pdfLimit = new Map(); 
-const MAX_PDF = 3;
+const MAX_PDF = 1;
 const PDF_COOLDOWN = 60 * 60 * 1000; 
 const pdfAksesSementara = new Map(); 
 
@@ -48,15 +50,26 @@ const BRAT_COOLDOWN = 60 * 60 * 1000;
 const bratAksesSementara = new Map(); 
 
 const waifuLimit = new Map();
-const MAX_WAIFU = 3; // max 3 kali
+const MAX_WAIFU = 1; // max 3 kali
 const WAIFU_COOLDOWN = 60 * 60 * 1000; // 1 jam
 const waifuAksesSementara = new Map();
 
 // Atur limit & cooldown
 const soundLimit = new Map(); // user -> { count, time }
-const MAX_SOUND = 3; // maksimal 3x
+const MAX_SOUND = 1; // maksimal 3x
 const SOUND_COOLDOWN = 60 * 60 * 1000; // 1 jam
 const soundAksesSementara = new Map(); // user -> expireTime
+
+const hitamkanLimit = new Map();
+const MAX_HITAMKAN = 1;
+const HITAMKAN_COOLDOWN = 60 * 60 * 1000; // 1 jam
+const hitamkanAksesSementara = new Map();
+
+const spotifyLimit = new Map();
+const MAX_SPOTIFY = 2;
+const SPOTIFY_COOLDOWN = 60 * 60 * 1000; // 1 jam
+const spotifyAksesSementara = new Map();
+
 
   const OWNER_NUMBER = '6283836348226@s.whatsapp.net'
   const PROXY_NUMBER = '6291100802986027@s.whatsapp.net'; 
@@ -1185,6 +1198,7 @@ if (text === '.shop') {
 │ • .belibrat ➜ Akses *.brat*
 │ • .beliwaifu  ➜ Akses *.waifu*
 │ • .belisound  ➜ Akses *.sound*
+│ • .belihitamkan  ➜ Akses *.hitamkan*
 │
 │ 👑 *FITUR VIP PERMANEN*
 │ 💰 Harga: *10.000 poin*
@@ -1380,6 +1394,71 @@ if (text === '.belisound') {
     });
 }
 
+// ===== BELI AKSES HITAMKAN SEMENTARA =====
+if (text === '.belihitamkan') {
+    const harga = 2500;
+    const durasiMs = 5 * 60 * 1000; // 5 menit
+    const skor = getGroupSkor(sender, from);
+
+    if (isOwner(sender) || isVIP(sender, from)) {
+        return sock.sendMessage(from, { text: '✅ Kamu sudah punya akses permanen ke fitur *.hitamkan*.' });
+    }
+
+    const now = Date.now();
+    const expired = hitamkanAksesSementara.get(sender);
+
+    if (expired && now < expired) {
+        const sisaMenit = Math.ceil((expired - now) / 60000);
+        return sock.sendMessage(from, { text: `✅ Kamu masih punya akses sementara ke *.hitamkan* selama *${sisaMenit} menit* lagi.` });
+    }
+
+    if (skor < harga) {
+        return sock.sendMessage(from, { text: `❌ *Skor Tidak Cukup!*\n\n📛 Butuh *${harga} poin* untuk beli akses *.hitamkan*\n🎯 Skor kamu: *${skor} poin*\n\n🔥 Main dan kumpulkan skor!` });
+    }
+
+    addGroupSkor(sender, from, -harga);
+    simpanSkorKeFile();
+
+    const waktuBerakhir = moment(now + durasiMs).tz('Asia/Jakarta').format('HH:mm:ss');
+    hitamkanAksesSementara.set(sender, now + durasiMs);
+
+    return sock.sendMessage(from, {
+        text: `✅ *Akses Sementara Berhasil Dibeli!*\n\n📌 Akses *.hitamkan* aktif selama *5 menit*\n💰 Harga: *${harga} poin*\n🕒 Berlaku sampai: *${waktuBerakhir} WIB*\n\nGunakan selama waktu berlaku! 🚀`
+    });
+}
+
+// ===== BELI AKSES SPOTIFY =====
+if (text === '.belispotify') {
+    const harga = 2500;
+    const durasiMs = 5 * 60 * 1000; // 5 menit
+    const skor = getGroupSkor(sender, from);
+
+    if (isOwner(sender) || isVIP(sender, from)) {
+        return sock.sendMessage(from, { text: '✅ Kamu sudah punya akses permanen ke fitur *.spotify*.' });
+    }
+
+    const now = Date.now();
+    const expired = spotifyAksesSementara.get(sender);
+
+    if (expired && now < expired) {
+        const sisaMenit = Math.ceil((expired - now) / 60000);
+        return sock.sendMessage(from, { text: `✅ Kamu masih punya akses sementara ke *.spotify* selama *${sisaMenit} menit* lagi.` });
+    }
+
+    if (skor < harga) {
+        return sock.sendMessage(from, { text: `❌ *Skor Tidak Cukup!*\n\n📛 Butuh *${harga} poin* untuk beli akses *.spotify*\n🎯 Skor kamu: *${skor} poin*\n\n🔥 Main dan kumpulkan skor!` });
+    }
+
+    addGroupSkor(sender, from, -harga);
+    simpanSkorKeFile();
+
+    const waktuBerakhir = moment(now + durasiMs).tz('Asia/Jakarta').format('HH:mm:ss');
+    spotifyAksesSementara.set(sender, now + durasiMs);
+
+    return sock.sendMessage(from, {
+        text: `✅ *Akses Sementara Berhasil Dibeli!*\n\n📌 Akses *.spotify* aktif selama *5 menit*\n💰 Harga: *${harga} poin*\n🕒 Berlaku sampai: *${waktuBerakhir} WIB*\n\nGunakan selama waktu berlaku! 🚀`
+    });
+}
 
 if (text === '.belikick') {
     if (!isGroup) return sock.sendMessage(from, {
@@ -2722,7 +2801,7 @@ if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.s
         const sticker = new Sticker(resizedBuffer, {
             type: 'FULL',
             pack: 'stikerbot',
-            author: 'JarrAI',
+            author: 'Jarr',
             quality: 100
         });
 
@@ -2896,7 +2975,7 @@ if (text.toLowerCase().startsWith('.teks')) {
         const sticker = new Sticker(bufferWithText, {
             type: 'FULL',
             pack: 'stikerbot',
-            author: 'JarrAI',
+            author: 'Jarr',
             quality: 100
         });
 
@@ -3059,7 +3138,7 @@ if (!(isOwner(sender) || isVIP(sender, from) || isTemporaryActive)) {
         const sticker = new Sticker(buffer, {
             type: 'FULL',
             pack: 'brat-anomali',
-            author: 'JarrAI',
+            author: 'Jarr',
             quality: 100
         });
 
@@ -4122,7 +4201,7 @@ if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu "))
           if (record.count >= MAX_WAIFU) {
             const sisa = Math.ceil((WAIFU_COOLDOWN - (now - record.time)) / 60000);
             await sock.sendMessage(from, {
-              text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.waifu* 3x per jam.\n⏳ Tunggu *${sisa} menit* lagi.\n\n💡 *Tips:* Jadi *VIP* atau beli akses *.beliwaifu* biar unlimited.`
+              text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.waifu* 1x per jam.\n⏳ Tunggu *${sisa} menit* lagi.\n\n💡 *Tips:* Jadi *VIP* atau beli akses *.beliwaifu* biar unlimited.`
             }, { quoted: msg });
             await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
             return;
@@ -4396,6 +4475,7 @@ if (text.startsWith('.siapa')) {
 if (text.startsWith('.spamcode')) {
   await spamCode(sock, from, msg, text, isOwner);
 }
+
 // 📝 SET NAMA GRUP – Semua member bisa
 if (text.startsWith('.setnamagc')) {
     if (!from.endsWith('@g.us')) {
@@ -4572,7 +4652,7 @@ if (text.toLowerCase().startsWith('.sound')) {
                 if (record.count >= MAX_SOUND) {
                     const sisa = Math.ceil((SOUND_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Sound Tercapai*\n\nKamu hanya bisa memakai *.sound* 3x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belisound* 5 menit.\n\n💡 *Tips:* Beli VIP agar bisa memakai *.sound* tanpa batas.`,
+                        text: `🚫 *Limit Sound Tercapai*\n\nKamu hanya bisa memakai *.sound* 1x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belisound* 5 menit.\n\n💡 *Tips:* Beli VIP agar bisa memakai *.sound* tanpa batas.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -4683,6 +4763,617 @@ if (text.startsWith('.fakereply')) {
   }
 }
 
+// ⚠️ CEK KALO HANYA .NULIS
+if (/^\.nulis\s*$/i.test(text)) {
+    const pesan = `📚 Pilih jenis buku yang ingin dibuat:\n\n` +
+                  `1. *.nulis buku :* Tulis di buku biasa\n` +
+                  `2. *.nulis bukubatik :* Tulis di buku batik`;
+    await sock.sendMessage(from, { text: pesan });
+    return;
+}
+
+
+// 📖 FITUR NULIS BUKU BATIK (wrap + multi-page)
+if (/^\.nulis bukubatik\s/i.test(text)) {
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    // ambil teks setelah command
+    let tulisan = text.replace(/\.nulis bukubatik/i, '').trim();
+    const ext = msg.message?.extendedTextMessage;
+    if (!tulisan && ext?.contextInfo?.quotedMessage) {
+        const quoted = ext.contextInfo.quotedMessage;
+        if (quoted.conversation) tulisan = quoted.conversation;
+        else if (quoted.extendedTextMessage?.text) tulisan = quoted.extendedTextMessage.text;
+    }
+
+    if (!tulisan) {
+        await sock.sendMessage(from, { text: '⚠️ Gunakan: `.nulis bukubatik teks`' });
+        return;
+    }
+
+    try {
+        // load template buku batik
+        const baseImage = await Jimp.read('./bukubatik.jpg');
+
+        // load font Patrick Hand
+        const font = await Jimp.loadFont('./font/patrickhand.fnt');
+
+        // posisi teks khusus buku batik (sesuaikan)
+        const startX = 180;       // sesuaikan posisi di buku batik
+        const startY = 120;
+        const lineHeight = 30;
+
+        const rightMargin = 60;
+        const bottomLimit = baseImage.bitmap.height - 130;
+        const maxWidth = baseImage.bitmap.width - startX - rightMargin;
+
+        // helper: pecah kata panjang
+        function splitLongWord(word, font, maxW) {
+            const parts = [];
+            let chunk = '';
+            for (let ch of word) {
+                const test = chunk + ch;
+                if (Jimp.measureText(font, test) <= maxW) {
+                    chunk = test;
+                } else {
+                    if (chunk) parts.push(chunk);
+                    chunk = ch;
+                }
+            }
+            if (chunk) parts.push(chunk);
+            return parts;
+        }
+
+        // wrap text
+        function wrapText(font, text, maxW) {
+            const lines = [];
+            const paras = text.split('\n');
+            for (const para of paras) {
+                const words = para.split(' ').filter(Boolean);
+                let line = '';
+                for (let w of words) {
+                    const testLine = line ? (line + ' ' + w) : w;
+                    if (Jimp.measureText(font, testLine) <= maxW) {
+                        line = testLine;
+                    } else {
+                        if (line) {
+                            lines.push(line);
+                            if (Jimp.measureText(font, w) > maxW) {
+                                const chunks = splitLongWord(w, font, maxW);
+                                for (let i = 0; i < chunks.length - 1; i++) lines.push(chunks[i]);
+                                line = chunks[chunks.length - 1];
+                            } else {
+                                line = w;
+                            }
+                        } else {
+                            if (Jimp.measureText(font, w) > maxW) {
+                                const chunks = splitLongWord(w, font, maxW);
+                                for (let i = 0; i < chunks.length - 1; i++) lines.push(chunks[i]);
+                                line = chunks[chunks.length - 1];
+                            } else {
+                                line = w;
+                            }
+                        }
+                    }
+                }
+                if (line) lines.push(line);
+            }
+            return lines;
+        }
+
+        const lines = wrapText(font, tulisan, maxWidth);
+
+        // multi-page
+        const pages = [baseImage.clone()];
+        let pageIndex = 0, y = startY;
+        for (const ln of lines) {
+            if (y + lineHeight > bottomLimit) {
+                pages.push(baseImage.clone());
+                pageIndex++; y = startY;
+            }
+            pages[pageIndex].print(
+            font,
+            startX,
+            y,
+            {
+                text: ln,
+                alignmentX: Jimp.HORIZONTAL_ALIGN_LEFT,
+                alignmentY: Jimp.VERTICAL_ALIGN_TOP
+            },
+            maxWidth,
+            lineHeight,
+            
+        );
+
+            y += lineHeight;
+        }
+
+        // kirim hasil
+        for (let i = 0; i < pages.length; i++) {
+            const buf = await pages[i].getBufferAsync(Jimp.MIME_PNG);
+            const cap = pages.length > 1
+                ? `📖 Hasil tulisan (halaman ${i+1}/${pages.length}):`
+                : '📖 Hasil tulisan:';
+            await sock.sendMessage(from, { image: buf, caption: cap });
+        }
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (err) {
+        console.error('❌ Error .nulis bukubatik:', err);
+        await sock.sendMessage(from, { text: '❌ Gagal membuat tulisan di buku batik.' });
+    }
+}
+
+
+// 📖 FITUR NULIS (perbaikan wrap + multi-page)
+if (/^\.nulis buku\s/i.test(text)) {
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    // ambil teks dari argumen atau reply
+    let tulisan = text.replace('.nulis buku', '').trim();
+    const ext = msg.message?.extendedTextMessage;
+    if (!tulisan && ext?.contextInfo?.quotedMessage) {
+        const quoted = ext.contextInfo.quotedMessage;
+        if (quoted.conversation) tulisan = quoted.conversation;
+        else if (quoted.extendedTextMessage?.text) tulisan = quoted.extendedTextMessage.text;
+    }
+
+    if (!tulisan) {
+        await sock.sendMessage(from, { text: '⚠️ Gunakan: `.nulis buku teks` atau reply pesan lalu `.nulis buku`' });
+        return;
+    }
+
+    try {
+        // load template buku (base)
+        const baseImage = await Jimp.read('./buku.jpg');
+
+        // load font BMFont (Patrick Hand)
+        const font = await Jimp.loadFont('./font/patrickhand.fnt');
+
+        // posisi tulisan sesuai garis biru (sesuaikan kalau perlu)
+        const startX = 360;           
+        const startY = 135;           
+        const lineHeight = 35;        
+
+        // hitung maxWidth benar: dari startX sampai margin kanan
+        const rightMargin = 50; // sesuaikan margin kanan agar tulisan tidak terlalu mepet
+        const maxWidth = baseImage.bitmap.width - startX - rightMargin;
+
+        // batas bawah tiap halaman (agar tidak nabrak footer)
+        const bottomLimit = baseImage.bitmap.height - 120;
+
+        // helper: pecah kata panjang jadi potongan yang muat
+        function splitLongWord(word, font, maxW) {
+            const parts = [];
+            let chunk = '';
+            for (let ch of word) {
+                const test = chunk + ch;
+                if (Jimp.measureText(font, test) <= maxW) {
+                    chunk = test;
+                } else {
+                    if (chunk) parts.push(chunk);
+                    chunk = ch;
+                }
+            }
+            if (chunk) parts.push(chunk);
+            return parts;
+        }
+
+        // improved wrapText: handle paragraphs, normal wrap, dan split long words
+        function wrapText(font, text, maxW) {
+            const lines = [];
+            const paras = text.split('\n');
+            for (const para of paras) {
+                const words = para.split(' ').filter(Boolean);
+                let line = '';
+                for (let w of words) {
+                    const testLine = line ? (line + ' ' + w) : w;
+                    if (Jimp.measureText(font, testLine) <= maxW) {
+                        line = testLine;
+                    } else {
+                        if (line) {
+                            lines.push(line);
+                            // check if current word itself too long
+                            if (Jimp.measureText(font, w) > maxW) {
+                                const chunks = splitLongWord(w, font, maxW);
+                                // push all chunks except last into lines
+                                for (let i = 0; i < chunks.length - 1; i++) lines.push(chunks[i]);
+                                line = chunks[chunks.length - 1];
+                            } else {
+                                line = w;
+                            }
+                        } else {
+                            // line is empty but word alone too long -> split it
+                            if (Jimp.measureText(font, w) > maxW) {
+                                const chunks = splitLongWord(w, font, maxW);
+                                for (let i = 0; i < chunks.length - 1; i++) lines.push(chunks[i]);
+                                line = chunks[chunks.length - 1];
+                            } else {
+                                line = w;
+                            }
+                        }
+                    }
+                }
+                if (line) lines.push(line);
+            }
+            return lines;
+        }
+
+        // buat lines yang akan ditulis
+        const lines = wrapText(font, tulisan, maxWidth);
+
+        // multi-page: buat array halaman (clone base image)
+        const pages = [baseImage.clone()];
+        let pageIndex = 0;
+        let y = startY;
+
+        for (const ln of lines) {
+            // jika melewati batas bawah -> buat halaman baru
+            if (y + lineHeight > bottomLimit) {
+                pages.push(baseImage.clone());
+                pageIndex++;
+                y = startY;
+            }
+
+            // tulis ke halaman saat ini
+            pages[pageIndex].print(font, startX, y, ln);
+            y += lineHeight;
+        }
+
+        // hasil akhir: kirim semua halaman (kalau 1 halaman cukup, kirim 1)
+        for (let i = 0; i < pages.length; i++) {
+            const buf = await pages[i].getBufferAsync(Jimp.MIME_PNG);
+            const cap = pages.length > 1 ? `📖 Hasil tulisan (halaman ${i+1}/${pages.length}):` : '📖 Hasil tulisan:';
+            await sock.sendMessage(from, { image: buf, caption: cap });
+        }
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (err) {
+        console.error('❌ Error .nulis:', err);
+        await sock.sendMessage(from, { text: '❌ Gagal membuat tulisan di buku.' });
+    }
+}
+
+// ===== HANDLER HITAMKAN =====
+if (text.toLowerCase().startsWith('.hitamkan')) {
+    const q = msg.quoted ? msg.quoted : msg;
+    const mime = (q.message?.imageMessage || msg.message?.imageMessage) ? 'image' : '';
+
+    if (!mime.startsWith('image')) {
+        await sock.sendMessage(from, { text: '❌ Balas atau kirim gambar dengan perintah *.hitamkan*' }, { quoted: msg });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    // ===== CEK LIMIT =====
+    const isBypass = isOwner(sender) || isVIP(sender, from);
+    const now = Date.now();
+    const aksesHitam = hitamkanAksesSementara.get(sender);
+    const isTemporaryActive = aksesHitam && now < aksesHitam;
+
+    if (!(isBypass || isTemporaryActive)) {
+        const record = hitamkanLimit.get(sender);
+        if (record) {
+            if (now - record.time < HITAMKAN_COOLDOWN) {
+                if (record.count >= MAX_HITAMKAN) {
+                    const sisa = Math.ceil((HITAMKAN_COOLDOWN - (now - record.time)) / 60000);
+                    await sock.sendMessage(from, {
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.hitamkan* 1x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belihitamkan* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.hitamkan* tanpa batas waktu.`,
+                        mentions: [sender]
+                    }, { quoted: msg });
+                    return;
+                } else record.count++;
+            } else {
+                hitamkanLimit.set(sender, { count: 1, time: now });
+            }
+        } else {
+            hitamkanLimit.set(sender, { count: 1, time: now });
+        }
+    }
+
+    // ===== PROSES HITAMKAN =====
+    try {
+        const media = await downloadMediaMessage(q, 'buffer');
+        const payload = { imageData: media.toString("base64"), filter: "hitam" };
+        const res = await axios.post("https://negro.consulting/api/process-image", payload);
+
+        if (res.data && res.data.status === "success" && res.data.processedImageUrl) {
+            const imgRes = await axios.get(res.data.processedImageUrl, { responseType: "arraybuffer" });
+            const buffer = Buffer.from(imgRes.data);
+
+            await sock.sendMessage(from, { image: buffer, caption: "✅ Selesai dihitamkan" }, { quoted: msg });
+            await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+        } else throw new Error("API tidak mengembalikan gambar.");
+    } catch (err) {
+        console.error(err);
+        await sock.sendMessage(from, { text: '❌ Gagal memproses gambar.' }, { quoted: msg });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+}
+
+if (text.toLowerCase().startsWith('.qc')) {
+    // === Tambahkan definisi args ===
+    const args = text.trim().split(/ +/).slice(1); // ambil kata setelah ".qc2"
+    let argsText = args.join(" ")
+    let textInput
+    let apiColor = '#000000' // default hitam
+
+    if (args.length >= 1) {
+        const input = argsText.split("|")
+        if (input.length === 2) {
+            const colorName = input[0].trim().toLowerCase()
+            textInput = input[1].trim()
+
+            const colorMap = {
+                'putih': '#FFFFFF', 'hijau': '#00FF00', 'kuning': '#FFFF00',
+                'hitam': '#000000', 'merah': '#FF0000', 'biru': '#0000FF',
+                'ungu': '#800080', 'jingga': '#FFA500', 'pink': '#FFC0CB',
+                'abu-abu': '#808080', 'coklat': '#A52A2A', 'cyan': '#00FFFF',
+                'magenta': '#FF00FF', 'maroon': '#800000', 'navy': '#000080',
+                'olive': '#808000', 'orange': '#FFA500', 'purple': '#800080',
+                'silver': '#C0C0C0', 'teal': '#008080', 'turquoise': '#40E0D0',
+                'violet': '#EE82EE', 'salmon': '#FA8072', 'gold': '#FFD700',
+                'indigo': '#4B0082', 'lime': '#00FF00', 'skyblue': '#87CEEB',
+                'tan': '#D2B48C', 'orchid': '#DA70D6', 'coral': '#FF7F50'
+            }
+
+            apiColor = colorMap[colorName] || apiColor
+        } else {
+            await sock.sendMessage(from, {
+                text: "❌ Format salah.\n\nContoh: *.qc warna|teks*"
+            }, { quoted: msg })
+            return
+        }
+    } else if (msg.quoted && msg.quoted.text) {
+        textInput = msg.quoted.text
+    } else {
+        await sock.sendMessage(from, {
+            text: "❌ Input teks atau reply teks dengan format: *.qc warna|teks*"
+        }, { quoted: msg })
+        return
+    }
+
+    if (!textInput) return sock.sendMessage(from, { text: '❌ Masukkan teks!' }, { quoted: msg })
+    if (textInput.length > 100) return sock.sendMessage(from, { text: '❌ Maksimal 100 karakter!' }, { quoted: msg })
+
+    let namaPengirim = msg.pushName || sender.split('@')[0]; // pakai pushName dulu, kalau kosong pakai nomor
+
+    let pp = await sock.profilePictureUrl(sender, 'image').catch(() => 'https://telegra.ph/file/320b066dc81928b782c7b.png')
+
+    const obj = {
+        type: "quote",
+        format: "png",
+        backgroundColor: apiColor,
+        width: 512,
+        height: 768,
+        scale: 2,
+        messages: [{
+            entities: [],
+            avatar: true,
+            from: {
+                id: 1,
+                name: namaPengirim,
+                photo: { url: pp }
+            },
+            text: textInput,
+            replyMessage: {}
+        }]
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } })
+
+    try {
+        const json = await axios.post('https://qc.botcahx.eu.org/generate', obj, {
+            headers: { 'Content-Type': 'application/json' }
+        })
+
+        const buffer = Buffer.from(json.data.result.image, 'base64')
+
+        // langsung bikin stiker tanpa require sticker.js
+        const stiker = new Sticker(buffer, {
+            pack: global.stickpack || 'qcbot',
+            author: global.stickauth || 'Jarr',
+            type: StickerTypes.FULL,
+            quality: 100
+        })
+
+        await sock.sendMessage(from, { sticker: await stiker.toBuffer() }, { quoted: msg })
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } })
+
+    } catch (error) {
+        console.error(error)
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } })
+        await sock.sendMessage(from, { text: '❌ Terjadi kesalahan saat membuat stiker.' }, { quoted: msg })
+    }
+}
+
+if (text.toLowerCase().startsWith('.srtdarksistem')) {
+    const args = text.split(' ').slice(1)
+    const nama = args.join(' ')
+
+    if (!nama) {
+        return sock.sendMessage(from, {
+            text: `Kirim perintah *.srtdarksistem [teks]*\nContoh: *.srtdarksistem Hilman*`
+        }, { quoted: msg })
+    }
+
+    // Reaksi jam pasir saat proses
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } })
+
+    ;(async () => {
+        try {
+            const url = `https://api.sxtream.xyz/maker/yapping?name=${encodeURIComponent(nama)}`
+            const res = await fetch(url)
+            if (!res.ok) throw '❌ Gagal mengambil data dari API.'
+
+            const buffer = await res.buffer()
+            await sock.sendMessage(from, {
+                image: buffer,
+                caption: `🗣️ Sertifikat Dark Sistem by *${nama}*`
+            }, { quoted: msg })
+
+            // Reaksi centang hijau setelah berhasil
+            await sock.sendMessage(from, { react: { text: '✅', key: msg.key } })
+
+        } catch (e) {
+            console.error(e)
+            // Reaksi silang merah jika error
+            await sock.sendMessage(from, { react: { text: '❌', key: msg.key } })
+            await sock.sendMessage(from, {
+                text: '❌ Terjadi kesalahan saat mengambil gambar.'
+            }, { quoted: msg })
+        }
+    })()
+}
+
+//SPOTIFY
+async function convert(ms) {
+    var minutes = Math.floor(ms / 60000);
+    var seconds = ((ms % 60000) / 1000).toFixed(0);
+    return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+}
+
+async function down(url) {
+    const BASEURL = "https://api.fabdl.com";
+    const headers = {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+    };
+
+    const { data: info } = await axios.get(`${BASEURL}/spotify/get?url=${url}`, { headers });
+    const { gid, id } = info.result;
+
+    const { data: download } = await axios.get(`${BASEURL}/spotify/mp3-convert-task/${gid}/${id}`, { headers });
+    if (download.result.download_url) return `${BASEURL}${download.result.download_url}`;
+    throw new Error("Gagal mendownload audio dari Spotify");
+}
+
+async function spotifyCreds() {
+    try {
+        const json = await axios.post(
+            "https://accounts.spotify.com/api/token",
+            "grant_type=client_credentials",
+            {
+                headers: {
+                    Authorization:
+                        "Basic " +
+                        Buffer.from("4c4fc8c3496243cbba99b39826e2841f:d598f89aba0946e2b85fb8aefa9ae4c8").toString("base64"),
+                },
+            }
+        );
+        if (!json.data.access_token) return { status: false, msg: "Tidak bisa generate token!" };
+        return { status: true, data: json.data };
+    } catch (e) {
+        return { status: false, msg: e.message };
+    }
+}
+
+async function play(query) {
+    try {
+        const creds = await spotifyCreds();
+        if (!creds.status) return creds;
+
+        const json = await axios.get(`https://api.spotify.com/v1/search?query=${encodeURIComponent(query)}&type=track&offset=0&limit=1`, {
+            headers: { Authorization: "Bearer " + creds.data.access_token },
+        });
+        if (!json.data.tracks.items || json.data.tracks.items.length < 1) return { status: false, msg: "Music not found!" };
+
+        let v = json.data.tracks.items[0];
+        let url = await down(v.external_urls.spotify);
+
+        const metadata = {
+            title: `${v.album.artists[0].name} - ${v.name}`,
+            artist: v.album.artists[0].name,
+            name: v.name,
+            duration: await convert(v.duration_ms),
+            popularity: `${v.popularity}%`,
+            preview: v.preview_url || "No preview audio available",
+            thumbnail: v.album.images[0].url,
+            url: v.external_urls.spotify,
+        };
+
+        return { status: true, metadata, audio: { url } };
+    } catch (e) {
+        return { status: false, msg: e.message };
+    }
+}
+
+// ===== HANDLER SPOTIFY =====
+if (text.toLowerCase().startsWith('.spotify') || text.toLowerCase().startsWith('.plays')) {
+    const query = text.split(' ').slice(1).join(' ');
+    if (!query) return sock.sendMessage(from, { text: '❌ Masukkan nama lagu atau artis!' }, { quoted: msg });
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    const isBypass = isOwner(sender) || isVIP(sender, from);
+    const now = Date.now();
+    const aksesSpotify = spotifyAksesSementara.get(sender);
+    const isTemporaryActive = aksesSpotify && now < aksesSpotify;
+
+    if (!(isBypass || isTemporaryActive)) {
+        const record = spotifyLimit.get(sender);
+        if (record) {
+            if (now - record.time < SPOTIFY_COOLDOWN) {
+                if (record.count >= MAX_SPOTIFY) {
+                    const sisa = Math.ceil((SPOTIFY_COOLDOWN - (now - record.time)) / 60000);
+                    await sock.sendMessage(from, {
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.spotify* 2x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belispotify* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.spotify* tanpa batas waktu.`,
+                        mentions: [sender]
+                    }, { quoted: msg });
+                    return;
+                } else record.count++;
+            } else {
+                spotifyLimit.set(sender, { count: 1, time: now });
+            }
+        } else {
+            spotifyLimit.set(sender, { count: 1, time: now });
+        }
+    }
+
+    (async () => {
+        try {
+            const result = await play(query);
+            if (!result.status) {
+                await sock.sendMessage(from, { text: `❌ Error: ${result.msg}`, quoted: msg });
+                return;
+            }
+
+            const { metadata, audio } = result;
+
+            await sock.sendMessage(from, {
+                image: { url: metadata.thumbnail },
+                caption: `
+🎵 *Spotify Track Info* 🎵
+────────────────────────
+*🎶 Judul:* ${metadata.title}
+*👤 Artis:* ${metadata.artist}
+*⏱️ Durasi:* ${metadata.duration}
+*🔥 Popularitas:* ${metadata.popularity}
+*🔊 Preview:* ${metadata.preview}
+*🔗 Spotify:* ${metadata.url}
+────────────────────────
+`,
+            }, { quoted: msg });
+
+            if (audio.url) {
+                await sock.sendMessage(from, { audio: { url: audio.url }, mimetype: 'audio/mpeg' }, { quoted: msg });
+            }
+
+            await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+        } catch (e) {
+            console.error(e);
+            await sock.sendMessage(from, { text: '❌ Terjadi kesalahan saat mengambil lagu.', quoted: msg });
+            await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        }
+    })();
+}
+
+
+
 if (text.trim() === '.info') {
     const teks = `╭───〔 📡 *INFORMASI JARR BOT* 〕───╮
 │ 🤖 *Nama Bot* : JARR AI BOT
@@ -4750,7 +5441,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.0.5');
+    const versiFancy = toFancyNumber('1.0.6');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -4791,24 +5482,29 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 ├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
 │ .ai <pertanyaan> → Tanya ke AI
 │
-├─ 〔 🖼️ *ᴍᴇᴅɪᴀ* 〕
-│ .waifu → Waifu random
-│ .pdf → Ubah gambar jadi pdf
+│├─ 〔 🎵 *ᴍᴜꜱɪᴄ & ᴀᴜᴅɪᴏ* 〕
+│ .spotify → Cari lagu Spotify
+│ .sound → Ubah teks jadi suara
+│ .ttmp3 → Unduh mp3 TikTok
+│ .ytmp3 → Unduh mp3 Youtube
+│ .ytmp4 → Unduh mp4 Youtube
+│
+├─ 〔 🖌️ *ᴍᴀᴋᴇʀ / ᴄʀᴇᴀᴛᴏʀ* 〕
 │ .stiker → Ubah gambar jadi stiker
-│ .toimg → Ubah stiker jadi gambar
-│ .teks → Beri teks di stiker
+│ .qc → Ubah teks jadi quote
+│ .toimg → Stiker ke gambar
+│ .teks → Tambah teks di stiker
 │ .brat → Membuat stiker kata
+│ .srtdarksistem → Sertifikat Dark Sistem
+│ .hitamkan → Membuat wajah hitam
+│
+├─ 〔 🖼️ *ᴍᴇᴅɪᴀ / ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
+│ .waifu → Waifu random
 │ .img → Menghasilkan gambar
-│ .qr → Membuat QR dari link
-│ .sound → Mengubah kata jadi suara
+│ .qr → Membuat QR
+│ .nulis → Menulis teks dibuku
 │ .dwfoto → Unduh foto sekali lihat
 │ .dwvideo → Unduh video sekali lihat
-│
-├─ 〔 🎥 *ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
-│ .wm <link> → Unduh tanpa watermark
-│ .ttmp3 <link> → Unduh mp3 TikTok
-│ .ytmp3 <link> → Unduh mp3 Youtube
-│ .ytmp4 <link> → Unduh mp4 Youtube
 │
 ├─ 〔 👥 *ꜰɪᴛᴜʀ ɢʀᴜᴘ* 〕
 │ .tagall → Mention semua member
