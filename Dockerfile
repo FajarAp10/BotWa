@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Paksa npm mengabaikan peer dependency conflict
-RUN npm install --legacy-peer-deps
+RUN npm install 
 
 COPY . .
 
