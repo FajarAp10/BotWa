@@ -35,7 +35,7 @@ let historySiapa = {};
 
 const pdfLimit = new Map(); 
 const MAX_PDF = 1;
-const PDF_COOLDOWN = 60 * 60 * 1000; 
+const PDF_COOLDOWN = 10 * 60 * 60 * 1000; 
 const pdfAksesSementara = new Map(); 
 
 
@@ -46,34 +46,34 @@ const COOLDOWN_TIME = 10 * 60 * 1000;
 
 const bratLimit = new Map(); 
 const MAX_BRAT = 3;
-const BRAT_COOLDOWN = 60 * 60 * 1000; 
+const BRAT_COOLDOWN = 10*  60 * 60 * 1000; 
 const bratAksesSementara = new Map(); 
 
 const waifuLimit = new Map();
 const MAX_WAIFU = 1; // max 3 kali
-const WAIFU_COOLDOWN = 60 * 60 * 1000; // 1 jam
+const WAIFU_COOLDOWN = 10 * 60 * 60 * 1000; // 10 jam
 const waifuAksesSementara = new Map();
 
 // Atur limit & cooldown
 const soundLimit = new Map(); // user -> { count, time }
 const MAX_SOUND = 1; // maksimal 3x
-const SOUND_COOLDOWN = 60 * 60 * 1000; // 1 jam
+const SOUND_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
 const soundAksesSementara = new Map(); // user -> expireTime
 
 const hitamkanLimit = new Map();
 const MAX_HITAMKAN = 1;
-const HITAMKAN_COOLDOWN = 60 * 60 * 1000; // 1 jam
+const HITAMKAN_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
 const hitamkanAksesSementara = new Map();
 
 const spotifyLimit = new Map();
 const MAX_SPOTIFY = 2;
-const SPOTIFY_COOLDOWN = 60 * 60 * 1000; // 1 jam
+const SPOTIFY_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
 const spotifyAksesSementara = new Map();
 
 // ===== Limit & Akses IGStalk =====
 const igstalkLimit = new Map(); 
 const MAX_IGSTALK = 1 // Max untuk pengguna biasa
-const IGSTALK_COOLDOWN = 60 * 60 * 1000; // 1 jam
+const IGSTALK_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
 const igstalkAksesSementara = new Map(); // Beli akses sementara
 
   const OWNER_NUMBER = '6283836348226@s.whatsapp.net'
@@ -3068,7 +3068,7 @@ if (text.toLowerCase().startsWith('.brat')) {
                 if (record.count >= MAX_BRAT) {
                     const sisa = Math.ceil((BRAT_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.brat* 3x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibrat* 30 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.brat* tanpa batas waktu.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.brat* 3x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibrat* 30 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.brat* tanpa batas waktu.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -3102,12 +3102,9 @@ if (text.toLowerCase().startsWith('.brat')) {
 
     } catch (err) {
         console.error("Error:", err);
-        await sock.sendMessage(from, {
-            text: '❌ Gagal membuat stiker brat.'
-        }, { quoted: msg });
+         await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
     }
 }
-
 
 
                 // 📢 TAG SEMUA ANGGOTA GRUP
@@ -3132,7 +3129,7 @@ if (text.toLowerCase().startsWith('.brat')) {
                 console.log(`📢 Men-tag ${participants.length} anggota grup`);
             } catch (e) {
                 console.error('❌ Gagal tagall:', e);
-                await sock.sendMessage(from, { text: '❌ Gagal mengambil data anggota grup.' });
+                await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
             }
 
             return;
@@ -3226,10 +3223,7 @@ if (text === '.dwfoto') {
 
     } catch (err) {
         console.error('❌ Gagal mengunduh foto sekali lihat:', err);
-        await sock.sendMessage(from, {
-            text: '❌ Gagal mengambil foto. Pastikan kamu mereply foto sekali lihat.',
-            mentions: [sender]
-        });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
     }
 
     return;
@@ -3276,10 +3270,7 @@ if (text === '.dwvideo') {
 
     } catch (err) {
         console.error('❌ Gagal mengambil video sekali lihat:', err);
-        await sock.sendMessage(from, {
-            text: '❌ Gagal mengambil video. Pastikan kamu mereply video sekali lihat.',
-            mentions: [sender]
-        });
+     await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
     }
 
     return;
@@ -4041,7 +4032,7 @@ if (text === '.pdf') {
                 if (record.count >= MAX_PDF) {
                     const sisa = Math.ceil((PDF_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.pdf* ${MAX_PDF}x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belipdf* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.pdf* tanpa batas waktu.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.pdf* ${MAX_PDF}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belipdf* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.pdf* tanpa batas waktu.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -4156,7 +4147,7 @@ if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu "))
           if (record.count >= MAX_WAIFU) {
             const sisa = Math.ceil((WAIFU_COOLDOWN - (now - record.time)) / 60000);
             await sock.sendMessage(from, {
-              text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.waifu* 1x per jam.\n⏳ Tunggu *${sisa} menit* lagi.\n\n💡 *Tips:* Jadi *VIP* atau beli akses *.beliwaifu* biar unlimited.`
+              text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.waifu* 1x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi.\n\n💡 *Tips:* Jadi *VIP* atau beli akses *.beliwaifu* biar unlimited.`
             }, { quoted: msg });
             await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
             return;
@@ -4607,7 +4598,7 @@ if (text.toLowerCase().startsWith('.sound')) {
                 if (record.count >= MAX_SOUND) {
                     const sisa = Math.ceil((SOUND_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Sound Tercapai*\n\nKamu hanya bisa memakai *.sound* 1x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belisound* 5 menit.\n\n💡 *Tips:* Beli VIP agar bisa memakai *.sound* tanpa batas.`,
+                        text: `🚫 *Limit Sound Tercapai*\n\nKamu hanya bisa memakai *.sound* 1x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belisound* 5 menit.\n\n💡 *Tips:* Beli VIP agar bisa memakai *.sound* tanpa batas.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -4753,7 +4744,7 @@ if (text.toLowerCase().startsWith('.hitamkan')) {
                 if (record.count >= MAX_HITAMKAN) {
                     const sisa = Math.ceil((HITAMKAN_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.hitamkan* 1x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belihitamkan* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.hitamkan* tanpa batas waktu.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.hitamkan* 1x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belihitamkan* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.hitamkan* tanpa batas waktu.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -5017,7 +5008,7 @@ if (text.toLowerCase().startsWith('.spotify') || text.toLowerCase().startsWith('
                 if (record.count >= MAX_SPOTIFY) {
                     const sisa = Math.ceil((SPOTIFY_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.spotify* 2x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belispotify* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.spotify* tanpa batas waktu.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.spotify* 2x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belispotify* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.spotify* tanpa batas waktu.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -5140,7 +5131,7 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
                 if (record.count >= MAX_IGSTALK) {
                     const sisa = Math.ceil((IGSTALK_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.igstalk* 1x per jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses sementara *.beliigstalk* 5 menit.\n\n💡 *Tips:* Jadilah VIP atau Owner agar bisa memakai *.igstalk* tanpa batas.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.igstalk* 1x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses sementara *.beliigstalk* 5 menit.\n\n💡 *Tips:* Jadilah VIP atau Owner agar bisa memakai *.igstalk* tanpa batas.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -5182,18 +5173,18 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
         await sock.sendMessage(from, { text: "❌ Terjadi kesalahan saat mengambil data." }, { quoted: msg });
     }
 }
-
 // 📌 FITUR JADWAL PIKET
 if (text.startsWith('.jadwalpiket')) {
-    if (!msg.key.remoteJid.endsWith('@g.us')) {
-        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup*!' });
+    const allowedGroup = "120363421418985666@g.us";
+
+    if (msg.key.remoteJid !== allowedGroup) {
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup yang ditentukan*!' });
         return;
     }
 
     const args = text.split(' ');
     const hari = (args[1] || '').toLowerCase();
 
-    // database jadwal
     const jadwal = {
         senin: [
             "Aditya Rizky Arvano",
@@ -5208,7 +5199,7 @@ if (text.startsWith('.jadwalpiket')) {
             "Arum Khairun Nisa",
             "Dea Sekar Ningrum",
             "Leonita Syafrida",
-            "Pradipta Nabil",
+            "Pradipta Sigma",
             "Rizky Satriaji Pamungkas",
             "Destra Dinata",
             "Viola Eka Putri Handoko"
@@ -5219,7 +5210,7 @@ if (text.startsWith('.jadwalpiket')) {
             "Nabila Luthfiana Zulfa",
             "Rizky Aditya",
             "Saskia Diva Aprilia",
-            "Fajar Aditya Pratama",
+            "Fajar Keren bjir",
             "Azzahra Cahyani Putri P"
         ],
         kamis: [
@@ -5228,8 +5219,8 @@ if (text.startsWith('.jadwalpiket')) {
             "Muhammad Baihaqi Arafah",
             "Muhammad Arif Murtadho",
             "Noor Allea Ellysa",
-            "Syelsi Cantika Inayah",
-            "Muhammad Febra Arisandi W"
+            "Syesil Carisa Inayah",
+            "Muhammad Febra Adisandi W"
         ],
         jumat: [
             "Aulya Cinta Kinasih",
@@ -5240,12 +5231,8 @@ if (text.startsWith('.jadwalpiket')) {
             "Zaskya Hening Nayla Nova",
             "Nadya Rizkayna Ramadhani"
         ],
-        sabtu: [
-            "Wayah e prei"
-        ],
-        minggu: [
-            "Wayah e turu"
-        ]
+        sabtu: ["Wayah e prei"],
+        minggu: ["Wayah e turu"]
     };
 
     if (!hari || !jadwal[hari]) {
@@ -5261,15 +5248,16 @@ if (text.startsWith('.jadwalpiket')) {
 
 // 📌 FITUR JADWAL MAPEL
 if (text.startsWith('.jadwalmapel')) {
-    if (!msg.key.remoteJid.endsWith('@g.us')) {
-        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup*!' });
+    const allowedGroup = "120363421418985666@g.us";
+
+    if (msg.key.remoteJid !== allowedGroup) {
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup yang ditentukan*!' });
         return;
     }
 
     const args = text.split(' ');
     const hari = (args[1] || '').toLowerCase();
 
-    // database jadwal mapel
     const mapel = {
         senin: [
             "Kejuruan (Pak Anaf)",
@@ -5305,15 +5293,11 @@ if (text.startsWith('.jadwalmapel')) {
         return;
     }
 
-    const daftar = mapel[hari]
-        .map((m, i) => `${i + 1}️⃣ ${m}`)
-        .join('\n');
-
+    const daftar = mapel[hari].map((m, i) => `${i + 1}️⃣ ${m}`).join('\n');
     const hasil = `📚 *Jadwal Mapel Hari ${hari.charAt(0).toUpperCase() + hari.slice(1)}*\n──────────────────\n${daftar}`;
 
     await sock.sendMessage(from, { text: hasil });
 }
-
 
 if (text.trim() === '.info') {
     const teks = `╭───〔 🤖 *JARR BOT* 〕───╮
@@ -5378,7 +5362,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.0.7');
+    const versiFancy = toFancyNumber('1.0.8');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -5419,7 +5403,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 ├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
 │ .ai <pertanyaan> → Tanya ke AI
 │
-│├─ 〔 🎵 *ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
+├─ 〔 🎵 *ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
 │ .spotify → Cari lagu Spotify
 │ .sound → Ubah teks jadi suara
 │ .wm → Unduh tanpa watermax
@@ -5435,7 +5419,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .brat → Membuat stiker kata
 │ .srtdarksistem → Sertifikat Dark Sistem
 │ .hitamkan → Membuat wajah hitam
-
+│
 ├─ 〔 ⏰ *ᴘᴇɴɢɪɴɢᴀᴛ* 〕
 │ .jadwalpiket → Lihat jadwal piket 
 │ .jadwalmapel → Lihat jadwal pelajaran 
