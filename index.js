@@ -30,6 +30,7 @@ const antiLinkGroups = new Map();
 const antiStickerGroups = new Map();
 const antiFotoGroups = new Map();
 
+const sesiPolling = new Map();
 
 let historySiapa = {};
 
@@ -2514,8 +2515,15 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
             }
         } else {
             const isi = sesi.jawaban.map((j, i) => {
-                return `*${i + 1}.* ${j ? `${j} (@${sesi.jawabanLolos[i].split('@')[0]})` : ''}`;
-            }).join("\n");
+            if (j) {
+                const user = sesi.jawabanLolos[i];
+                return user
+                    ? `*${i + 1}.* ✅ ${j} (@${user.split('@')[0]})`
+                    : `*${i + 1}.* ✅ ${j}`;
+            } else {
+                return `*${i + 1}.*`;
+            }
+        }).join("\n");
 
             await sock.sendMessage(from, {
                 text: `🚫 *Jawaban Salah!*\n━━━━━━━━━\n🧠 *Pertanyaan:* ${sesi.pertanyaan}\n\n📋 *Jawaban Saat Ini:*\n${isi}\n\n❌ *"${userJawab}" tidak ada dalam daftar jawaban.*\n↩️ Balas pesan ini untuk menjawab.`,
@@ -3283,7 +3291,7 @@ if (text.trim() === '.off') {
 
     if (!isRealOwner) {
         await sock.sendMessage(from, {
-            text: '❌ Hanya *Owner* yang bisa mematikan bot di grup ini.'
+            text: '❌ WKWK gbsa matiin gw, makanya jadi *OWNER*.'
         });
         return;
     }
@@ -3320,7 +3328,7 @@ console.log("isOwner:", isOwner(sender));
     
     if (!isRealOwner) {
         await sock.sendMessage(from, {
-            text: '❌ Hanya *Owner* yang bisa menyalakan bot di grup ini.'
+            text: '❌ Sok sok an nyalain, emng lu *OWNER*??.'
         });
         return;
     }
@@ -5178,7 +5186,7 @@ if (text.startsWith('.jadwalpiket')) {
     const allowedGroup = "120363421418985666@g.us";
 
     if (msg.key.remoteJid !== allowedGroup) {
-        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup yang ditentukan*!' });
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup pg*!' });
         return;
     }
 
@@ -5255,7 +5263,7 @@ if (text.startsWith('.jadwalmapel')) {
     const allowedGroup = "120363421418985666@g.us";
 
     if (msg.key.remoteJid !== allowedGroup) {
-        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup yang ditentukan*!' });
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup PG*!' });
         return;
     }
 
@@ -5302,6 +5310,160 @@ if (text.startsWith('.jadwalmapel')) {
 
     await sock.sendMessage(from, { text: hasil });
 }
+
+// 📌 FITUR SPIN
+if (text.startsWith('.spin')) {
+    const groupIdKelas = "120363421418985666@g.us";
+
+    // hanya untuk grup kelas
+    if (msg.key.remoteJid !== groupIdKelas) {
+        await sock.sendMessage(from, { text: "⚠️ Fitur ini hanya bisa dipakai di *grup PG*!" });
+        return;
+    }
+
+    // gabungan semua nama
+    const semuaNama = [
+     
+        "Aditya Rizky Arvano", "Bara Obama", "Herlina Ayu Putri",
+        "Marsya Ayu Maharani", "Sarah Alicia", "Agusta Daffa Fahirawan",
+        "Widya Ayu Khoirunnisa",
+
+        "Arum Khairun Nisa", "Dea Sekar Ningrum", "Leonita Syafrida",
+        "Pradipta Sigma", "Rizky Satriaji Pamungkas", "Destra Dinata",
+        "Viola Eka Putri Handoko",
+
+        "Arsya Zazillia Haryani", "Dhanis Ardhi Virmansyah",
+        "Nabila Luthfiana Zulfa", "Rizky Aditya", "Saskia Diva Aprilia",
+        "Fajar Keren bjir", "Azzahra Cahyani Putri P",
+
+        "Azisa Verga Riyani", "Firsa Puspita Kusuma",
+        "Muhammad Baihaqi Arafah", "Muhammad Arif Murtadho",
+        "Noor Allea Ellysa", "Syesil Carisa Inayah",
+        "Muhammad Febra Adisandi W",
+
+        "Aulya Cinta Kinasih", "Galih Cahya Saputra",
+        "Muhammad Zainus Sholikin", "Wahyu Januar Alatif",
+        "Ribkhi Amelia Putri", "Zaskya Hening Nayla Nova",
+        "Nadya Rizkayna Ramadhani"
+    ];
+
+    // cek jumlah spin
+    const args = text.split(' ');
+    let jumlah = parseInt(args[1]) || 1;
+    if (jumlah < 1) jumlah = 1;
+    if (jumlah > semuaNama.length) jumlah = semuaNama.length;
+
+    // acak nama
+    const copyNama = [...semuaNama];
+    const hasil = [];
+    for (let i = 0; i < jumlah; i++) {
+        const index = Math.floor(Math.random() * copyNama.length);
+        hasil.push(copyNama[index]);
+        copyNama.splice(index, 1); // hapus biar gak dobel
+    }
+
+    // format hasil
+    const teksHasil = hasil.map((n, i) => `*${i + 1}.* 👤 ${n}`).join('\n');
+    const pesan = `🎲 *Spin Result!*\n──────────────────\n${teksHasil}`;
+
+    await sock.sendMessage(from, { text: pesan });
+}
+// 📌 FITUR POLLING
+if (text.startsWith('.polling')) {
+    if (!msg.key.remoteJid.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup*!' });
+        return;
+    }
+
+    const args = text.replace('.polling', '').trim();
+    if (!args.includes('|')) {
+        await sock.sendMessage(from, { text: '⚠️ Format salah!\n\nContoh: `.polling Besok belajar jam berapa? | 7 pagi | 8 pagi | 9 pagi`' });
+        return;
+    }
+
+    const [pertanyaan, ...opsi] = args.split('|').map(a => a.trim());
+
+    if (opsi.length < 2) {
+        await sock.sendMessage(from, { text: '⚠️ Minimal harus ada 2 opsi!' });
+        return;
+    }
+
+    const hasil = Array(opsi.length).fill(0);
+    const endTime = Date.now() + 60000; // 60 detik
+
+    const tampilkanPolling = () => {
+        const sisa = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        let teks = `🗳️ *Polling Dimulai!*\n──────────────────\n📌 ${pertanyaan}\n\n`;
+        opsi.forEach((o, i) => {
+            teks += `${i + 1}️⃣ ${o} (${hasil[i]} suara)\n`;
+        });
+        teks += `\n✅ Balas pesan ini dengan angka pilihanmu\n⏳ Sisa waktu: *${sisa} detik*`;
+        return teks;
+    };
+
+    const sent = await sock.sendMessage(from, { text: tampilkanPolling() });
+
+    // simpan sesi polling
+    sesiPolling.set(from, {
+        pesanId: sent.key.id,
+        pertanyaan,
+        opsi,
+        hasil,
+        pemilih: new Set(),
+        endTime,
+        timeout: setTimeout(async () => {
+            const sesi = sesiPolling.get(from);
+            if (!sesi) return;
+
+            const maxSuara = Math.max(...sesi.hasil);
+            const pemenangIndex = sesi.hasil.indexOf(maxSuara);
+
+            let teks = `🏁 *Polling Selesai!*\n──────────────────\n📌 ${sesi.pertanyaan}\n\n`;
+            sesi.opsi.forEach((o, i) => {
+                teks += `${i + 1}️⃣ ${o} (${sesi.hasil[i]} suara)\n`;
+            });
+            teks += `\n🥇 *${sesi.opsi[pemenangIndex]}* menang dengan ${maxSuara} suara 🎉`;
+
+            await sock.sendMessage(from, { text: teks });
+            sesiPolling.delete(from);
+        }, 60000)
+    });
+
+    return;
+}
+
+// 📌 Tangani jawaban polling
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const sesi = sesiPolling.get(from);
+    if (sesi && msg.message.extendedTextMessage.contextInfo.stanzaId === sesi.pesanId) {
+        const sender = msg.key.participant || msg.key.remoteJid;
+        const pilihan = parseInt(text.trim());
+
+        if (isNaN(pilihan) || pilihan < 1 || pilihan > sesi.opsi.length) {
+            await sock.sendMessage(from, { text: `⚠️ Pilih angka antara 1 - ${sesi.opsi.length}` });
+            return;
+        }
+
+        if (sesi.pemilih.has(sender)) {
+            await sock.sendMessage(from, { text: `⚠️ @${sender.split('@')[0]} kamu sudah memilih!`, mentions: [sender] });
+            return;
+        }
+
+        sesi.hasil[pilihan - 1]++;
+        sesi.pemilih.add(sender);
+
+        const sisa = Math.max(0, Math.ceil((sesi.endTime - Date.now()) / 1000));
+
+        let teks = `🗳️ *Update Polling*\n──────────────────\n📌 ${sesi.pertanyaan}\n\n`;
+        sesi.opsi.forEach((o, i) => {
+            teks += `${i + 1}️⃣ ${o} (${sesi.hasil[i]} suara)\n`;
+        });
+        teks += `\n⏳ Sisa waktu: *${sisa} detik*`;
+
+        await sock.sendMessage(from, { text: teks });
+    }
+}
+
 
 if (text.trim() === '.info') {
     const teks = `╭───〔 🤖 *JARR BOT* 〕───╮
@@ -5366,7 +5528,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.0.8');
+    const versiFancy = toFancyNumber('1.0.9');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -5403,6 +5565,8 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .cekkhodam → Cek khodam 
 │ .siapa → Target random
 │ .fakereply → Pesan palsu
+│ .spin → Undian acak nama anggota
+│ .polling → Buat polling
 │
 ├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
 │ .ai <pertanyaan> → Tanya ke AI
