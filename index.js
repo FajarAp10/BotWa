@@ -5183,6 +5183,137 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
     }
 }
 
+// 📌 FITUR JADWAL PIKET
+if (text.startsWith('.jadwalpiket')) {
+    if (!msg.key.remoteJid.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup*!' });
+        return;
+    }
+
+    const args = text.split(' ');
+    const hari = (args[1] || '').toLowerCase();
+
+    // database jadwal
+    const jadwal = {
+        senin: [
+            "Aditya Rizky Arvano",
+            "Bara Obama",
+            "Herlina Ayu Putri",
+            "Marsya Ayu Maharani",
+            "Sarah Alicia",
+            "Agusta Daffa Fahirawan",
+            "Widya Ayu Khoirunnisa"
+        ],
+        selasa: [
+            "Arum Khairun Nisa",
+            "Dea Sekar Ningrum",
+            "Leonita Syafrida",
+            "Pradipta Nabil",
+            "Rizky Satriaji Pamungkas",
+            "Destra Dinata",
+            "Viola Eka Putri Handoko"
+        ],
+        rabu: [
+            "Arsya Zazillia Haryani",
+            "Dhanis Ardhi Virmansyah",
+            "Nabila Luthfiana Zulfa",
+            "Rizky Aditya",
+            "Saskia Diva Aprilia",
+            "Fajar Aditya Pratama",
+            "Azzahra Cahyani Putri P"
+        ],
+        kamis: [
+            "Azisa Verga Riyani",
+            "Firsa Puspita Kusuma",
+            "Muhammad Baihaqi Arafah",
+            "Muhammad Arif Murtadho",
+            "Noor Allea Ellysa",
+            "Syelsi Cantika Inayah",
+            "Muhammad Febra Arisandi W"
+        ],
+        jumat: [
+            "Aulya Cinta Kinasih",
+            "Galih Cahya Saputra",
+            "Muhammad Zainus Sholikin",
+            "Wahyu Januar Alatif",
+            "Ribkhi Amelia Putri",
+            "Zaskya Hening Nayla Nova",
+            "Nadya Rizkayna Ramadhani"
+        ],
+        sabtu: [
+            "Wayah e prei"
+        ],
+        minggu: [
+            "Wayah e turu"
+        ]
+    };
+
+    if (!hari || !jadwal[hari]) {
+        await sock.sendMessage(from, { text: "⚠️ Gunakan: `.jadwalpiket <hari>`\nContoh: `.jadwalpiket senin`" });
+        return;
+    }
+
+    const daftar = jadwal[hari].map(n => `👤 ${n}`).join('\n');
+    const hasil = `📅 *Jadwal Piket Hari ${hari.charAt(0).toUpperCase() + hari.slice(1)}*\n──────────────────\n${daftar}`;
+
+    await sock.sendMessage(from, { text: hasil });
+}
+
+// 📌 FITUR JADWAL MAPEL
+if (text.startsWith('.jadwalmapel')) {
+    if (!msg.key.remoteJid.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup*!' });
+        return;
+    }
+
+    const args = text.split(' ');
+    const hari = (args[1] || '').toLowerCase();
+
+    // database jadwal mapel
+    const mapel = {
+        senin: [
+            "Kejuruan (Pak Anaf)",
+            "Kejuruan (Bu Aji)"
+        ],
+        selasa: [
+            "Kejuruan (Pak Adi)",
+            "Kejuruan (Bu Ana)"
+        ],
+        rabu: [
+            "PKK (Bu Minuk)",
+            "MTK (Bu Inda)",
+            "Kejuruan (Bu Ana - Jamkos)",
+            "Agama (Bu Salis)"
+        ],
+        kamis: [
+            "Sejarah (Bu Yukha)",
+            "Olahraga (Pak Joko)",
+            "Bahasa Indonesia (Bu Rimba)",
+            "MTK (Bu Inda)",
+            "Bahasa Jawa (Bu Elisa)"
+        ],
+        jumat: [
+            "Bahasa Inggris (Bu Sarti)",
+            "Agama (Bu Salis)",
+            "PKN (Pak Sophan)",
+            "Bahasa Inggris (Bu Sarti)"
+        ]
+    };
+
+    if (!hari || !mapel[hari]) {
+        await sock.sendMessage(from, { text: "⚠️ Gunakan: `.jadwalmapel <hari>`\nContoh: `.jadwalmapel rabu`" });
+        return;
+    }
+
+    const daftar = mapel[hari]
+        .map((m, i) => `${i + 1}️⃣ ${m}`)
+        .join('\n');
+
+    const hasil = `📚 *Jadwal Mapel Hari ${hari.charAt(0).toUpperCase() + hari.slice(1)}*\n──────────────────\n${daftar}`;
+
+    await sock.sendMessage(from, { text: hasil });
+}
+
 
 if (text.trim() === '.info') {
     const teks = `╭───〔 🤖 *JARR BOT* 〕───╮
@@ -5291,6 +5422,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │├─ 〔 🎵 *ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
 │ .spotify → Cari lagu Spotify
 │ .sound → Ubah teks jadi suara
+│ .wm → Unduh tanpa watermax
 │ .ttmp3 → Unduh mp3 TikTok
 │ .ytmp3 → Unduh mp3 Youtube
 │ .ytmp4 → Unduh mp4 Youtube
@@ -5303,6 +5435,10 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .brat → Membuat stiker kata
 │ .srtdarksistem → Sertifikat Dark Sistem
 │ .hitamkan → Membuat wajah hitam
+
+├─ 〔 ⏰ *ᴘᴇɴɢɪɴɢᴀᴛ* 〕
+│ .jadwalpiket → Lihat jadwal piket 
+│ .jadwalmapel → Lihat jadwal pelajaran 
 │
 ├─ 〔 🖼️ *ᴍᴇᴅɪᴀ* 〕
 │ .waifu → Waifu random
