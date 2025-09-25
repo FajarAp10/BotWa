@@ -5231,8 +5231,12 @@ if (text.startsWith('.jadwalpiket')) {
             "Zaskya Hening Nayla Nova",
             "Nadya Rizkayna Ramadhani"
         ],
-        sabtu: ["Wayah e prei"],
-        minggu: ["Wayah e turu"]
+        sabtu: [
+            "Wayah e prei"
+        ],
+        minggu: [
+            "Wayah e turu"
+        ]
     };
 
     if (!hari || !jadwal[hari]) {
