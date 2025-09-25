@@ -5181,193 +5181,7 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
         await sock.sendMessage(from, { text: "❌ Terjadi kesalahan saat mengambil data." }, { quoted: msg });
     }
 }
-// 📌 FITUR JADWAL PIKET
-if (text.startsWith('.jadwalpiket')) {
-    const allowedGroup = "120363421418985666@g.us";
 
-    if (msg.key.remoteJid !== allowedGroup) {
-        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup pg*!' });
-        return;
-    }
-
-    const args = text.split(' ');
-    const hari = (args[1] || '').toLowerCase();
-
-    const jadwal = {
-        senin: [
-            "Aditya Rizky Arvano",
-            "Bara Obama",
-            "Herlina Ayu Putri",
-            "Marsya Ayu Maharani",
-            "Sarah Alicia",
-            "Agusta Daffa Fahirawan",
-            "Widya Ayu Khoirunnisa"
-        ],
-        selasa: [
-            "Arum Khairun Nisa",
-            "Dea Sekar Ningrum",
-            "Leonita Syafrida",
-            "Pradipta Sigma",
-            "Rizky Satriaji Pamungkas",
-            "Destra Dinata",
-            "Viola Eka Putri Handoko"
-        ],
-        rabu: [
-            "Arsya Zazillia Haryani",
-            "Dhanis Ardhi Virmansyah",
-            "Nabila Luthfiana Zulfa",
-            "Rizky Aditya",
-            "Saskia Diva Aprilia",
-            "Fajar Keren bjir",
-            "Azzahra Cahyani Putri P"
-        ],
-        kamis: [
-            "Azisa Verga Riyani",
-            "Firsa Puspita Kusuma",
-            "Muhammad Baihaqi Arafah",
-            "Muhammad Arif Murtadho",
-            "Noor Allea Ellysa",
-            "Syesil Carisa Inayah",
-            "Muhammad Febra Adisandi W"
-        ],
-        jumat: [
-            "Aulya Cinta Kinasih",
-            "Galih Cahya Saputra",
-            "Muhammad Zainus Sholikin",
-            "Wahyu Januar Alatif",
-            "Ribkhi Amelia Putri",
-            "Zaskya Hening Nayla Nova",
-            "Nadya Rizkayna Ramadhani"
-        ],
-        sabtu: [
-            "Wayah e prei"
-        ],
-        minggu: [
-            "Wayah e turu"
-        ]
-    };
-
-    if (!hari || !jadwal[hari]) {
-        await sock.sendMessage(from, { text: "⚠️ Gunakan: `.jadwalpiket <hari>`\nContoh: `.jadwalpiket senin`" });
-        return;
-    }
-
-    const daftar = jadwal[hari].map(n => `👤 ${n}`).join('\n');
-    const hasil = `📅 *Jadwal Piket Hari ${hari.charAt(0).toUpperCase() + hari.slice(1)}*\n──────────────────\n${daftar}`;
-
-    await sock.sendMessage(from, { text: hasil });
-}
-
-// 📌 FITUR JADWAL MAPEL
-if (text.startsWith('.jadwalmapel')) {
-    const allowedGroup = "120363421418985666@g.us";
-
-    if (msg.key.remoteJid !== allowedGroup) {
-        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup PG*!' });
-        return;
-    }
-
-    const args = text.split(' ');
-    const hari = (args[1] || '').toLowerCase();
-
-    const mapel = {
-        senin: [
-            "Kejuruan (Pak Anaf)",
-            "Kejuruan (Bu Aji)"
-        ],
-        selasa: [
-            "Kejuruan (Pak Adi)",
-            "Kejuruan (Bu Ana)"
-        ],
-        rabu: [
-            "PKK (Bu Minuk)",
-            "MTK (Bu Inda)",
-            "Kejuruan (Bu Ana - Jamkos)",
-            "Agama (Bu Salis)"
-        ],
-        kamis: [
-            "Sejarah (Bu Yukha)",
-            "Olahraga (Pak Joko)",
-            "Bahasa Indonesia (Bu Rimba)",
-            "MTK (Bu Inda)",
-            "Bahasa Jawa (Bu Elisa)"
-        ],
-        jumat: [
-            "Bahasa Inggris (Bu Sarti)",
-            "Agama (Bu Salis)",
-            "PKN (Pak Sophan)",
-            "Bahasa Inggris (Bu Sarti)"
-        ]
-    };
-
-    if (!hari || !mapel[hari]) {
-        await sock.sendMessage(from, { text: "⚠️ Gunakan: `.jadwalmapel <hari>`\nContoh: `.jadwalmapel rabu`" });
-        return;
-    }
-
-    const daftar = mapel[hari].map((m, i) => `${i + 1}️⃣ ${m}`).join('\n');
-    const hasil = `📚 *Jadwal Mapel Hari ${hari.charAt(0).toUpperCase() + hari.slice(1)}*\n──────────────────\n${daftar}`;
-
-    await sock.sendMessage(from, { text: hasil });
-}
-
-// 📌 FITUR SPIN
-if (text.startsWith('.spin')) {
-    const groupIdKelas = "120363421418985666@g.us";
-
-    // hanya untuk grup kelas
-    if (msg.key.remoteJid !== groupIdKelas) {
-        await sock.sendMessage(from, { text: "⚠️ Fitur ini hanya bisa dipakai di *grup PG*!" });
-        return;
-    }
-
-    // gabungan semua nama
-    const semuaNama = [
-     
-        "Aditya Rizky Arvano", "Bara Obama", "Herlina Ayu Putri",
-        "Marsya Ayu Maharani", "Sarah Alicia", "Agusta Daffa Fahirawan",
-        "Widya Ayu Khoirunnisa",
-
-        "Arum Khairun Nisa", "Dea Sekar Ningrum", "Leonita Syafrida",
-        "Pradipta Sigma", "Rizky Satriaji Pamungkas", "Destra Dinata",
-        "Viola Eka Putri Handoko",
-
-        "Arsya Zazillia Haryani", "Dhanis Ardhi Virmansyah",
-        "Nabila Luthfiana Zulfa", "Rizky Aditya", "Saskia Diva Aprilia",
-        "Fajar Keren bjir", "Azzahra Cahyani Putri P",
-
-        "Azisa Verga Riyani", "Firsa Puspita Kusuma",
-        "Muhammad Baihaqi Arafah", "Muhammad Arif Murtadho",
-        "Noor Allea Ellysa", "Syesil Carisa Inayah",
-        "Muhammad Febra Adisandi W",
-
-        "Aulya Cinta Kinasih", "Galih Cahya Saputra",
-        "Muhammad Zainus Sholikin", "Wahyu Januar Alatif",
-        "Ribkhi Amelia Putri", "Zaskya Hening Nayla Nova",
-        "Nadya Rizkayna Ramadhani"
-    ];
-
-    // cek jumlah spin
-    const args = text.split(' ');
-    let jumlah = parseInt(args[1]) || 1;
-    if (jumlah < 1) jumlah = 1;
-    if (jumlah > semuaNama.length) jumlah = semuaNama.length;
-
-    // acak nama
-    const copyNama = [...semuaNama];
-    const hasil = [];
-    for (let i = 0; i < jumlah; i++) {
-        const index = Math.floor(Math.random() * copyNama.length);
-        hasil.push(copyNama[index]);
-        copyNama.splice(index, 1); // hapus biar gak dobel
-    }
-
-    // format hasil
-    const teksHasil = hasil.map((n, i) => `*${i + 1}.* 👤 ${n}`).join('\n');
-    const pesan = `🎲 *Spin Result!*\n──────────────────\n${teksHasil}`;
-
-    await sock.sendMessage(from, { text: pesan });
-}
 // 📌 FITUR POLLING
 if (text.startsWith('.polling')) {
     if (!msg.key.remoteJid.endsWith('@g.us')) {
@@ -5461,6 +5275,40 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         teks += `\n⏳ Sisa waktu: *${sisa} detik*`;
 
         await sock.sendMessage(from, { text: teks });
+    }
+}
+
+
+// 📌 FITUR KELUAR GRUP
+if (text.toLowerCase() === '.mau keluar sendiri apa ku keluarin?') {
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa digunakan oleh *Owner*!' });
+        return;
+    }
+
+    const sent = await sock.sendMessage(from, { text: 'Keluar sendiri 😎' });
+
+    // simpan sesi khusus untuk trigger reply
+    global.sesiKeluar = {
+        groupId: from,
+        pesanId: sent.key.id
+    };
+
+    return;
+}
+
+// 📌 Tindak lanjuti reply owner
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const stanzaId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+
+    if (global.sesiKeluar && stanzaId === global.sesiKeluar.pesanId) {
+        if (!isOwner(sender)) return; // cuma owner yg bisa trigger keluar
+
+        await sock.sendMessage(from, { text: 'Terimakasih semua 🙏' });
+        await sock.groupLeave(from);
+
+        delete global.sesiKeluar; // hapus sesi
+        return;
     }
 }
 
