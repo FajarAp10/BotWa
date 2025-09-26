@@ -32,6 +32,11 @@ const antiFotoGroups = new Map();
 
 const sesiPolling = new Map();
 
+const sesiFamily100 = new Map();
+const sesiJudi = new Map(); // key: sender, value: { msgId }
+// Sesi tebak bendera
+const sesiTebakBendera = new Map();
+
 let historySiapa = {};
 
 const pdfLimit = new Map(); 
@@ -939,8 +944,74 @@ const soalFamily100 = [
   }
 ];
 
-const sesiFamily100 = new Map();
-const sesiJudi = new Map(); // key: sender, value: { msgId }
+
+// Database bendera (100+ negara, contoh sebagian)
+const soalBendera = [
+    { soal: "🇮🇩", jawaban: "indonesia" },
+    { soal: "🇲🇾", jawaban: "malaysia" },
+    { soal: "🇸🇬", jawaban: "singapura" },
+    { soal: "🇧🇳", jawaban: "brunei" },
+    { soal: "🇹🇭", jawaban: "thailand" },
+    { soal: "🇻🇳", jawaban: "vietnam" },
+    { soal: "🇵🇭", jawaban: "filipina" },
+    { soal: "🇲🇲", jawaban: "myanmar" },
+    { soal: "🇰🇭", jawaban: "kamboja" },
+    { soal: "🇱🇦", jawaban: "laos" },
+    { soal: "🇨🇳", jawaban: "cina" },
+    { soal: "🇯🇵", jawaban: "jepang" },
+    { soal: "🇰🇷", jawaban: "korea selatan" },
+    { soal: "🇰🇵", jawaban: "korea utara" },
+    { soal: "🇮🇳", jawaban: "india" },
+    { soal: "🇵🇰", jawaban: "pakistan" },
+    { soal: "🇧🇩", jawaban: "bangladesh" },
+    { soal: "🇳🇵", jawaban: "nepal" },
+    { soal: "🇱🇰", jawaban: "sri lanka" },
+    { soal: "🇧🇹", jawaban: "bhutan" },
+    { soal: "🇲🇻", jawaban: "maladewa" },
+    { soal: "🇸🇦", jawaban: "arab saudi" },
+    { soal: "🇦🇪", jawaban: "uni emirat arab" },
+    { soal: "🇶🇦", jawaban: "qatar" },
+    { soal: "🇰🇼", jawaban: "kuwait" },
+    { soal: "🇧🇭", jawaban: "bahrain" },
+    { soal: "🇴🇲", jawaban: "oman" },
+    { soal: "🇮🇷", jawaban: "iran" },
+    { soal: "🇮🇶", jawaban: "irak" },
+    { soal: "🇹🇷", jawaban: "turki" },
+    { soal: "🇮🇱", jawaban: "israel" },
+    { soal: "🇵🇸", jawaban: "palestina" },
+    { soal: "🇪🇬", jawaban: "mesir" },
+    { soal: "🇿🇦", jawaban: "afrika selatan" },
+    { soal: "🇳🇬", jawaban: "nigeria" },
+    { soal: "🇰🇪", jawaban: "kenya" },
+    { soal: "🇹🇿", jawaban: "tanzania" },
+    { soal: "🇪🇹", jawaban: "ethiopia" },
+    { soal: "🇲🇦", jawaban: "maroko" },
+    { soal: "🇩🇿", jawaban: "aljazair" },
+    { soal: "🇹🇳", jawaban: "tunisia" },
+    { soal: "🇱🇾", jawaban: "libya" },
+    { soal: "🇸🇩", jawaban: "sudan" },
+    { soal: "🇫🇷", jawaban: "prancis" },
+    { soal: "🇩🇪", jawaban: "jerman" },
+    { soal: "🇮🇹", jawaban: "italia" },
+    { soal: "🇪🇸", jawaban: "spanyol" },
+    { soal: "🇬🇧", jawaban: "inggris" },
+    { soal: "🇷🇺", jawaban: "rusia" },
+    { soal: "🇺🇦", jawaban: "ukraina" },
+    { soal: "🇵🇱", jawaban: "polandia" },
+    { soal: "🇷🇴", jawaban: "romania" },
+    { soal: "🇬🇷", jawaban: "yunani" },
+    { soal: "🇧🇷", jawaban: "brasil" },
+    { soal: "🇦🇷", jawaban: "argentina" },
+    { soal: "🇨🇱", jawaban: "chile" },
+    { soal: "🇵🇪", jawaban: "peru" },
+    { soal: "🇨🇴", jawaban: "kolombia" },
+    { soal: "🇲🇽", jawaban: "meksiko" },
+    { soal: "🇺🇸", jawaban: "amerika serikat" },
+    { soal: "🇨🇦", jawaban: "kanada" },
+    { soal: "🇦🇺", jawaban: "australia" },
+    { soal: "🇳🇿", jawaban: "selandia baru" },
+    // ... tambah sampai 100++
+];
 
 
 const userCooldownMap = new Map(); // Map<JID, timestamp>
@@ -2272,19 +2343,40 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
     }
 }
 
+
+// Command tebak-bendera
+if (textMessage.toLowerCase() === '.tebakbendera') {
+    const soal = ambilSoalAcak('tebakbendera', soalBendera);
+
+    const sent = await sock.sendMessage(from, {
+        text: `🎌 *TEBAK BENDERA DIMULAI!*\n\n🏳️ *Bendera:* ${soal.soal}\n\n⏱️ Jawab dalam 30 detik!\n\n_Reply pesan ini untuk menjawab._`
+    });
+
+    const timeout = setTimeout(() => {
+        sesiTebakBendera.delete(sent.key.id);
+        sock.sendMessage(from, {
+            text: `⏰ Waktu habis!\nJawaban yang benar adalah: *${soal.jawaban}*`
+        });
+    }, 30000);
+
+    sesiTebakBendera.set(sent.key.id, { jawaban: soal.jawaban.toLowerCase(), timeout });
+    return;
+}
+
+// 🧠 Cek jawaban tebak-bendera
 if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
     const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
-    const sesi = sesiTebakan.get(replyId);
+    const sesi = sesiTebakBendera.get(replyId);
 
-    if (sesi && sesi.tipe === "lagu") {
+    if (sesi) {
         clearTimeout(sesi.timeout);
-        sesiTebakan.delete(replyId);
+        sesiTebakBendera.delete(replyId);
 
         const userAnswer = textMessage.trim().toLowerCase();
         if (userAnswer === sesi.jawaban) {
-            tambahSkor(sender, from, 20);
+            tambahSkor(sender, from, 15);
             await sock.sendMessage(from, {
-                text: `✅ *Benar!* Itu adalah *${sesi.jawaban}* 🎉\n🏆 Kamu dapat *20 poin!*\n\nMau main lagi? Ketik *.tebak-lagu*`
+                text: `✅ *Benar!* Itu adalah bendera *${userAnswer}* 🎉\n🏆 Kamu dapat *15 poin!*`
             });
         } else {
             await sock.sendMessage(from, {
@@ -2294,6 +2386,7 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         return;
     }
 }
+
         if (text.trim() === '.kuis') {
     const soal = ambilSoalAcak('kuis', soalKuis);
     const teksSoal = `🎓 *KUIS DIMULAI!*\n\n📌 *Soal:* ${soal.soal}\n\n${soal.pilihan.join('\n')}\n\n✍️ Jawab dengan huruf A/B/C/D dengan mereply pesan ini\n⏱️ Waktu 30 detik!`;
@@ -5312,6 +5405,60 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
     }
 }
 
+// 📢 FITUR UMUMKAN (OWNER ONLY, VIA PRIVATE CHAT)
+if (text.startsWith('.umumkan')) {
+    const sender = msg.key.remoteJid;
+
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: "⚠️ Fitur ini hanya bisa dipakai oleh *Owner Bot*!" });
+        return;
+    }
+
+    if (msg.key.remoteJid.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: "⚠️ Gunakan fitur ini lewat *chat pribadi bot*!" });
+        return;
+    }
+
+    const pengumuman = text.replace('.umumkan', '').trim();
+    if (!pengumuman) {
+        await sock.sendMessage(from, { text: "⚠️ Tulis pengumuman!\nContoh: `.umumkan Besok ada ulangan!`" });
+        return;
+    }
+
+    // baca data grup aktif
+    let grupAktif = {};
+    try {
+        grupAktif = JSON.parse(fs.readFileSync('./grupAktif.json'));
+    } catch (e) {
+        grupAktif = {};
+    }
+
+    // filter grup yg aktif
+    const targetGrup = Object.entries(grupAktif)
+        .filter(([id, aktif]) => aktif === true && id.endsWith('@g.us'))
+        .map(([id]) => id);
+
+    if (targetGrup.length === 0) {
+        await sock.sendMessage(from, { text: "⚠️ Tidak ada grup aktif untuk menerima pengumuman." });
+        return;
+    }
+
+    // kirim pengumuman
+for (const groupId of targetGrup) {
+    await sock.sendMessage(groupId, {
+        text: `╭━━━〔 📢 *PENGUMUMAN* 〕━━━╮
+┃
+┃ 📝 ${pengumuman}
+┃
+╰━━━━━━━━━━━━━━━━━━╯
+👤 Dari: *Owner Bot*`
+    });
+}
+
+
+    await sock.sendMessage(from, { text: `✅ Pengumuman berhasil dikirim ke ${targetGrup.length} grup aktif!` });
+}
+
 
 if (text.trim() === '.info') {
     const teks = `╭───〔 🤖 *JARR BOT* 〕───╮
@@ -5403,6 +5550,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .tebak-aku → Tebakan lucu
 │ .susunkata → Susun huruf
 │ .family100 → Jawaban terbanyak
+│ .tebakbendera → Menebak bendera
 │
 ├─ 〔 🏳️‍🌈 *ꜰɪᴛᴜʀ ʟᴜᴄᴜ* 〕
 │ .gay → Seberapa gay?
@@ -5413,7 +5561,6 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .cekkhodam → Cek khodam 
 │ .siapa → Target random
 │ .fakereply → Pesan palsu
-│ .spin → Undian acak nama anggota
 │ .polling → Buat polling
 │
 ├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
@@ -5435,10 +5582,6 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .brat → Membuat stiker kata
 │ .srtdarksistem → Sertifikat Dark Sistem
 │ .hitamkan → Membuat wajah hitam
-│
-├─ 〔 ⏰ *ᴘᴇɴɢɪɴɢᴀᴛ* 〕
-│ .jadwalpiket → Lihat jadwal piket 
-│ .jadwalmapel → Lihat jadwal pelajaran 
 │
 ├─ 〔 🖼️ *ᴍᴇᴅɪᴀ* 〕
 │ .waifu → Waifu random
