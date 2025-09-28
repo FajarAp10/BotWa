@@ -31,10 +31,10 @@ const antiStickerGroups = new Map();
 const antiFotoGroups = new Map();
 
 const sesiPolling = new Map();
-
+const sesiCepat = new Map();
+const sesiTicTacToe = new Map();
 const sesiFamily100 = new Map();
 const sesiJudi = new Map(); // key: sender, value: { msgId }
-// Sesi tebak bendera
 const sesiTebakBendera = new Map();
 
 let historySiapa = {};
@@ -1196,58 +1196,49 @@ if (isMuted(sender, from)) {
     }
     return;
 }
+// 🔧 fungsi hapus pesan universal
+async function hapusPesan(from, msg) {
+    try {
+        const isFromMe = msg.key.fromMe === true;
 
-// 🔗 Antilink aktif → hapus pesan yang ada link
+        await sock.sendMessage(from, {
+            delete: {
+                remoteJid: from,
+                id: msg.key.id,
+                fromMe: isFromMe,
+                participant: isFromMe ? sock.user.id : msg.key.participant || sender
+            }
+        });
+
+        console.log(
+            `🗑️ Pesan (${isFromMe ? "BOT" : "USER"}) ${msg.key.id} dihapus di ${from}`
+        );
+    } catch (e) {
+        console.error("❌ Gagal hapus pesan:", e);
+    }
+}
+// 🔗 Antilink
 if (from.endsWith('@g.us') && antiLinkGroups.get(from)) {
-    if (text.includes('http://') || text.includes('https://')) {
-        try {
-            await sock.sendMessage(from, { delete: msg.key }); // hapus pesan link
-            console.log(`🚫 Link dari ${sender} dihapus di grup ${from}`);
-        } catch (e) {
-            console.log('❌ Gagal hapus pesan link:', e.message);
-        }
+    if (text && (text.includes('http://') || text.includes('https://'))) {
+        await hapusPesan(from, msg);
         return;
     }
 }
 
 const mtype = Object.keys(msg.message || {})[0];
-//stiker
-if (mtype === 'stickerMessage' && from.endsWith('@g.us')) {
-    if (antiStickerGroups.has(from)) {
-        try {
-            await sock.sendMessage(from, {
-                delete: {
-                    remoteJid: from,
-                    fromMe: false,
-                    id: msg.key.id,
-                    participant: msg.key.participant
-                }
-            });
-            console.log(`🗑️ Stiker dari ${msg.key.participant} dihapus di grup ${from}`);
-        } catch (e) {
-            console.error('Gagal hapus stiker:', e);
-        }
-    }
+
+// 🎭 Antistiker
+if (mtype === 'stickerMessage' && from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+    await hapusPesan(from, msg);
+    return;
 }
 
-//gambar
-if (mtype === 'imageMessage' && from.endsWith('@g.us')) {
-    if (antiFotoGroups.has(from)) {
-        try {
-            await sock.sendMessage(from, {
-                delete: {
-                    remoteJid: from,
-                    fromMe: false,
-                    id: msg.key.id,
-                    participant: msg.key.participant
-                }
-            });
-            console.log(`🗑️ Foto dari ${msg.key.participant} dihapus di grup ${from}`);
-        } catch (e) {
-            console.error('Gagal hapus foto:', e);
-        }
-    }
+// 🖼️ Antifoto
+if (mtype === 'imageMessage' && from.endsWith('@g.us') && antiFotoGroups.get(from)) {
+    await hapusPesan(from, msg);
+    return;
 }
+
 
 //fakereply
 function ensureJid(j) {
@@ -2374,13 +2365,13 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
 
         const userAnswer = textMessage.trim().toLowerCase();
         if (userAnswer === sesi.jawaban) {
-            tambahSkor(sender, from, 15);
+            tambahSkor(sender, from, 30);
             await sock.sendMessage(from, {
-                text: `✅ *Benar!* Itu adalah bendera *${userAnswer}* 🎉\n🏆 Kamu dapat *15 poin!*`
+                text: `✅ *Benar!* Itu adalah bendera *${userAnswer}* 🎉\n🏆 Kamu dapat *30 poin!*\n\n mau lagi? Ketik *.tebakbendera*`
             });
         } else {
             await sock.sendMessage(from, {
-                text: `❌ *Salah!* Jawabanmu: *${userAnswer}*\n✅ Jawaban benar: *${sesi.jawaban}*`
+                text: `❌ *Salah!* Jawabanmu: *${userAnswer}*\n✅ Jawaban benar: *${sesi.jawaban}*\n\nCoba lagi? Ketik *.tebakbendera*`
             });
         }
         return;
@@ -2885,7 +2876,6 @@ if (text.startsWith('.wm')) {
 
     return;
 }
-
 if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.sticker') {
     console.log(`📥 Permintaan stiker dari ${from}...`);
 
@@ -2893,7 +2883,6 @@ if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.s
     const imageDirect = msg.message?.imageMessage;
     const imageQuoted = quoted?.imageMessage;
 
-    // Hanya terima gambar
     let messageForMedia = null;
     if (imageDirect) {
         messageForMedia = msg;
@@ -2915,22 +2904,15 @@ if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.s
         const sharp = require("sharp");
         const { Sticker } = require("wa-sticker-formatter");
 
-        // Cek ukuran, kalau lebih dari 1 MB -> kompres
         let finalBuffer = mediaBuffer;
         if (mediaBuffer.length > 1024 * 1024) {
             console.log("⚠️ File > 1MB, kompresi...");
             finalBuffer = await sharp(mediaBuffer)
-                .resize({ // tetap jaga resolusi asli, tidak dipaksa kotak
-                    width: 512,
-                    height: 512,
-                    fit: 'inside',
-                    withoutEnlargement: true
-                })
-                .webp({ quality: 80 }) // turunkan kualitas biar <1MB
+                .resize({ width: 512, height: 512, fit: 'inside', withoutEnlargement: true })
+                .webp({ quality: 80 })
                 .toBuffer();
         }
 
-        // 🖼️ Bikin stiker
         const { width, height } = await sharp(finalBuffer).metadata();
         const size = Math.max(width, height);
 
@@ -2951,10 +2933,21 @@ if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.s
             quality: 100
         });
 
-        await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
+        // ✅ kirim stiker
+        const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
 
         await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
         console.log(`✅ Stiker berhasil dikirim ke ${from}`);
+
+        // 🚫 kalau antistiker aktif → hapus lagi
+        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+            try {
+                await sock.sendMessage(from, { delete: sent.key });
+                console.log("🗑️ Stiker bot ikut dihapus (antistiker aktif).");
+            } catch (e) {
+                console.error("❌ Gagal hapus stiker bot:", e);
+            }
+        }
 
     } catch (err) {
         console.error("❌ Gagal membuat stiker:", err);
@@ -2963,8 +2956,6 @@ if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.s
 
     return;
 }
-
-
 
 // 🖼️ KONVERSI STIKER JADI GAMBAR (PAKAI REACTION)
 if (text.trim().toLowerCase() === '.toimg') {
@@ -2978,9 +2969,7 @@ if (text.trim().toLowerCase() === '.toimg') {
         : stickerQuoted
             ? {
                 ...msg,
-                message: {
-                    stickerMessage: stickerQuoted
-                }
+                message: { stickerMessage: stickerQuoted }
             }
             : null;
 
@@ -2991,11 +2980,9 @@ if (text.trim().toLowerCase() === '.toimg') {
 
     try {
         // Reaction jam pasir
-        await sock.sendMessage(from, {
-            react: { text: '⏳', key: msg.key }
-        });
+        await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
 
-        // Download sticker (pakai objek pesan lengkap)
+        // Download sticker
         const mediaBuffer = await downloadMediaMessage(
             messageForMedia,
             "buffer",
@@ -3005,32 +2992,33 @@ if (text.trim().toLowerCase() === '.toimg') {
 
         // Convert webp ke png
         const sharp = require('sharp');
-        const imgBuffer = await sharp(mediaBuffer)
-            .png()
-            .toBuffer();
+        const imgBuffer = await sharp(mediaBuffer).png().toBuffer();
 
-        // Kirim gambar
-        await sock.sendMessage(from, {
+        // Kirim gambar hasil konversi
+        const sentMsg = await sock.sendMessage(from, {
             image: imgBuffer,
             caption: "✅ Sticker berhasil diubah jadi gambar"
         }, { quoted: msg });
 
         // Reaction sukses
-        await sock.sendMessage(from, {
-            react: { text: '✅', key: msg.key }
-        });
-
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
         console.log(`✅ Sticker di ${from} berhasil diubah jadi gambar`);
+
+        // 🔒 Cek antifoto → hapus hasil kiriman bot juga
+        if (from.endsWith('@g.us') && antiFotoGroups.has(from)) {
+            await sock.sendMessage(from, { delete: sentMsg.key });
+            console.log(`🗑️ Gambar hasil .toimg dihapus (karena antifoto aktif) di grup ${from}`);
+        }
+
     } catch (err) {
         console.error("❌ Gagal mengubah sticker:", err);
-        await sock.sendMessage(from, {
-            react: { text: '❌', key: msg.key }
-        });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
         await sock.sendMessage(from, { text: "❌ Gagal mengubah sticker jadi gambar" });
     }
 
     return;
 }
+
 
 
 if (text.toLowerCase().startsWith('.teks')) {
@@ -3143,7 +3131,6 @@ if (text.toLowerCase().startsWith('.teks')) {
 
     return;
 }
-
 // Fitur .brat
 if (text.toLowerCase().startsWith('.brat')) {
     const userText = text.replace('.brat', '').trim();
@@ -3162,7 +3149,7 @@ if (text.toLowerCase().startsWith('.brat')) {
     const isTemporaryActive = aksesBrat && now < aksesBrat;
 
     // VIP / Owner / Temporary Access bebas limit
-    if (!(isOwner(sender) || isVIP(sender, from) || isTemporaryActive)) {
+    if (!(isBypass || isTemporaryActive)) {
         const record = bratLimit.get(sender);
         if (record) {
             if (now - record.time < BRAT_COOLDOWN) {
@@ -3183,14 +3170,12 @@ if (text.toLowerCase().startsWith('.brat')) {
     }
 
     try {
-        // --- Generate Brat pakai API (lebih ringan daripada sharp manual)
         const url = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(userText)}&delay=1000`;
         const res = await fetch(url);
         if (!res.ok) throw new Error("Gagal mengambil data dari API.");
 
         const buffer = await res.buffer();
 
-        // Tambahkan metadata stiker (pack & author)
         const sticker = new Sticker(buffer, {
             pack: 'brat',
             author: 'Jarr',
@@ -3198,15 +3183,21 @@ if (text.toLowerCase().startsWith('.brat')) {
             quality: 100
         });
 
-        await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
+        // kirim stiker
+        const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
         await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        // ✅ langsung cek: kalau antistiker aktif → hapus stiker bot
+        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+            await hapusPesan(from, sent);
+            console.log("🗑️ Stiker .brat bot ikut dihapus (antistiker aktif).");
+        }
 
     } catch (err) {
         console.error("Error:", err);
-         await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
     }
 }
-
 
                 // 📢 TAG SEMUA ANGGOTA GRUP
         if (text.trim() === '.tagall') {
@@ -3284,7 +3275,6 @@ simpanSkorKeFile();
     });
 }
 
-
 if (text === '.dwfoto') {
     const quotedInfo = msg.message?.extendedTextMessage?.contextInfo;
     const quoted = quotedInfo?.quotedMessage;
@@ -3297,30 +3287,43 @@ if (text === '.dwfoto') {
         });
         return;
     }
-        await sock.sendMessage(from, {
-            react: {
-                text: '⏳',
-                key: msg.key
-            }
-        });
+
+    await sock.sendMessage(from, {
+        react: { text: '⏳', key: msg.key }
+    });
 
     try {
         const mediaBuffer = await downloadMediaMessage(
-            { message: quoted, key: { remoteJid: from, fromMe: false, id: quotedInfo.stanzaId, participant: targetSender } },
+            {
+                message: quoted,
+                key: {
+                    remoteJid: from,
+                    fromMe: false,
+                    id: quotedInfo.stanzaId,
+                    participant: targetSender
+                }
+            },
             'buffer',
             {},
             { logger: console, reuploadRequest: sock.reuploadRequest }
         );
 
-        await sock.sendMessage(from, {
+        // simpan pesan hasil kirim
+        const sentMsg = await sock.sendMessage(from, {
             image: mediaBuffer,
-            caption: '📸 Foto sekali lihat berhasil di ambil.',
+            caption: '📸 Foto sekali lihat berhasil diambil.',
             mentions: [sender]
         });
 
-         await sock.sendMessage(from, {
-        react: { text: '✅', key: msg.key }
+        await sock.sendMessage(from, {
+            react: { text: '✅', key: msg.key }
         });
+
+        // 🔒 Cek antifoto → hapus hasil kiriman bot juga
+        if (from.endsWith('@g.us') && antiFotoGroups.has(from)) {
+            await sock.sendMessage(from, { delete: sentMsg.key });
+            console.log(`🗑️ Hasil .dwfoto dihapus (karena antifoto aktif) di grup ${from}`);
+        }
 
     } catch (err) {
         console.error('❌ Gagal mengunduh foto sekali lihat:', err);
@@ -4229,10 +4232,9 @@ if (text === '.pdfgo') {
 
     return;
 }
-
+// ========== FITUR .WAIFU ==========
 if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu ")) {
   try {
-    // kasih reaction ⏳ dulu
     await sock.sendMessage(from, { react: { text: "⏳", key: msg.key } });
 
     const isBypass = isOwner(sender) || isVIP(sender, from); 
@@ -4240,7 +4242,6 @@ if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu "))
     const aksesWaifu = waifuAksesSementara.get(sender);
     const isTemporaryActive = aksesWaifu && now < aksesWaifu;
 
-    // VIP / Owner / akses beli bebas limit
     if (!(isBypass || isTemporaryActive)) {
       const record = waifuLimit.get(sender);
       if (record) {
@@ -4252,9 +4253,7 @@ if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu "))
             }, { quoted: msg });
             await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
             return;
-          } else {
-            record.count++;
-          }
+          } else record.count++;
         } else {
           waifuLimit.set(sender, { count: 1, time: now });
         }
@@ -4263,15 +4262,20 @@ if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu "))
       }
     }
 
-    // ambil gambar random waifu dari API
     const res = await axios.get("https://api.waifu.pics/sfw/waifu");
 
-    await sock.sendMessage(from, {
+    const sentMsg = await sock.sendMessage(from, {
       image: { url: res.data.url },
       caption: "💖 Here’s your waifu~"
     }, { quoted: msg });
 
     await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
+
+    // 🔒 Antifoto aktif → hapus
+    if (from.endsWith('@g.us') && antiFotoGroups.has(from)) {
+      await sock.sendMessage(from, { delete: sentMsg.key });
+      console.log(`🗑️ Foto waifu dihapus (antifoto aktif) di grup ${from}`);
+    }
 
   } catch (err) {
     console.error(err);
@@ -4280,9 +4284,9 @@ if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu "))
   }
 }
 
+// ========== FITUR .WAIFUX ==========
 if (text.toLowerCase() === ".waifux" || text.toLowerCase().startsWith(".waifux ")) {
   try {
-    // 🚫 Hanya bisa dipakai oleh VIP / OWNER
     if (!isVIP(sender, from) && sender !== OWNER_NUMBER) {
       await sock.sendMessage(from, {
         text: '🚫 Perintah *.waifux* hanya untuk pengguna *VIP* / *Owner*!'
@@ -4290,19 +4294,22 @@ if (text.toLowerCase() === ".waifux" || text.toLowerCase().startsWith(".waifux "
       return;
     }
 
-    // kasih reaction jam pasir ⏳
     await sock.sendMessage(from, { react: { text: "⏳", key: msg.key } });
 
-    // ambil gambar NSFW waifu
     const res = await axios.get("https://api.waifu.pics/nsfw/waifu");
 
-    await sock.sendMessage(from, {
+    const sentMsg = await sock.sendMessage(from, {
       image: { url: res.data.url },
       caption: "🔞 Your *NSFW Waifu*"
     }, { quoted: msg });
 
-    // reaction jadi ✅
     await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
+
+    // 🔒 Antifoto aktif → hapus
+    if (from.endsWith('@g.us') && antiFotoGroups.has(from)) {
+      await sock.sendMessage(from, { delete: sentMsg.key });
+      console.log(`🗑️ Foto waifux dihapus (antifoto aktif) di grup ${from}`);
+    }
 
   } catch (err) {
     console.error(err);
@@ -4311,82 +4318,41 @@ if (text.toLowerCase() === ".waifux" || text.toLowerCase().startsWith(".waifux "
   }
 }
 
-
+// ========== FITUR .QR ==========
 if (text.startsWith('.qr')) {
-    const query = text.split(' ')[1];
-    const userTag = `@${sender.split('@')[0]}`;
+  const query = text.split(' ')[1];
+  const userTag = `@${sender.split('@')[0]}`;
 
-    if (!query || (!query.startsWith("http://") && !query.startsWith("https://"))) {
-        await sock.sendMessage(from, {
-            text: "❌ Link tidak valid.\nGunakan: *.qr <link http/https>*"
-        });
-        return;
-    }
-
-    await sock.sendMessage(from, {
-        react: { text: '⏳', key: msg.key }
-    });
-
-    try {
-        const qrBuffer = await QRCode.toBuffer(query, { type: 'png' });
-
-        await sock.sendMessage(from, {
-            image: qrBuffer,
-            caption: `✅ QR berhasil dibuat oleh ${userTag}`,
-            mentions: [sender]
-        }, { quoted: msg });
-
-        await sock.sendMessage(from, {
-            react: { text: '✅', key: msg.key }
-        });
-
-        console.log(`✅ QR code berhasil dibuat oleh ${userTag} di ${from}`);
-    } catch (err) {
-        console.error('❌ ERROR QR:', err.message);
-        await sock.sendMessage(from, {
-            text: "❌ Gagal membuat QR. Coba lagi nanti."
-        });
-    }
-
+  if (!query || (!query.startsWith("http://") && !query.startsWith("https://"))) {
+    await sock.sendMessage(from, { text: "❌ Link tidak valid.\nGunakan: *.qr <link http/https>*" });
     return;
-}
+  }
 
-if (text.startsWith('.img')) {
-    const query = text.split(' ').slice(1).join(' ').trim();
-    const userTag = `@${sender.split('@')[0]}`; // ini buat teks biru
+  await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
 
-    if (!query) {
-        await sock.sendMessage(from, { text: '⚠️ Format salah!\nGunakan: *.img <nama>*' });
-        return;
+  try {
+    const qrBuffer = await QRCode.toBuffer(query, { type: 'png' });
+
+    const sentMsg = await sock.sendMessage(from, {
+      image: qrBuffer,
+      caption: `✅ QR berhasil dibuat oleh ${userTag}`,
+      mentions: [sender]
+    }, { quoted: msg });
+
+    await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+    console.log(`✅ QR code berhasil dibuat oleh ${userTag} di ${from}`);
+
+    // 🔒 Antifoto aktif → hapus
+    if (from.endsWith('@g.us') && antiFotoGroups.has(from)) {
+      await sock.sendMessage(from, { delete: sentMsg.key });
+      console.log(`🗑️ Foto QR dihapus (antifoto aktif) di grup ${from}`);
     }
 
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        const { data } = await axios.get(
-            `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15`,
-            { headers: { Authorization: '8vG7tzljANRLQpo0xRYlN5SjiSWl1N2YqbzMWPPWBfSrY2dbahj9rT8S' } }
-        );
-
-        if (!data.photos || data.photos.length === 0) {
-            throw new Error("Tidak ada hasil.");
-        }
-
-        const photo = data.photos[Math.floor(Math.random() * data.photos.length)];
-
-        await sock.sendMessage(from, {
-            image: { url: photo.src.original },
-            caption: `✅ Hasil gambar *${query}*\n🔍 untuk ${userTag}`, 
-            mentions: [sender] // ⬅️ ini wajib biar jadi biru
-        }, { quoted: msg });
-
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-        console.log(`📷 IMG sukses: ${query} → ${photo.src.original}`);
-    } catch (err) {
-        console.error('❌ ERROR IMG:', err.message);
-        await sock.sendMessage(from, { text: '❌ Gagal ambil gambar. Coba lagi nanti.' });
-    }
-    return;
+  } catch (err) {
+    console.error('❌ ERROR QR:', err.message);
+    await sock.sendMessage(from, { text: "❌ Gagal membuat QR. Coba lagi nanti." });
+  }
+  return;
 }
 
 if (text.startsWith('.antilink')) {
@@ -4649,7 +4615,6 @@ if (text.startsWith('.adminonly')) {
         await sock.sendMessage(from, { text: '⚙️ Gunakan: *.adminonly on* atau *.adminonly off*' });
     }
 }
-
 // 🌐 LINK GRUP – Semua bisa akses
 if (text === '.linkgc') {
     if (!from.endsWith('@g.us')) {
@@ -4664,11 +4629,18 @@ if (text === '.linkgc') {
         const code = await sock.groupInviteCode(from);
         const link = `https://chat.whatsapp.com/${code}`;
 
+        // kirim link grup
+        const sentMsg = await sock.sendMessage(from, { text: `🔗 *Link Grup:*\n${link}` });
+
         // ganti reaction jadi ✅
         await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
 
-        // kirim link grup
-        await sock.sendMessage(from, { text: `🔗 *Link Grup:*\n${link}` });
+        // 🚫 Kalau antilink aktif → hapus pesan link (termasuk bot sendiri)
+        if (from.endsWith('@g.us') && antiLinkGroups.get(from)) {
+            await sock.sendMessage(from, { delete: sentMsg.key });
+            console.log(`🗑️ Link grup (.linkgc) dihapus (antilink aktif) di grup ${from}`);
+        }
+
     } catch (err) {
         console.error('❌ Gagal ambil link grup:', err);
 
@@ -4676,6 +4648,7 @@ if (text === '.linkgc') {
         await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
     }
 }
+
 
 if (text.toLowerCase().startsWith('.sound')) {
     const teks = text.replace('.sound', '').trim();
@@ -4882,18 +4855,18 @@ if (text.toLowerCase().startsWith('.hitamkan')) {
     }
 }
 
+// 📌 FITUR .qc (Quote Sticker)
 if (text.toLowerCase().startsWith('.qc')) {
-    // === Tambahkan definisi args ===
-    const args = text.trim().split(/ +/).slice(1); // ambil kata setelah ".qc2"
-    let argsText = args.join(" ")
-    let textInput
-    let apiColor = '#000000' // default hitam
+    const args = text.trim().split(/ +/).slice(1);
+    let argsText = args.join(" ");
+    let textInput;
+    let apiColor = '#000000';
 
     if (args.length >= 1) {
-        const input = argsText.split("|")
+        const input = argsText.split("|");
         if (input.length === 2) {
-            const colorName = input[0].trim().toLowerCase()
-            textInput = input[1].trim()
+            const colorName = input[0].trim().toLowerCase();
+            textInput = input[1].trim();
 
             const colorMap = {
                 'putih': '#FFFFFF', 'hijau': '#00FF00', 'kuning': '#FFFF00',
@@ -4906,30 +4879,29 @@ if (text.toLowerCase().startsWith('.qc')) {
                 'violet': '#EE82EE', 'salmon': '#FA8072', 'gold': '#FFD700',
                 'indigo': '#4B0082', 'lime': '#00FF00', 'skyblue': '#87CEEB',
                 'tan': '#D2B48C', 'orchid': '#DA70D6', 'coral': '#FF7F50'
-            }
+            };
 
-            apiColor = colorMap[colorName] || apiColor
+            apiColor = colorMap[colorName] || apiColor;
         } else {
             await sock.sendMessage(from, {
                 text: "❌ Format salah.\n\nContoh: *.qc warna|teks*"
-            }, { quoted: msg })
-            return
+            }, { quoted: msg });
+            return;
         }
     } else if (msg.quoted && msg.quoted.text) {
-        textInput = msg.quoted.text
+        textInput = msg.quoted.text;
     } else {
         await sock.sendMessage(from, {
             text: "❌ Input teks atau reply teks dengan format: *.qc warna|teks*"
-        }, { quoted: msg })
-        return
+        }, { quoted: msg });
+        return;
     }
 
-    if (!textInput) return sock.sendMessage(from, { text: '❌ Masukkan teks!' }, { quoted: msg })
-    if (textInput.length > 100) return sock.sendMessage(from, { text: '❌ Maksimal 100 karakter!' }, { quoted: msg })
+    if (!textInput) return sock.sendMessage(from, { text: '❌ Masukkan teks!' }, { quoted: msg });
+    if (textInput.length > 100) return sock.sendMessage(from, { text: '❌ Maksimal 100 karakter!' }, { quoted: msg });
 
-    let namaPengirim = msg.pushName || sender.split('@')[0]; // pakai pushName dulu, kalau kosong pakai nomor
-
-    let pp = await sock.profilePictureUrl(sender, 'image').catch(() => 'https://telegra.ph/file/320b066dc81928b782c7b.png')
+    let namaPengirim = msg.pushName || sender.split('@')[0];
+    let pp = await sock.profilePictureUrl(sender, 'image').catch(() => 'https://telegra.ph/file/320b066dc81928b782c7b.png');
 
     const obj = {
         type: "quote",
@@ -4949,35 +4921,40 @@ if (text.toLowerCase().startsWith('.qc')) {
             text: textInput,
             replyMessage: {}
         }]
-    }
+    };
 
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } })
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
 
     try {
         const json = await axios.post('https://qc.botcahx.eu.org/generate', obj, {
             headers: { 'Content-Type': 'application/json' }
-        })
+        });
 
-        const buffer = Buffer.from(json.data.result.image, 'base64')
+        const buffer = Buffer.from(json.data.result.image, 'base64');
 
-        // langsung bikin stiker tanpa require sticker.js
         const stiker = new Sticker(buffer, {
             pack: global.stickpack || 'qcbot',
             author: global.stickauth || 'Jarr',
             type: StickerTypes.FULL,
             quality: 100
-        })
+        });
 
-        await sock.sendMessage(from, { sticker: await stiker.toBuffer() }, { quoted: msg })
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } })
+        const stickerMsg = await sock.sendMessage(from, { sticker: await stiker.toBuffer() }, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        // 🔒 Cek Antistiker (hapus stiker dari bot sendiri juga)
+        if (from.endsWith('@g.us') && antiStickerGroups.has(from)) {
+            await sock.sendMessage(from, { delete: stickerMsg.key });
+            console.log(`🗑️ Stiker QC dihapus (bot sendiri) di grup ${from}`);
+        }
 
     } catch (error) {
-        console.error(error)
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } })
-        await sock.sendMessage(from, { text: '❌ Terjadi kesalahan saat membuat stiker.' }, { quoted: msg })
+        console.error(error);
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, { text: '❌ Terjadi kesalahan saat membuat stiker.' }, { quoted: msg });
     }
 }
-
 if (text.toLowerCase().startsWith('.srtdarksistem')) {
     const args = text.split(' ').slice(1)
     const nama = args.join(' ')
@@ -4988,33 +4965,36 @@ if (text.toLowerCase().startsWith('.srtdarksistem')) {
         }, { quoted: msg })
     }
 
-    // Reaksi jam pasir saat proses
     await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } })
 
-    ;(async () => {
-        try {
-            const url = `https://api.sxtream.xyz/maker/yapping?name=${encodeURIComponent(nama)}`
-            const res = await fetch(url)
-            if (!res.ok) throw '❌ Gagal mengambil data dari API.'
+    try {
+        const url = `https://api.sxtream.xyz/maker/yapping?name=${encodeURIComponent(nama)}`
+        const res = await fetch(url)
+        if (!res.ok) throw '❌ Gagal mengambil data dari API.'
 
-            const buffer = await res.buffer()
-            await sock.sendMessage(from, {
-                image: buffer,
-                caption: `🗣️ Sertifikat Dark Sistem by *${nama}*`
-            }, { quoted: msg })
+        const buffer = await res.buffer()
 
-            // Reaksi centang hijau setelah berhasil
-            await sock.sendMessage(from, { react: { text: '✅', key: msg.key } })
+        // 📌 Simpan pesan kiriman bot
+        const sentMsg = await sock.sendMessage(from, {
+            image: buffer,
+            caption: `🗣️ Sertifikat Dark Sistem by *${nama}*`
+        }, { quoted: msg })
 
-        } catch (e) {
-            console.error(e)
-            // Reaksi silang merah jika error
-            await sock.sendMessage(from, { react: { text: '❌', key: msg.key } })
-            await sock.sendMessage(from, {
-                text: '❌ Terjadi kesalahan saat mengambil gambar.'
-            }, { quoted: msg })
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } })
+
+        // 🔒 Antifoto aktif → hapus foto bot juga
+        if (from.endsWith('@g.us') && antiFotoGroups.has(from)) {
+            await sock.sendMessage(from, { delete: sentMsg.key })
+            console.log(`🗑️ Foto .srtdarksistem dihapus (antifoto aktif) di grup ${from}`)
         }
-    })()
+
+    } catch (e) {
+        console.error(e)
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } })
+        await sock.sendMessage(from, {
+            text: '❌ Terjadi kesalahan saat mengambil gambar.'
+        }, { quoted: msg })
+    }
 }
 
 //SPOTIFY
@@ -5404,60 +5384,278 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         return;
     }
 }
+// ==============================
+// 📌 FITUR CEPAT REPLY (Owner/VIP)
+// ==============================
 
-// 📢 FITUR UMUMKAN (OWNER ONLY, VIA PRIVATE CHAT)
-if (text.startsWith('.umumkan')) {
-    const sender = msg.key.remoteJid;
+function randomString(length = 6) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
 
-    if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: "⚠️ Fitur ini hanya bisa dipakai oleh *Owner Bot*!" });
+if (text.startsWith('.tantangan')) {
+    const args = text.split(' ');
+    const poin = parseInt(args[1]) || 10;
+    const waktu = parseInt(args[2]) || 15;
+
+    const challenge = randomString(5 + Math.floor(Math.random() * 3));
+
+    // ✅ kalau dari private chat
+    if (!from.endsWith('@g.us')) {
+        if (!isOwner(sender) && !isVIP(sender, from)) {
+            await sock.sendMessage(from, { text: "❌ Fitur ini hanya bisa dipakai digrup" });
+            return;
+        }
+
+        // baca data grup aktif
+        let grupAktif = {};
+        try {
+            grupAktif = JSON.parse(fs.readFileSync('./grupAktif.json'));
+        } catch {
+            grupAktif = {};
+        }
+
+        // filter grup aktif
+        const targetGrup = Object.entries(grupAktif)
+            .filter(([id, aktif]) => aktif === true && id.endsWith('@g.us'))
+            .map(([id]) => id);
+
+        if (targetGrup.length === 0) {
+            await sock.sendMessage(from, { text: "⚠️ Tidak ada grup aktif untuk menerima challenge." });
+            return;
+        }
+
+        for (const groupId of targetGrup) {
+            const sent = await sock.sendMessage(groupId, {
+                text: `🎯 *Tantangan Cepat!*\n──────────────────\nBalas pesan ini dengan kata berikut:\n\n➡️ *${challenge}*\n\n🏆 Hadiah: *${poin} poin*\n⏳ Waktu: ${waktu} detik`
+            });
+
+            const timeout = setTimeout(() => {
+                if (sesiCepat.has(sent.key.id)) {
+                    sock.sendMessage(groupId, { text: `⏰ *Waktu habis!* Tidak ada yang berhasil.` });
+                    sesiCepat.delete(sent.key.id);
+                }
+            }, waktu * 1000);
+
+            sesiCepat.set(sent.key.id, { poin, timeout, jawaban: challenge });
+        }
+
+        await sock.sendMessage(from, { text: `✅ Tantangan berhasil dikirim ke ${targetGrup.length} grup aktif!` });
         return;
     }
 
-    if (msg.key.remoteJid.endsWith('@g.us')) {
-        await sock.sendMessage(from, { text: "⚠️ Gunakan fitur ini lewat *chat pribadi bot*!" });
-        return;
-    }
-
-    const pengumuman = text.replace('.umumkan', '').trim();
-    if (!pengumuman) {
-        await sock.sendMessage(from, { text: "⚠️ Tulis pengumuman!\nContoh: `.umumkan Besok ada ulangan!`" });
-        return;
-    }
-
-    // baca data grup aktif
-    let grupAktif = {};
-    try {
-        grupAktif = JSON.parse(fs.readFileSync('./grupAktif.json'));
-    } catch (e) {
-        grupAktif = {};
-    }
-
-    // filter grup yg aktif
-    const targetGrup = Object.entries(grupAktif)
-        .filter(([id, aktif]) => aktif === true && id.endsWith('@g.us'))
-        .map(([id]) => id);
-
-    if (targetGrup.length === 0) {
-        await sock.sendMessage(from, { text: "⚠️ Tidak ada grup aktif untuk menerima pengumuman." });
-        return;
-    }
-
-    // kirim pengumuman
-for (const groupId of targetGrup) {
-    await sock.sendMessage(groupId, {
-        text: `╭━━━〔 📢 *PENGUMUMAN* 〕━━━╮
-┃
-┃ 📝 ${pengumuman}
-┃
-╰━━━━━━━━━━━━━━━━━━╯
-👤 Dari: *Owner Bot*`
+    // ✅ kalau dari dalam grup
+    const sent = await sock.sendMessage(from, {
+        text: `🎯 *Tantangan Cepat!*\n──────────────────\nBalas pesan ini dengan kata berikut:\n\n➡️ *${challenge}*\n\n🏆 Hadiah: *${poin} poin*\n⏳ Waktu: ${waktu} detik`
     });
+
+    const timeout = setTimeout(() => {
+        if (sesiCepat.has(sent.key.id)) {
+            sock.sendMessage(from, { text: `⏰ *Waktu habis!* Tidak ada yang berhasil.` });
+            sesiCepat.delete(sent.key.id);
+        }
+    }, waktu * 1000);
+
+    sesiCepat.set(sent.key.id, { poin, timeout, jawaban: challenge });
+    return;
+}
+
+// 📌 Cek jawaban cepat
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+    const sesi = sesiCepat.get(replyId);
+
+    if (sesi) {
+        const userAnswer = text.trim();
+        if (userAnswer === sesi.jawaban) {
+            clearTimeout(sesi.timeout);
+            sesiCepat.delete(replyId);
+
+            tambahSkor(sender, from, sesi.poin);
+
+            await sock.sendMessage(from, {
+                text: `✅ Selamat @${sender.split('@')[0]}!\nKamu berhasil mengetik *${sesi.jawaban}* 🎉\n🏆 Hadiah: *${sesi.poin} poin*`,
+                mentions: [sender]
+            });
+        } else {
+            await sock.sendMessage(from, {
+                text: `❌ Jawaban salah!\nKamu mengetik: *${userAnswer}*\nJawaban yang benar: *${sesi.jawaban}*`
+            });
+        }
+        return;
+    }
 }
 
 
-    await sock.sendMessage(from, { text: `✅ Pengumuman berhasil dikirim ke ${targetGrup.length} grup aktif!` });
+
+function renderBoard(board) {
+    return `
+${board[0]} | ${board[1]} | ${board[2]}
+---------
+${board[3]} | ${board[4]} | ${board[5]}
+---------
+${board[6]} | ${board[7]} | ${board[8]}
+`.trim();
 }
+
+function cekMenang(board, simbol) {
+    const winPatterns = [
+        [0,1,2],[3,4,5],[6,7,8], // baris
+        [0,3,6],[1,4,7],[2,5,8], // kolom
+        [0,4,8],[2,4,6]          // diagonal
+    ];
+    return winPatterns.some(pattern => 
+        pattern.every(i => board[i] === simbol)
+    );
+}
+
+// 📌 Mulai tantangan
+if (text.startsWith('.tictactoe')) {
+    if (!from.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: '❌ Fitur hanya bisa di grup!' });
+        return;
+    }
+    if (sesiTicTacToe.has(from)) {
+        await sock.sendMessage(from, { text: '⚠️ Masih ada game TicTacToe berlangsung di grup ini!' });
+        return;
+    }
+
+    const lawan = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+    if (!lawan) {
+        await sock.sendMessage(from, { text: '⚠️ Tag lawanmu!\nContoh: `.tictactoe @user`' });
+        return;
+    }
+
+    const sent = await sock.sendMessage(from, {
+        text: `🎮 *TicTacToe Dimulai!*\n──────────────────\n@${sender.split('@')[0]} menantang @${lawan.split('@')[0]}\n\n⚠️ Menunggu persetujuan lawan...\nReply pesan ini dengan *setuju* untuk mulai! (30 detik)`,
+        mentions: [sender, lawan]
+    });
+
+    const timeout = setTimeout(async () => {
+        const sesi = sesiTicTacToe.get(from);
+        if (sesi && sesi.status === 'menunggu') {
+            await sock.sendMessage(from, { 
+                text: `⏰ Waktu habis! @${sesi.lawan.split('@')[0]} tidak merespon. Game dibatalkan.`,
+                mentions: [sesi.penantang, sesi.lawan] 
+            });
+            sesiTicTacToe.delete(from);
+        }
+    }, 30000);
+
+    sesiTicTacToe.set(from, {
+        penantang: normalizeJid(sender),
+        lawan: normalizeJid(lawan),
+        status: 'menunggu',
+        board: Array(9).fill('⬜'),
+        giliran: null,
+        simbol: {},
+        pesanId: sent.key.id,
+        timeout,
+        pionPos: { '❌': [], '⭕': [] } // simpan posisi pion urut
+    });
+    return;
+}
+
+// 📌 Lawan setuju
+if (sesiTicTacToe.has(from)) {
+    const sesi = sesiTicTacToe.get(from);
+
+    if (
+        sesi &&
+        sesi.status === 'menunggu' &&
+        normalizeJid(sender) === sesi.lawan &&
+        text.trim().toLowerCase() === 'setuju'
+    ) {
+        clearTimeout(sesi.timeout);
+        sesi.status = 'main';
+        sesi.giliran = sesi.penantang;
+        sesi.simbol[sesi.penantang] = '❌';
+        sesi.simbol[sesi.lawan] = '⭕';
+
+        await sock.sendMessage(from, {
+            text: `✅ @${sesi.lawan.split('@')[0]} menerima tantangan!\n\n${renderBoard(sesi.board)}\n\nGiliran: @${sesi.giliran.split('@')[0]} (${sesi.simbol[sesi.giliran]})\n\nKetik angka (1-9) untuk memilih posisi.`,
+            mentions: [sesi.penantang, sesi.lawan]
+        });
+        return;
+    }
+}
+
+// 📌 Menyerah
+if (text === '.menyerah') {
+    const sesi = sesiTicTacToe.get(from);
+    if (sesi && sesi.status === 'main' && 
+        (normalizeJid(sender) === sesi.penantang || normalizeJid(sender) === sesi.lawan)) {
+        
+        const pecundang = normalizeJid(sender);
+        const pemenang = (pecundang === sesi.penantang) ? sesi.lawan : sesi.penantang;
+
+        tambahSkor(pemenang, from, 50);
+        tambahSkor(pecundang, from, -50);
+
+        await sock.sendMessage(from, {
+            text: `🏳️ @${pecundang.split('@')[0]} menyerah!\n\n🏆 Pemenang: @${pemenang.split('@')[0]} (+50 poin)\n❌ Kalah: @${pecundang.split('@')[0]} (-50 poin)`,
+            mentions: [pemenang, pecundang]
+        });
+        sesiTicTacToe.delete(from);
+        return;
+    }
+}
+
+// 📌 Giliran main (mode 3 pion rotasi)
+if (/^[1-9]$/.test(text)) {
+    const sesi = sesiTicTacToe.get(from);
+    if (sesi && sesi.status === 'main' && normalizeJid(sender) === sesi.giliran) {
+        const pos = parseInt(text) - 1;
+        const simbol = sesi.simbol[sesi.giliran];
+        const pionList = sesi.pionPos[simbol];
+
+        if (sesi.board[pos] !== '⬜') {
+            await sock.sendMessage(from, { text: '⚠️ Posisi sudah terisi, pilih angka kosong!' });
+            return;
+        }
+
+        if (pionList.length < 3) {
+            // masih boleh tambah pion
+            sesi.board[pos] = simbol;
+            pionList.push(pos);
+        } else {
+            // rotasi → geser pion paling lama
+            const oldPos = pionList.shift(); // ambil pion tertua
+            sesi.board[oldPos] = '⬜';       // kosongkan
+            sesi.board[pos] = simbol;       // taruh pion baru
+            pionList.push(pos);             // simpan posisi baru
+        }
+
+        // cek menang
+        if (cekMenang(sesi.board, simbol)) {
+            const pemenang = sesi.giliran;
+            const pecundang = (sesi.giliran === sesi.penantang) ? sesi.lawan : sesi.penantang;
+
+            tambahSkor(pemenang, from, 50);
+            tambahSkor(pecundang, from, -50);
+
+            await sock.sendMessage(from, {
+                text: `🎉 *Permainan Selesai!*\n\n${renderBoard(sesi.board)}\n\n🏆 Pemenang: @${pemenang.split('@')[0]} (+50 poin)\n❌ Kalah: @${pecundang.split('@')[0]} (-50 poin)`,
+                mentions: [pemenang, pecundang]
+            });
+            sesiTicTacToe.delete(from);
+            return;
+        }
+
+        // lanjut giliran
+        sesi.giliran = (sesi.giliran === sesi.penantang) ? sesi.lawan : sesi.penantang;
+        await sock.sendMessage(from, {
+            text: `${renderBoard(sesi.board)}\n\nGiliran: @${sesi.giliran.split('@')[0]} (${sesi.simbol[sesi.giliran]})`,
+            mentions: [sesi.penantang, sesi.lawan]
+        });
+        return;
+    }
+}
+
 
 
 if (text.trim() === '.info') {
@@ -5523,7 +5721,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.0.9');
+    const versiFancy = toFancyNumber('1.1.0');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -5551,6 +5749,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .susunkata → Susun huruf
 │ .family100 → Jawaban terbanyak
 │ .tebakbendera → Menebak bendera
+│ .tictactoe → Bermain X dan O
 │
 ├─ 〔 🏳️‍🌈 *ꜰɪᴛᴜʀ ʟᴜᴄᴜ* 〕
 │ .gay → Seberapa gay?
@@ -5585,7 +5784,6 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │
 ├─ 〔 🖼️ *ᴍᴇᴅɪᴀ* 〕
 │ .waifu → Waifu random
-│ .img → Menghasilkan gambar
 │ .qr → Membuat QR
 │ .pdf → Mengubah foto jadi pdf
 │ .igstalk → Mengstalking ig orang
@@ -5606,7 +5804,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │
 ├─ 〔 🧰 *ᴛᴏᴏʟꜱ ɪʟᴇɢᴀʟ* 〕
 │ .hack @user → Retas skor orang
-│ .hacksistem→ Retas akses VIP
+│ .hacksistem → Retas akses VIP
 │
 ├─ 〔 📋 *ɪɴꜰᴏ* 〕
 │ .shop → Buka menu shop
@@ -5628,6 +5826,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 ├─ 〔 📊 *ꜱᴋᴏʀ ᴋʜᴜꜱᴜꜱ* 〕
 │ .setskor → Atur skor user
 │ .allskor → Kirim skor ke semua
+│ .tantangan → Memberi skor ke grup
 │
 ├─ 〔 👑 *ᴠɪᴘ ᴄᴏɴᴛʀᴏʟ* 〕
 │ .setvip → Jadikan VIP
