@@ -37,6 +37,8 @@ const sesiTicTacToe = new Map();
 const sesiFamily100 = new Map();
 const sesiJudi = new Map(); // key: sender, value: { msgId }
 const sesiTebakBendera = new Map();
+const sesiPilihGrup = new Map();
+const sesiUmumkan = new Map();
 
 let historySiapa = {};
 
@@ -133,9 +135,20 @@ try {
 function isVIP(jid, groupId) {
     const realJid = normalizeJid(jid);
     if (realJid === OWNER_NUMBER) return true;
-    if (!vipList[groupId]) return false;
-    return vipList[groupId].includes(realJid);
+
+    // ✅ Cek VIP di grup (lokal)
+    if (vipList[groupId] && vipList[groupId].includes(realJid)) {
+        return true;
+    }
+
+    // ✅ Cek VIP global (khusus Owner buat lewat .setvip di chat pribadi)
+    if (vipList["vip-pribadi"] && vipList["vip-pribadi"].includes(realJid)) {
+        return true;
+    }
+
+    return false;
 }
+
 
 
 
@@ -316,8 +329,56 @@ function addGroupSkor(jid, roomId, poin) {
     skorUser[roomId][realJid] += poin;
     simpanSkorKeFile();
 }
+const rankFile = path.join(__dirname, 'rank.json');
+let rankUser = {};
 
+// === Load rank.json ===
+if (fs.existsSync(rankFile)) {
+    try {
+        rankUser = JSON.parse(fs.readFileSync(rankFile));
+    } catch {
+        rankUser = {};
+    }
+}
 
+function saveRank() {
+    fs.writeFileSync(rankFile, JSON.stringify(rankUser, null, 2));
+}
+
+// === Cooldown anti spam XP ===
+let rankCooldown = {};
+
+// === Tambah XP di grup atau chat pribadi ===
+function tambahXP(user, room) {
+    if (!user) return;
+    if (!rankUser[room]) rankUser[room] = {};
+    if (!rankUser[room][user]) rankUser[room][user] = { xp: 0, level: 1 };
+
+    const now = Date.now();
+    if (rankCooldown[user] && now - rankCooldown[user] < 60000) {
+        return; // cooldown 1 menit
+    }
+    rankCooldown[user] = now;
+
+    // Random XP biar natural
+    const xpTambah = Math.floor(Math.random() * 5) + 3;
+    rankUser[room][user].xp += xpTambah;
+
+    // Cek level up
+    const levelSekarang = rankUser[room][user].level;
+    const xpSekarang = rankUser[room][user].xp;
+    const xpButuh = levelSekarang * 100;
+
+    if (xpSekarang >= xpButuh) {
+        rankUser[room][user].level++;
+        sock.sendMessage(room, {
+            text: `✨ Selamat @${user.split('@')[0]}! Kamu naik ke *Level ${rankUser[room][user].level}* 🎉`,
+            mentions: [user]
+        });
+    }
+
+    saveRank();
+}
 
 const bankSoalTeracak = new Map();
 
@@ -1093,6 +1154,7 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
     // Cari ID pengirim sebenarnya
     let rawSender = null;
     
+    
 
     if (isGroup) {
         rawSender = msg.key.participant || msg.participant;
@@ -1119,7 +1181,13 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
             msg.message?.documentMessage?.mimetype?.includes("image") && msg.message.documentMessage ||
             msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage
         );
-  
+
+        if (!msg.key.fromMe) {
+    tambahXP(sender, from);
+}
+
+
+
 
         const msgType = Object.keys(msg.message)[0];
         const body = text.toLowerCase(); // ⬅ WAJIB ADA!
@@ -1773,19 +1841,42 @@ skorUser[from][sender] = skor - harga;
     });
 }
 
+
+// === Command .skor (gabungan + status VIP) ===
 if (text.trim() === '.skor') {
     const roomKey = from;
-    const realJid = normalizeJid(sender); // pastikan ini sama literalnya dengan yang disimpan
+    const realJid = normalizeJid(sender);
 
+    // Ambil skor (poin)
     const poin = skorUser[roomKey]?.[realJid] || 0;
 
+    // Ambil data rank (XP & level)
+    if (!rankUser[roomKey]) rankUser[roomKey] = {};
+    if (!rankUser[roomKey][realJid]) rankUser[roomKey][realJid] = { xp: 0, level: 1 };
+
+    const { xp, level } = rankUser[roomKey][realJid];
+    const nextXP = (level + 1) * 100;
+
+    // Tentukan status VIP
+    let status;
+    if (isOwner(sender)) {
+        status = "👑 Owner";
+    } else if (isVIP(sender, roomKey) || isVIP(sender, 'vip-pribadi')) {
+        status = "💎 VIP";
+    } else {
+        status = "👤 Non-VIP";
+    }
+
+    // Kirim hasilnya
     await sock.sendMessage(from, {
-        text: `📊 *SKOR KAMU*\n───────────────\n📱 Nomor: @${realJid.split('@')[0]}\n🏆 Skor: *${poin} poin*`,
+        text: `📊 *STATUS KAMU*\n────────────────\n📱 Nomor : @${realJid.split('@')[0]}\n🏆 Skor  : *${poin} poin*\n⭐ Level : *${level}*\n⚡ XP    : *${xp} / ${nextXP}*\n🎖️ Status : *${status}*`,
         mentions: [sender]
     });
 
     return;
 }
+
+
 
 
 if (text.startsWith('.allskor')) {
@@ -1862,44 +1953,53 @@ if (body.startsWith('.listskor')) {
   }
 
   const groupMetadata = await sock.groupMetadata(from);
-  const groupMembers = groupMetadata.participants.map(p => p.id);
+  const groupMembers = groupMetadata.participants.map(p => normalizeJid(p.id));
 
   const skorGrup = skorUser[from] || {};
-  const skorKeys = Object.keys(skorGrup).filter(jid => groupMembers.includes(jid));
+  const rankGrup = rankUser[from] || {};
+
+  const skorKeys = groupMembers.filter(jid => skorGrup[jid] !== undefined || rankGrup[jid] !== undefined);
 
   if (skorKeys.length === 0) {
     await sock.sendMessage(from, {
-      text: '📊 Belum ada data skor.'
+      text: '📊 Belum ada data skor/rank.'
     }, { quoted: msg });
     return;
   }
 
-  const sorted = skorKeys.sort((a, b) => (skorGrup[b] || 0) - (skorGrup[a] || 0));
+  // Urutkan: Level dulu → Skor
+  const sorted = skorKeys.sort((a, b) => {
+    const lvlA = rankGrup[a]?.level || 1;
+    const lvlB = rankGrup[b]?.level || 1;
+    if (lvlB !== lvlA) return lvlB - lvlA;
+    return (skorGrup[b] || 0) - (skorGrup[a] || 0);
+  });
 
-  let teks = `╔══ 📊 *DAFTAR SKOR* 📊 ══╗\n`;
+  let teks = `╔══ 📊 *DAFTAR SKOR & LEVEL* 📊 ══╗\n`;
 
-  if (groupMembers.includes(OWNER_NUMBER)) {
-    const skorOwner = skorGrup[OWNER_NUMBER] || 0;
-    teks += `║ 👑 Owner : @${OWNER_NUMBER.split('@')[0]} → *${skorOwner} poin*\n`;
+  const normOwner = normalizeJid(OWNER_NUMBER);
+  if (groupMembers.includes(normOwner)) {
+    const skorOwner = skorGrup[normOwner] || 0;
+    const lvlOwner = rankGrup[normOwner]?.level || 1;
+    teks += `║ 👑 Owner : @${normOwner.split('@')[0]} → *${skorOwner} poin* | Lv.${lvlOwner}\n`;
   }
 
   let count = 1;
   for (const jid of sorted) {
-    if (jid === OWNER_NUMBER) continue;
+    if (jid === normOwner) continue;
     const skor = skorGrup[jid] || 0;
-    teks += `║ ${count++}. @${jid.split('@')[0]} → *${skor} poin*\n`;
+    const lvl = rankGrup[jid]?.level || 1;
+    teks += `║ ${count++}. @${jid.split('@')[0]} → *${skor} poin* | Lv.${lvl}\n`;
   }
 
-  teks += `╚═════════════════════╝`;
+  teks += `╚═════════════════════════╝`;
 
   await sock.sendMessage(from, {
     text: teks,
-    mentions: [OWNER_NUMBER, ...sorted.filter(jid => jid !== OWNER_NUMBER)]
+    mentions: [normOwner, ...sorted.filter(jid => jid !== normOwner)]
   }, { quoted: msg });
 }
 
-
-// .listvip
 if (body.startsWith('.listvip')) {
   if (!isVIP(sender, from) && !hasTemporaryFeature(sender, 'listvip')) {
     await sock.sendMessage(from, {
@@ -1910,21 +2010,23 @@ if (body.startsWith('.listvip')) {
 
   if (!isGroup) {
     await sock.sendMessage(from, {
-      text: '❌ Perintah hanya bisa digunakan di grup.'
+      text: '❌ Perintah hanya bisa digunakan di grup.' 
     }, { quoted: msg });
     return;
   }
 
   const metadata = await sock.groupMetadata(from);
-  const groupMembers = metadata.participants.map(p => p.id);
+  const groupMembers = metadata.participants.map(p => normalizeJid(p.id));
+
+  const normOwner = normalizeJid(OWNER_NUMBER);
 
   const allVIP = (vipList[from] || []).filter(jid => groupMembers.includes(jid));
-  const vipLain = allVIP.filter(jid => jid !== OWNER_NUMBER);
+  const vipLain = allVIP.filter(jid => jid !== normOwner);
 
   let teks = `╔══ 🎖️ *DAFTAR VIP* 🎖️ ══╗\n`;
 
-  if (groupMembers.includes(OWNER_NUMBER)) {
-    teks += `║ 👑 Owner : @${OWNER_NUMBER.split('@')[0]}\n`;
+  if (groupMembers.includes(normOwner)) {
+    teks += `║ 👑 Owner : @${normOwner.split('@')[0]}\n`;
   }
 
   if (vipLain.length === 0) {
@@ -1936,52 +2038,97 @@ if (body.startsWith('.listvip')) {
   }
 
   teks += `╚═══════════════════╝`;
-    const mentions = [...allVIP];
-    if (!mentions.includes(OWNER_NUMBER) && groupMembers.includes(OWNER_NUMBER)) {
-    mentions.push(OWNER_NUMBER);
-    }
 
-    await sock.sendMessage(from, {
+  const mentions = [...vipLain];
+  if (!mentions.includes(normOwner) && groupMembers.includes(normOwner)) {
+    mentions.push(normOwner);
+  }
+
+  await sock.sendMessage(from, {
     text: teks,
     mentions
-    }, { quoted: msg });
-
+  }, { quoted: msg });
 }
 
-
 // .setvip
-if (body.startsWith('.setvip') && isGroup) {
+if (body.startsWith('.setvip')) {
+  const args = body.trim().split(/\s+/);
+
+  // ✅ Mode Owner khusus: ".setvip 62xxx"
+  if (isOwner(sender) && args[1] && !isGroup) {
+    const nomor = args[1].replace(/[^0-9]/g, '');
+    if (!nomor) {
+      await sock.sendMessage(from, {
+        text: '❌ Format salah!\nGunakan: *.setvip 62xxx*'
+      }, { quoted: msg });
+      return;
+    }
+
+    const target = normalizeJid(nomor + '@s.whatsapp.net');
+    const groupId = "vip-pribadi"; // bisa kamu bikin khusus kalau mau VIP global, atau pilih grup tertentu
+
+    if (!vipList[groupId]) vipList[groupId] = [];
+    if (vipList[groupId].includes(target)) {
+      await sock.sendMessage(from, {
+        text: `⚠️ @${target.split('@')[0]} sudah VIP.`,
+        mentions: [target]
+      }, { quoted: msg });
+      return;
+    }
+
+    vipList[groupId].push(target);
+    saveVIP();
+
+    await sock.sendMessage(from, {
+      text: `✅ @${target.split('@')[0]} sekarang adalah *VIP*.`,
+      mentions: [target]
+    }, { quoted: msg });
+    return;
+  }
+
+  // ✅ Mode Grup biasa (punya kamu sebelumnya)
+  if (!isGroup) {
+    await sock.sendMessage(from, {
+      text: '❌ Fitur ini hanya bisa digunakan di dalam grup.'
+    }, { quoted: msg });
+    return;
+  }
+
   if (!isVIP(sender, from)) {
-    return sock.sendMessage(from, {
+    await sock.sendMessage(from, {
       text: '❌ Hanya VIP atau Owner yang bisa menambahkan VIP.'
     }, { quoted: msg });
+    return;
   }
 
   const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
   if (!mentioned || mentioned.length === 0) {
-    return sock.sendMessage(from, {
+    await sock.sendMessage(from, {
       text: '❌ Tag orang yang mau dijadikan VIP.\nContoh: *.setvip @user*'
     }, { quoted: msg });
+    return;
   }
 
   const target = normalizeJid(mentioned[0]);
 
   if ((vipList[from] || []).includes(target)) {
-    return sock.sendMessage(from, {
+    await sock.sendMessage(from, {
       text: `⚠️ @${target.split('@')[0]} sudah VIP.`,
       mentions: [target]
     }, { quoted: msg });
+    return;
   }
 
   if (!vipList[from]) vipList[from] = [];
   vipList[from].push(target);
   saveVIP();
 
-  return sock.sendMessage(from, {
+  await sock.sendMessage(from, {
     text: `✅ @${target.split('@')[0]} sekarang adalah *VIP*!`,
     mentions: [target]
   }, { quoted: msg });
 }
+
 
 // .allvip
 if (body.startsWith('.allvip') && isGroup) {
@@ -2034,9 +2181,49 @@ if (body.startsWith('.allvip') && isGroup) {
   }
 }
 
+// .unsetvip (versi grup & owner global)
+if (body.startsWith('.unsetvip')) {
+  const args = body.trim().split(/\s+/);
 
-// .unsetvip
-if (body.startsWith('.unsetvip') && isGroup) {
+  // ✅ MODE KHUSUS OWNER — hapus VIP global lewat private
+  if (isOwner(sender) && args[1] && !isGroup) {
+    const nomor = args[1].replace(/[^0-9]/g, '');
+    if (!nomor) {
+      await sock.sendMessage(from, {
+        text: '❌ Format salah!\nGunakan: *.unsetvip 62xxx*'
+      }, { quoted: msg });
+      return;
+    }
+
+    const target = normalizeJid(nomor + '@s.whatsapp.net');
+    const groupId = "vip-pribadi";
+
+    if (!vipList[groupId] || !vipList[groupId].includes(target)) {
+      await sock.sendMessage(from, {
+        text: `⚠️ @${target.split('@')[0]} tidak ada di daftar *VIP Global*.`,
+        mentions: [target]
+      }, { quoted: msg });
+      return;
+    }
+
+    vipList[groupId] = vipList[groupId].filter(jid => jid !== target);
+    saveVIP();
+
+    await sock.sendMessage(from, {
+      text: `🗑️ @${target.split('@')[0]} berhasil dihapus dari *VIP Global*!`,
+      mentions: [target]
+    }, { quoted: msg });
+    return;
+  }
+
+  // ✅ MODE GRUP (punya kamu sebelumnya)
+  if (!isGroup) {
+    await sock.sendMessage(from, {
+      text: '❌ Fitur ini hanya bisa digunakan di dalam grup.'
+    }, { quoted: msg });
+    return;
+  }
+
   if (!isVIP(sender, from)) {
     return sock.sendMessage(from, {
       text: '❌ Hanya VIP atau Owner yang bisa menghapus VIP.'
@@ -2069,7 +2256,7 @@ if (body.startsWith('.unsetvip') && isGroup) {
   saveVIP();
 
   return sock.sendMessage(from, {
-    text: `🗑️ @${target.split('@')[0]} berhasil dihapus dari *VIP*.`,
+    text: `🗑️ @${target.split('@')[0]} berhasil dihapus dari *VIP Grup*!`,
     mentions: [target]
   }, { quoted: msg });
 }
@@ -2217,6 +2404,118 @@ simpanSkorKeFile();
         mentions: [targetJid, sender],
     });
 }
+
+if (text.startsWith('.setexp')) {
+    if (!from.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: '❌ Perintah hanya bisa digunakan di grup.' });
+        return;
+    }
+
+    if (!isVIP(sender, from) && sender !== OWNER_NUMBER) {
+        await sock.sendMessage(from, {
+            text: '🚫 Perintah ini hanya untuk pengguna *VIP* atau Owner*.'
+        });
+        return;
+    }
+
+    const args = text.trim().split(/\s+/);
+    const angka = parseInt(args[2] || args[1]); // Bisa .setexp @user 200 atau .setexp 200
+
+    const quoted = msg.message?.extendedTextMessage?.contextInfo;
+    const mentionedJid = quoted?.mentionedJid?.[0];
+    const target = mentionedJid || quoted?.participant || (args[1]?.startsWith('@') ? args[1].replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null);
+
+    const targetJid = target || sender;
+
+    if (targetJid === OWNER_NUMBER && sender !== OWNER_NUMBER) {
+        await sock.sendMessage(from, {
+            text: '🚫 Tidak bisa mengubah EXP *Owner*!'
+        });
+        return;
+    }
+
+    if (isNaN(angka)) {
+        await sock.sendMessage(from, {
+            text: `❗ Format salah!\nGunakan: *.setexp 200* atau *.setexp @user 200*`
+        });
+        return;
+    }
+
+    if (!rankUser[from]) rankUser[from] = {};
+    if (!rankUser[from][targetJid]) rankUser[from][targetJid] = { xp: 0, level: 1 };
+
+    // 🔥 Set XP baru
+    rankUser[from][targetJid].xp = angka;
+
+    // 🔥 Cek level berdasarkan XP
+    let currentLevel = rankUser[from][targetJid].level;
+    let currentXP = rankUser[from][targetJid].xp;
+    let neededXP = currentLevel * 100;
+
+    while (currentXP >= neededXP) {
+        currentLevel++;
+        neededXP = currentLevel * 100;
+    }
+
+    rankUser[from][targetJid].level = currentLevel;
+
+    saveRank();
+
+    await sock.sendMessage(from, {
+        text: `✅ *EXP berhasil diatur!*\n\n👤 Pengguna: @${targetJid.split('@')[0]}\n⚡ XP: *${angka}*\n⭐ Level: *${currentLevel}*\n🛡️ Oleh: @${sender.split('@')[0]}`,
+        mentions: [targetJid, sender],
+    });
+}
+
+
+if (text.startsWith('.setlevel')) {
+    if (!from.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: '❌ Perintah hanya bisa digunakan di grup.' });
+        return;
+    }
+
+    if (!isVIP(sender, from) && sender !== OWNER_NUMBER) {
+        await sock.sendMessage(from, {
+            text: '🚫 Perintah ini hanya untuk pengguna *VIP* atau *Owner*.'
+        });
+        return;
+    }
+
+    const args = text.trim().split(/\s+/);
+    const angka = parseInt(args[2] || args[1]); // Bisa .setlevel @user 5 atau .setlevel 5
+
+    const quoted = msg.message?.extendedTextMessage?.contextInfo;
+    const mentionedJid = quoted?.mentionedJid?.[0];
+    const target = mentionedJid || quoted?.participant || (args[1]?.startsWith('@') ? args[1].replace(/[^0-9]/g, '') + '@s.whatsapp.net' : null);
+
+    const targetJid = target || sender;
+
+    if (targetJid === OWNER_NUMBER && sender !== OWNER_NUMBER) {
+        await sock.sendMessage(from, {
+            text: '🚫 Tidak bisa mengubah Level *Owner*!'
+        });
+        return;
+    }
+
+    if (isNaN(angka)) {
+        await sock.sendMessage(from, {
+            text: `❗ Format salah!\nGunakan: *.setlevel 5* atau *.setlevel @user 5*`
+        });
+        return;
+    }
+
+    if (!rankUser[from]) rankUser[from] = {};
+    if (!rankUser[from][targetJid]) rankUser[from][targetJid] = { xp: 0, level: 1 };
+
+    rankUser[from][targetJid].level = angka;
+    saveRank();
+
+    await sock.sendMessage(from, {
+        text: `✅ *Level berhasil diatur!*\n\n👤 Pengguna: @${targetJid.split('@')[0]}\n⭐ Level: *${angka}*\n🛡️ Oleh: @${sender.split('@')[0]}`,
+        mentions: [targetJid, sender],
+    });
+}
+
 
 if (text.startsWith('.mute')) {
     if (!from.endsWith('@g.us')) {
@@ -2619,79 +2918,119 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
     }
 }
 
-if (text.trim() === '.judi') {
-    const skor = getGroupSkor(sender, from);
 
+if (text.startsWith('.judi')) {
+    const args = text.trim().split(/\s+/);
+    const taruhan = parseInt(args[1]);
+    const roomKey = from;
+    const realJid = normalizeJid(sender);
+    const skor = skorUser[roomKey]?.[realJid] || 0;
 
-    if (skor < 30) {
+    // 📛 Validasi input
+    if (isNaN(taruhan) || taruhan <= 0) {
         await sock.sendMessage(from, {
-            text: `🚫 *Skor kamu terlalu rendah!*\n━━━━━━━━━━━━━━━\n📉 Skor saat ini: *${skor} poin*\n🔒 Minimal skor untuk ikut judi adalah *30 poin*\n\n💡 Ayo main kuis atau tebak-tebakan dulu untuk kumpulkan skor!`,
-            mentions: [sender]
+            text: `🎰 *FORMAT SALAH*\n━━━━━━━━━━━━━━━\nGunakan format:\n> *.judi <jumlah>*\n\n💡 Contoh: *.judi 50*`
         });
         return;
     }
 
-    const kirim = await sock.sendMessage(from, {
-        text: `🎰 *GAME JUDI GANJIL / GENAP*\n━━━━━━━━━━━━━━━━━━\n🧠 *Cara Main:*\nPilih salah satu:\n\n🔴 *Ganjil*\n🔵 *Genap*\n\n📥 *Balas pesan ini* untuk bermain\n\n🎁 Hadiah:\n• Benar ➜ +50 poin\n• Salah ➜ -55 poin\n━━━━━━━━━━━━━━━━━━\n💰 Skor kamu saat ini: *${skor} poin*\n🎲 Ayo uji keberuntunganmu!`,
+    if (skor < taruhan) {
+        await sock.sendMessage(from, {
+            text: `🚫 *Skor kamu tidak cukup!*\n━━━━━━━━━━━━━━━\n📉 Skor saat ini: *${skor} poin*\n💰 Taruhan: *${taruhan} poin*\n\n💡 Kumpulkan skor dulu lewat *tantangan atau game!*`
+        });
+        return;
+    }
+
+    // 🎡 daftar simbol
+    const simbol = ['🍒', '🍋', '🍀', '💎', '🍇', '💰', '7️⃣'];
+
+    // fungsi random slot
+    const acakSlot = () => [
+        simbol[Math.floor(Math.random() * simbol.length)],
+        simbol[Math.floor(Math.random() * simbol.length)],
+        simbol[Math.floor(Math.random() * simbol.length)]
+    ];
+
+    // 🔁 spin animasi
+    const pesanAwal = await sock.sendMessage(from, {
+        text: `🎰 *MESIN SLOT AKTIF!*  
+━━━━━━━━━━━━━━━  
+💵 Taruhan: *${taruhan} poin*  
+🕹️ Menarik tuas... 🎲  
+
+🎡 [ 🍒 🍋 💎 ]`,
         mentions: [sender]
     });
 
-    sesiJudi.set(sender, { msgId: kirim.key.id });
-    return;
-}
-
-
-if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
-    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
-    const sesi = sesiJudi.get(sender);
-
-    if (sesi && sesi.msgId === replyId) {
-        const pilihan = text.trim().toLowerCase();
-        const hasilAcak = Math.floor(Math.random() * 100) + 1;
-        const hasil = hasilAcak % 2 === 0 ? 'genap' : 'ganjil';
-
-        if (pilihan !== 'ganjil' && pilihan !== 'genap') {
-            await sock.sendMessage(from, {
-                text: `🚫 *Pilihan tidak valid!*\nBalas hanya dengan *ganjil* atau *genap* ya.`,
-                mentions: [sender]
-            });
-            return;
-        }
-
-        sesiJudi.delete(sender);
-
-        const benar = pilihan === hasil;
-        const poinSebelum = (skorUser[from] && skorUser[from][sender]) || 0;
-        let poinTambahan = 0;
-
-        if (benar) {
-            poinTambahan = 50;
-        } else {
-            poinTambahan = -55;
-        }
-
-        tambahSkor(sender, from, poinTambahan);
-       const poinSesudah = (skorUser[from] && skorUser[from][sender]) || 0;
-
-
-        let pesan = `🎰 *HASIL JUDI GANJIL / GENAP*\n━━━━━━━━━━━━━━━━━━\n📥 Tebakanmu: *${pilihan.toUpperCase()}*\n🎲 Angka: *${hasilAcak}* ➜ *${hasil.toUpperCase()}*\n`;
-
-        if (benar) {
-            pesan += `\n🎉 *Kamu BENAR!* +50 poin 💰\n✨ Keberuntungan sedang berpihak padamu!`;
-        } else {
-            pesan += `\n💔 *Salah!* -30 poin\n😹Yahaha kasihan kalah, coba lagi`;
-        }
-
-        pesan += `\n\n🏅 Skor kamu sekarang: *${poinSesudah} poin*\n━━━━━━━━━━━━━━━━━━\n📌 *Ketik .judi* untuk main lagi!`;
-
+    // animasi 3x edit
+    for (let i = 1; i <= 3; i++) {
+        await new Promise(r => setTimeout(r, 1200));
+        const spin = acakSlot();
         await sock.sendMessage(from, {
-            text: pesan,
-            mentions: [sender]
-        });
+            edit: pesanAwal.key,
+            text: `🎰 *MESIN SLOT BERPUTAR...*  
+━━━━━━━━━━━━━━━  
+💵 Taruhan: *${taruhan} poin*  
+🌀 Putaran ke ${i}...  
 
-        return;
+🎡 [ ${spin.join(' ')} ]`
+        });
+        if (i === 3) var spinAkhir = spin; // hasil terakhir
     }
+
+    await new Promise(r => setTimeout(r, 1000));
+
+    // 🎯 hasil akhir (chat baru, bukan edit)
+    const [a, b, c] = spinAkhir;
+    let hasilText = '';
+    let perubahan = 0;
+
+    if (a === b && b === c) {
+        // JACKPOT
+        if (a === '7️⃣') {
+            perubahan = taruhan * 10;
+            hasilText = `💎💎💎 *JACKPOT 777!!!* 💎💎💎\n🎉 +${perubahan} poin 💰💰💰\n🔥 Mesin sampe ngebul, gokil banget!`;
+        } else {
+            perubahan = taruhan * 5;
+            hasilText = `🎯 *TIGA SIMBOL SAMA!* 🎯\n✨ +${perubahan} poin!\n🍀 Kamu lagi hoki berat nih!`;
+        }
+    } else if (a === b || b === c || a === c) {
+        // MENANG KECIL
+        perubahan = taruhan * 2;
+        hasilText = `🍀 *MENANG KECIL!* 🍀\n🎁 +${perubahan} poin`;
+    } else {
+        // KALAH
+        const chance = Math.random() * 100;
+        if (chance < 80) {
+            perubahan = -taruhan;
+            hasilText = `💔 *KALAH TIPIS!* 💔\n📉 -${Math.abs(perubahan)} poin`;
+        } else {
+            perubahan = -(taruhan * 2);
+            hasilText = `☠️ *RUNGKAT PARAH!* ☠️\n📉 -${Math.abs(perubahan)} poin`;
+        }
+    }
+
+    // update skor
+    tambahSkor(realJid, roomKey, perubahan);
+    const skorBaru = skorUser[roomKey]?.[realJid] || 0;
+
+    // 💬 kirim hasil baru (biar dramatis)
+    await sock.sendMessage(from, {
+        text:
+`${perubahan >= 0 ? '💰' : '🔥'} *HASIL AKHIR SLOT* ${perubahan >= 0 ? '💰' : '🔥'}  
+━━━━━━━━━━━━━━━  
+👤 Pemain : @${realJid.split('@')[0]}  
+💵 Taruhan : *${taruhan} poin*  
+📊 Perubahan : *${perubahan >= 0 ? '+' + perubahan : perubahan} poin*  
+
+${hasilText}  
+━━━━━━━━━━━━━━━  
+🏆 Skor Sekarang : *${skorBaru} poin*  
+🎲 Main lagi: *.judi <jumlah>*`,
+        mentions: [sender]
+    });
 }
+
 
 if (text.startsWith('.ttmp3')) {
     const tiktokUrl = text.split(' ')[1];
@@ -3157,7 +3496,7 @@ if (text.toLowerCase().startsWith('.brat')) {
                 if (record.count >= MAX_BRAT) {
                     const sisa = Math.ceil((BRAT_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.brat* 3x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibrat* 30 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.brat* tanpa batas waktu.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.brat* 3x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibrat* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.brat* tanpa batas waktu.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -3381,14 +3720,21 @@ if (text === '.dwvideo') {
     return;
 }
 
-
 if (text.trim() === '.off') {
     const realJid = normalizeJid(sender);
     const isRealOwner = realJid === OWNER_NUMBER || msg.key.fromMe;
 
     if (!isRealOwner) {
         await sock.sendMessage(from, {
-            text: '❌ WKWK gbsa matiin gw, makanya jadi *OWNER*.'
+            text: '❌ Lu bukan orang terpilih buat matiin.'
+        });
+        return;
+    }
+
+    // cek status dulu
+    if (grupAktif.get(from) === false) {
+        await sock.sendMessage(from, {
+            text: '⚙️ Bot sudah dalam keadaan *OFF*.'
         });
         return;
     }
@@ -3410,22 +3756,24 @@ if (text.trim() === '.off') {
         text: `🔴 *Bot Dimatikan*\n\n📅 Tanggal: ${waktu}\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
         mentions: [OWNER_NUMBER]
     });
-
     return;
 }
 
 
 if (text.trim() === '.on') {
-    
     const isRealOwner = isOwner(sender) || msg.key.fromMe;
-    console.log("sender JID:", sender);
-console.log("normalized:", normalizeJid(sender));
-console.log("isOwner:", isOwner(sender));
 
-    
     if (!isRealOwner) {
         await sock.sendMessage(from, {
-            text: '❌ Sok sok an nyalain, emng lu *OWNER*??.'
+            text: '❌ Hanya orang beriman yang bisa nyalain.'
+        });
+        return;
+    }
+
+    // cek status dulu
+    if (grupAktif.get(from) === true) {
+        await sock.sendMessage(from, {
+            text: '⚙️ Bot sudah dalam keadaan *ON*.'
         });
         return;
     }
@@ -5405,14 +5753,13 @@ if (text.startsWith('.tantangan')) {
 
     const challenge = randomString(5 + Math.floor(Math.random() * 3));
 
-    // ✅ kalau dari private chat
-    if (!from.endsWith('@g.us')) {
-        if (!isOwner(sender) && !isVIP(sender, from)) {
-            await sock.sendMessage(from, { text: "❌ Fitur ini hanya bisa dipakai digrup" });
-            return;
-        }
+    if (!isOwner(sender) && !isVIP(sender, from)) {
+        await sock.sendMessage(from, { text: "❌ Fitur ini hanya untuk *Owner* atau *VIP*." });
+        return;
+    }
 
-        // baca data grup aktif
+    // kalau chat pribadi
+    if (!from.endsWith('@g.us')) {
         let grupAktif = {};
         try {
             grupAktif = JSON.parse(fs.readFileSync('./grupAktif.json'));
@@ -5420,36 +5767,30 @@ if (text.startsWith('.tantangan')) {
             grupAktif = {};
         }
 
-        // filter grup aktif
-        const targetGrup = Object.entries(grupAktif)
+        const daftar = Object.entries(grupAktif)
             .filter(([id, aktif]) => aktif === true && id.endsWith('@g.us'))
             .map(([id]) => id);
 
-        if (targetGrup.length === 0) {
-            await sock.sendMessage(from, { text: "⚠️ Tidak ada grup aktif untuk menerima challenge." });
+        if (daftar.length === 0) {
+            await sock.sendMessage(from, { text: "⚠️ Tidak ada grup aktif." });
             return;
         }
 
-        for (const groupId of targetGrup) {
-            const sent = await sock.sendMessage(groupId, {
-                text: `🎯 *Tantangan Cepat!*\n──────────────────\nBalas pesan ini dengan kata berikut:\n\n➡️ *${challenge}*\n\n🏆 Hadiah: *${poin} poin*\n⏳ Waktu: ${waktu} detik`
-            });
-
-            const timeout = setTimeout(() => {
-                if (sesiCepat.has(sent.key.id)) {
-                    sock.sendMessage(groupId, { text: `⏰ *Waktu habis!* Tidak ada yang berhasil.` });
-                    sesiCepat.delete(sent.key.id);
-                }
-            }, waktu * 1000);
-
-            sesiCepat.set(sent.key.id, { poin, timeout, jawaban: challenge });
+        // ambil nama grup
+        let teks = "📋 *Pilih grup untuk mengirim tantangan:*\n\n";
+        for (let i = 0; i < daftar.length; i++) {
+            const meta = await sock.groupMetadata(daftar[i]).catch(() => null);
+            if (!meta) continue;
+            teks += `${i + 1}. ${meta.subject}\n`;
         }
+        teks += `\nBalas dengan angka (misal: 2)\n`;
 
-        await sock.sendMessage(from, { text: `✅ Tantangan berhasil dikirim ke ${targetGrup.length} grup aktif!` });
+        await sock.sendMessage(from, { text: teks });
+        sesiPilihGrup.set(sender, { daftar, poin, waktu, challenge });
         return;
     }
 
-    // ✅ kalau dari dalam grup
+    // kalau dari grup langsung
     const sent = await sock.sendMessage(from, {
         text: `🎯 *Tantangan Cepat!*\n──────────────────\nBalas pesan ini dengan kata berikut:\n\n➡️ *${challenge}*\n\n🏆 Hadiah: *${poin} poin*\n⏳ Waktu: ${waktu} detik`
     });
@@ -5465,30 +5806,108 @@ if (text.startsWith('.tantangan')) {
     return;
 }
 
-// 📌 Cek jawaban cepat
-if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
-    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
-    const sesi = sesiCepat.get(replyId);
+// kalau user sedang memilih grup
+if (sesiPilihGrup.has(sender)) {
+    const pilihan = parseInt(text.trim());
+    const data = sesiPilihGrup.get(sender);
 
-    if (sesi) {
-        const userAnswer = text.trim();
-        if (userAnswer === sesi.jawaban) {
-            clearTimeout(sesi.timeout);
-            sesiCepat.delete(replyId);
-
-            tambahSkor(sender, from, sesi.poin);
-
-            await sock.sendMessage(from, {
-                text: `✅ Selamat @${sender.split('@')[0]}!\nKamu berhasil mengetik *${sesi.jawaban}* 🎉\n🏆 Hadiah: *${sesi.poin} poin*`,
-                mentions: [sender]
-            });
-        } else {
-            await sock.sendMessage(from, {
-                text: `❌ Jawaban salah!\nKamu mengetik: *${userAnswer}*\nJawaban yang benar: *${sesi.jawaban}*`
-            });
-        }
+    if (isNaN(pilihan) || pilihan < 1 || pilihan > data.daftar.length) {
+        await sock.sendMessage(from, { text: "❌ Pilihan tidak valid. Kirim angka yang sesuai." });
         return;
     }
+
+    const groupId = data.daftar[pilihan - 1];
+    sesiPilihGrup.delete(sender);
+
+    const sent = await sock.sendMessage(groupId, {
+        text: `🎯 *Tantangan Cepat!*\n──────────────────\nBalas pesan ini dengan kata berikut:\n\n➡️ *${data.challenge}*\n\n🏆 Hadiah: *${data.poin} poin*\n⏳ Waktu: ${data.waktu} detik`
+    });
+
+    const timeout = setTimeout(() => {
+        if (sesiCepat.has(sent.key.id)) {
+            sock.sendMessage(groupId, { text: `⏰ *Waktu habis!* Tidak ada yang berhasil.` });
+            sesiCepat.delete(sent.key.id);
+        }
+    }, data.waktu * 1000);
+
+    sesiCepat.set(sent.key.id, { poin: data.poin, timeout, jawaban: data.challenge });
+
+    await sock.sendMessage(from, { text: `✅ Tantangan berhasil dikirim ke grup yang dipilih!` });
+    return;
+}
+
+if (text.startsWith('.umumkan')) {
+    const isi = text.replace('.umumkan', '').trim();
+
+    // ✅ Hanya bisa digunakan di chat pribadi
+    if (from.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: "❌ Perintah *.umumkan* hanya bisa digunakan di chat pribadi bot." });
+        return;
+    }
+
+    // ✅ Cek akses: hanya Owner atau VIP
+    if (!isOwner(sender) && !isVIP(sender, from)) {
+        await sock.sendMessage(from, { text: "❌ Perintah ini hanya bisa digunakan oleh *Owner* atau *VIP*." });
+        return;
+    }
+
+    // ✅ Validasi isi teks
+    if (!isi) {
+        await sock.sendMessage(from, { text: "❗ Format salah!\nGunakan: *.umumkan <teks>" });
+        return;
+    }
+
+    // Baca daftar grup aktif
+    let grupAktif = {};
+    try {
+        grupAktif = JSON.parse(fs.readFileSync('./grupAktif.json'));
+    } catch {
+        grupAktif = {};
+    }
+
+    const daftar = Object.entries(grupAktif)
+        .filter(([id, aktif]) => aktif === true && id.endsWith('@g.us'))
+        .map(([id]) => id);
+
+    if (daftar.length === 0) {
+        await sock.sendMessage(from, { text: "⚠️ Tidak ada grup aktif untuk menerima pengumuman." });
+        return;
+    }
+
+    // ✅ Buat daftar nama grup
+    let teks = `📋 *Pilih grup untuk mengirim pengumuman:*\n\n`;
+    for (let i = 0; i < daftar.length; i++) {
+        const meta = await sock.groupMetadata(daftar[i]).catch(() => null);
+        if (!meta) continue;
+        teks += `${i + 1}. ${meta.subject}\n`;
+    }
+    teks += `\n🗒️ Balas dengan angka (misal: 2)\n`;
+
+    await sock.sendMessage(from, { text: teks });
+    sesiUmumkan.set(sender, { daftar, isi });
+    return;
+}
+
+// === Jika user sedang memilih grup untuk umumkan ===
+if (sesiUmumkan.has(sender)) {
+    const pilihan = parseInt(text.trim());
+    const data = sesiUmumkan.get(sender);
+
+    if (isNaN(pilihan) || pilihan < 1 || pilihan > data.daftar.length) {
+        await sock.sendMessage(from, { text: "❌ Pilihan tidak valid.\nBalas dengan nomor grup yang sesuai." });
+        return;
+    }
+
+    const groupId = data.daftar[pilihan - 1];
+    sesiUmumkan.delete(sender);
+
+    await sock.sendMessage(groupId, {
+        text: `📢 *PENGUMUMAN* 📢\n──────────────────\n${data.isi}\n\n👤 Dari: @${sender.split('@')[0]}`,
+        mentions: [sender]
+    });
+
+    await sock.sendMessage(from, { text: `✅ Pengumuman berhasil dikirim ke grup yang dipilih!` });
+    return;
 }
 
 
@@ -5657,7 +6076,6 @@ if (/^[1-9]$/.test(text)) {
     }
 }
 
-
 if (text.trim() === '.info') {
     const teks = `╭───〔 🤖 *JARR BOT* 〕───╮
 │ 👑 Owner   : Fajar Aditya Pratama
@@ -5825,6 +6243,8 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │
 ├─ 〔 📊 *ꜱᴋᴏʀ ᴋʜᴜꜱᴜꜱ* 〕
 │ .setskor → Atur skor user
+│ .setexp → Atur exp user
+│ .setlevel → Atur level user
 │ .allskor → Kirim skor ke semua
 │ .tantangan → Memberi skor ke grup
 │
@@ -5833,6 +6253,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .unsetvip → Cabut VIP
 │ .listvip → Daftar VIP
 │ .listskor → Daftar SKOR
+│ .umumkan → Pengumuman di Grup
 │
 ├─ 〔 🔞 *ᴠɪᴘ ꜱᴘᴇᴄɪᴀʟ* 〕
 │ .waifux → Random waifu NSFW
