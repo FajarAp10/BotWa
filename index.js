@@ -2066,7 +2066,7 @@ if (body.startsWith('.setvip')) {
     }
 
     const target = normalizeJid(nomor + '@s.whatsapp.net');
-    const groupId = "vip-pribadi"; // bisa kamu bikin khusus kalau mau VIP global, atau pilih grup tertentu
+    const groupId = "vip-pribadi";
 
     if (!vipList[groupId]) vipList[groupId] = [];
     if (vipList[groupId].includes(target)) {
@@ -2080,14 +2080,19 @@ if (body.startsWith('.setvip')) {
     vipList[groupId].push(target);
     saveVIP();
 
+    // 🔥 Tambahan: kirim chat pribadi ke VIP
+    await sock.sendMessage(target, {
+      text: `🎉 Halo! Kamu sekarang adalah VIP pribadi.`
+    });
+
     await sock.sendMessage(from, {
-      text: `✅ @${target.split('@')[0]} sekarang adalah *VIP*.`,
+      text: `✅ @${target.split('@')[0]} sekarang adalah *VIP* dan chat pribadi sudah dibuat.`,
       mentions: [target]
     }, { quoted: msg });
     return;
   }
 
-  // ✅ Mode Grup biasa (punya kamu sebelumnya)
+  // ✅ Mode Grup biasa (tidak diubah sama sekali)
   if (!isGroup) {
     await sock.sendMessage(from, {
       text: '❌ Fitur ini hanya bisa digunakan di dalam grup.'
@@ -2129,6 +2134,7 @@ if (body.startsWith('.setvip')) {
     mentions: [target]
   }, { quoted: msg });
 }
+
 
 
 // .allvip
@@ -6056,7 +6062,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.1.8');
+    const versiFancy = toFancyNumber('1.2.0');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -6127,7 +6133,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .dwvideo → Unduh video sekali lihat
 │
 ├─ 〔 👤 *ᴀɴᴏɴʏᴍᴏᴜꜱ* 〕
-│ .anonymous → Chat dengan orang random
+│ .anonymous → Chat orang random
 │ .stop → Hentikan session anonim
 │
 ├─ 〔 👥 *ꜰɪᴛᴜʀ ɢʀᴜᴘ* 〕
