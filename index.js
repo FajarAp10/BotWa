@@ -26,11 +26,11 @@ const AdmZip = require('adm-zip');
 const gtts = require('google-tts-api');
 const mime = require('mime-types');
 const { PDFDocument } = require('pdf-lib');
+const { Document, Packer, Paragraph, TextRun } = require('docx');
 const pdfSessions = new Map(); 
 const antiLinkGroups = new Map();
 const antiStickerGroups = new Map();
 const antiFotoGroups = new Map();
-
 const sesiPolling = new Map();
 const sesiCepat = new Map();
 const sesiTicTacToe = new Map();
@@ -41,17 +41,14 @@ const sesiPilihGrup = new Map();
 const sesiUmumkan = new Map();
 
 let historySiapa = {};
+let anonQueue = [];
+let anonSessions = new Map(); 
+
 
 const pdfLimit = new Map(); 
 const MAX_PDF = 1;
 const PDF_COOLDOWN = 10 * 60 * 60 * 1000; 
 const pdfAksesSementara = new Map(); 
-
-
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const ongoingHacks = {};
-const cooldownHack = new Map();
-const COOLDOWN_TIME = 10 * 60 * 1000; 
 
 const bratLimit = new Map(); 
 const MAX_BRAT = 3;
@@ -349,18 +346,16 @@ function saveRank() {
 let rankCooldown = {};
 
 // === Tambah XP di grup atau chat pribadi ===
-function tambahXP(user, room) {
+function tambahXP(sock, user, room) {
     if (!user) return;
     if (!rankUser[room]) rankUser[room] = {};
     if (!rankUser[room][user]) rankUser[room][user] = { xp: 0, level: 1 };
 
     const now = Date.now();
-    if (rankCooldown[user] && now - rankCooldown[user] < 60000) {
-        return; // cooldown 1 menit
-    }
+    if (rankCooldown[user] && now - rankCooldown[user] < 60000) return; // cooldown 1 menit
     rankCooldown[user] = now;
 
-    // Random XP biar natural
+    // Random XP
     const xpTambah = Math.floor(Math.random() * 5) + 3;
     rankUser[room][user].xp += xpTambah;
 
@@ -1183,7 +1178,8 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
         );
 
         if (!msg.key.fromMe) {
-    tambahXP(sender, from);
+    tambahXP(sock, sender, from);
+
 }
 
 
@@ -1201,32 +1197,6 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
         if (isGroup && !grupAktif.get(from) && text.trim() !== '.on') {
             return; // Masih bisa .off manual
         }
-const sessionKey = isGroup ? `${from}:${sender}` : sender;
-const currentPdfSession = pdfSessions.get(sessionKey);
-
-if (currentPdfSession) {
-    // Kalau pengguna mengirim nama file PDF
-    if (
-        text.trim().length > 0 &&
-        !['.pdfgo','.pdf'].includes(body.trim()) &&
-        !msg.message?.imageMessage
-    ) {
-        currentPdfSession.fileName = text.trim();
-        await sock.sendMessage(from, {
-            text: `📁 Nama file disimpan sebagai: *${text.trim()}.pdf*\n🛠️ Ketik *.pdfgo* untuk menyelesaikannya.`,
-            quoted: msg
-        });
-        return;
-    }
-
-    // Kalau kirim teks lain selain itu
-    if (
-        !msg.message?.imageMessage &&
-        !['.pdfgo','.pdf'].includes(body.trim())
-    ) {
-        return;
-    }
-}
 
 if (msg.message?.imageMessage) {
     const imageSenderKey = isGroup ? `${from}:${sender}` : sender;
@@ -1318,6 +1288,37 @@ function ensureJid(j) {
   const with62 = noPrefix.startsWith('62') ? noPrefix : '62' + noPrefix;
   return with62 + '@s.whatsapp.net';
 }
+
+const sessionKey = isGroup ? `${from}:${sender}` : sender;
+const currentPdfSession = pdfSessions.get(sessionKey);
+
+//pdf
+if (currentPdfSession) {
+    // Kalau pengguna mengirim nama file PDF
+    if (
+        text.trim().length > 0 &&
+        !['.pdfgo','.pdf'].includes(body.trim()) &&
+        !msg.message?.imageMessage
+    ) {
+        currentPdfSession.fileName = text.trim();
+        await sock.sendMessage(from, {
+            text: `📁 Nama file disimpan sebagai: *${text.trim()}.pdf*\n🛠️ Ketik *.pdfgo* untuk menyelesaikannya.`,
+            quoted: msg
+        });
+        return;
+    }
+
+    // Kalau kirim teks lain selain itu
+    if (
+        !msg.message?.imageMessage &&
+        !['.pdfgo','.pdf'].includes(body.trim())
+    ) {
+        return;
+    }
+}
+
+
+
 
 if (text === '.shop') {
     const menu = `🎯 *FITUR SHOP* 🎯
@@ -2620,9 +2621,9 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
 
         const userAnswer = textMessage.trim().toLowerCase();
         if (userAnswer === sesi.jawaban) {
-            tambahSkor(sender, from, 15);
+            tambahSkor(sender, from, 25);
             await sock.sendMessage(from, {
-                text: `✅ *Benar!* Jawabanmu adalah *${userAnswer}* 🎉\n🏆 Kamu mendapatkan *15 poin!*\n\nMau lagi? Ketik *.tebak-aku*`
+                text: `✅ *Benar!* Jawabanmu adalah *${userAnswer}* 🎉\n🏆 Kamu mendapatkan *25 poin!*\n\nMau lagi? Ketik *.tebak-aku*`
         });
 
         } else {
@@ -2733,9 +2734,9 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         const userAnswer = text.trim().toUpperCase();
         if (['A', 'B', 'C', 'D'].includes(userAnswer)) {
             if (userAnswer === sesi.jawaban) {
-                tambahSkor(sender, from, 10);
+                tambahSkor(sender, from, 20);
                 await sock.sendMessage(from, {
-                    text: `✅ *Benar!* Jawabanmu adalah *${userAnswer}* 🎉\n🏆 Kamu mendapatkan *+10 poin!*\n\nMau lagi? Ketik *.kuis*`
+                    text: `✅ *Benar!* Jawabanmu adalah *${userAnswer}* 🎉\n🏆 Kamu mendapatkan *+20 poin!*\n\nMau lagi? Ketik *.kuis*`
                 });
             } else {
                 await sock.sendMessage(from, {
@@ -2755,9 +2756,9 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         const userAnswer = text.trim().toUpperCase();
         if (['A', 'B', 'C', 'D', 'E', 'F'].includes(userAnswer)) {
             if (userAnswer === sesi.jawaban) {
-                tambahSkor(sender, from, 30);
+                tambahSkor(sender, from, 50);
                 await sock.sendMessage(from, {
-                    text: `✅ *Benar!* Jawabanmu adalah *${userAnswer}* 🎉\n🏆 Kamu mendapatkan *+40 poin!*\n\nMau coba lagi? Ketik *.kuissusah*`
+                    text: `✅ *Benar!* Jawabanmu adalah *${userAnswer}* 🎉\n🏆 Kamu mendapatkan *+50 poin!*\n\nMau coba lagi? Ketik *.kuissusah*`
                 });
             } else {
                 tambahSkor(sender, from, -50); // kurangi 50
@@ -3359,80 +3360,85 @@ if (text.trim().toLowerCase() === '.toimg') {
     return;
 }
 
-
-
 if (text.toLowerCase().startsWith('.teks')) {
     const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     const stickerQuoted = quotedMsg?.stickerMessage;
 
     if (!stickerQuoted) {
         await sock.sendMessage(from, {
-            text: '❌ Fitur ini hanya untuk *reply stiker*.\nContoh: *.teks Halo semua*',
+            text: '❌ Fitur ini hanya untuk *reply stiker*.\nContoh: *.teks merah | Halo semua*',
         }, { quoted: msg });
         return;
     }
 
-    const userText = text.replace('.teks', '').trim();
-    if (!userText) {
+    // Ambil input pengguna, format: .teks warna | teks
+    const argsText = text.split(' ').slice(1).join(' ').split('|');
+    if (argsText.length < 2) {
         await sock.sendMessage(from, {
-            text: '❌ Kamu harus menuliskan teks.\nContoh: *.teks Halo semua*',
+            text: '❌ Format salah.\nContoh: *.teks merah | Halo semua*',
         }, { quoted: msg });
         return;
     }
 
-        // Kirim reaction jam pasir
-    await sock.sendMessage(from, {
-        react: {
-            text: '⏳',
-            key: msg.key
-        }
-    });
+    let colorName = argsText[0].trim().toLowerCase();
+    const userText = argsText[1].trim();
 
+    const colorMap = {
+        hitam: '#000000', putih: '#FFFFFF', merah: '#FF0000', biru: '#0000FF',
+        hijau: '#00FF00', kuning: '#FFFF00', oranye: '#FFA500', ungu: '#800080',
+        pink: '#FFC0CB', coklat: '#8B4513', abu: '#808080', cyan: '#00FFFF',
+        magenta: '#FF00FF', emas: '#FFD700', perak: '#C0C0C0', navy: '#000080',
+        lime: '#00FF00', teal: '#008080', olive: '#808000', maroon: '#800000'
+    };
+
+    if (!colorMap[colorName]) {
+        await sock.sendMessage(from, {
+            text: `❌ Warna tidak valid. Pilih salah satu: ${Object.keys(colorMap).join(', ')}`,
+        }, { quoted: msg });
+        return;
+    }
+
+    const color = colorMap[colorName];
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
 
     try {
         const mediaBuffer = await downloadMediaMessage(
             { message: { stickerMessage: stickerQuoted } },
-            'buffer',
-            {},
-            { logger: console }
+            'buffer', {}, { logger: console }
         );
 
         const image = sharp(mediaBuffer);
         const { width, height } = await image.metadata();
 
+        // Hitung teks per baris
         const words = userText.trim().split(/\s+/);
         const totalWords = words.length;
-        const idealLineCount = Math.ceil(Math.sqrt(totalWords)); // Ex: 4 kata → 2 baris
-
+        const idealLineCount = Math.ceil(Math.sqrt(totalWords));
         const wordsPerLine = Math.ceil(totalWords / idealLineCount);
         const lines = [];
-
         for (let i = 0; i < totalWords; i += wordsPerLine) {
             lines.push(words.slice(i, i + wordsPerLine).join(' '));
         }
 
-
         const lineCount = lines.length;
-        const fontSize = Math.floor(height / (7 + lineCount)); // lebih kecil dan proporsional
+        const fontSize = Math.floor(height / (7 + lineCount));
         const lineSpacing = Math.floor(fontSize * 1.1);
-        const verticalOffset = 30; // makin besar, makin ke bawah
+        const verticalOffset = 30;
         const startY = height - (lineSpacing * lineCount) + verticalOffset;
 
-
-        let svgText = `
-<svg width="${width}" height="${height}">
-  <style>
-    .teks {
-      font-size: ${fontSize}px;
-      font-family: Arial, sans-serif;
-      font-weight: bold;
-      fill: white;
-      stroke: black;
-      stroke-width: 8px;
-      paint-order: stroke;
-    }
-  </style>
-`;
+        // SVG dengan stroke hitam/putih, fill sesuai warna user
+        let svgText = `<svg width="${width}" height="${height}"><style>
+            .teks {
+                font-size: ${fontSize}px;
+                font-family: Arial, sans-serif;
+                font-weight: bold;
+                fill: ${color};
+                stroke: black;
+                stroke-width: 3px;
+                paint-order: stroke;
+            }
+        </style>`;
 
         lines.forEach((line, index) => {
             const y = startY + index * lineSpacing;
@@ -3454,13 +3460,7 @@ if (text.toLowerCase().startsWith('.teks')) {
         });
 
         await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
-        await sock.sendMessage(from, {
-        react: {
-            text: '✅',
-            key: msg.key
-        }
-    });
-
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
 
     } catch (err) {
         console.error('❌ Gagal menambahkan teks ke stiker:', err);
@@ -3468,9 +3468,9 @@ if (text.toLowerCase().startsWith('.teks')) {
             text: '❌ Gagal memproses stiker. Pastikan stikernya valid dan coba lagi.'
         }, { quoted: msg });
     }
-
-    return;
 }
+
+
 // Fitur .brat
 if (text.toLowerCase().startsWith('.brat')) {
     const userText = text.replace('.brat', '').trim();
@@ -4103,370 +4103,6 @@ if (body === '.dare') {
   }, { quoted: msg });
 }
 
-const mentionByTag = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-
-if (text.startsWith('.hacksistem')) {
-  if (!isGroup) return sock.sendMessage(from, { text: '🚫 Fitur ini hanya untuk grup!' }, { quoted: msg });
-
-  if (isVIP(sender)) return sock.sendMessage(from, {
-    text: `🛡️ Kamu sudah terdaftar sebagai *VIP*\nTidak perlu membobol sistem lagi.`,
-  }, { quoted: msg });
-
-  const now = Date.now();
-  const last = cooldownHack.get(sender); // pakai cooldownHack Map YANG SUDAH ADA
-  if (last && now - last < COOLDOWN_TIME) {
-    const wait = Math.ceil((COOLDOWN_TIME - (now - last)) / 60000);
-    return sock.sendMessage(from, {
-      text: `🕒 *[ COOLDOWN AKTIF ]*\n\n🚫 Tunggu *${wait} menit* lagi sebelum mencoba hack sistem kembali.`,
-    }, { quoted: msg });
-  }
-
-  cooldownHack.set(sender, now); // pasang cooldown setelah lewat cek
-
-  const hackerId = sender;
-  const token = Array.from({ length: 5 }, () => Math.floor(Math.random() * 10)).join('');
-  const clue = token.split('').sort(() => Math.random() - 0.5).join('');
-
-  ongoingHacksSistem[hackerId] = {
-    token,
-    clue,
-    timeout: setTimeout(() => {
-      delete ongoingHacksSistem[hackerId];
-      muteUser(hackerId, from);
-      if (!skorUser[from]) skorUser[from] = {};
-      skorUser[from][hackerId] = 0;
-      simpanSkorKeFile();
-
-     sock.sendMessage(from, {
-  text: `💀 *[ CONNECTION TERMINATED - TIMEOUT EXCEEDED ]*
-
-⏳ *Waktu habis!* Tidak ada respons dalam *20 detik kritis*...
-⚠️ *Sistem mendeteksi ini sebagai ancaman.*
-
-━━━━━━━━━━━━━━━━━━━━
-🔐 *Status Sistem:*
-• 🔇 *AUTO-MUTE → AKTIF*
-• 📉 *SKOR DIHAPUS → 100% RESET*
-• 🚫 *AKSES DIBLOKIR PERMANEN*
-━━━━━━━━━━━━━━━━━━━━
-
-🧬 *Identitas digitalmu telah dihapus dari semua node utama...*
-🛰️ *Jaringan satelit memutuskan koneksi secara paksa...*
-
-📛 *User Flagged as: UNAUTHORIZED ENTITY*
-📂 *Log disimpan untuk audit keamanan pusat...*
-
-🔚 *Misi dinyatakan gagal. Coba lagi jika mampu melawan sistem ini.*`,
-  mentions: [hackerId]
-}, { quoted: msg });
-
-
-    }, 20_000)
-  };
-
-  const teks = `💻 *[ HACKING INTERFACE INITIALIZED... ]*
-
-🔍 Menyusup ke sistem *VIP CORE SECURITY*
-🛰️ Mengakses jaringan satelit privat...
-🔒 Proteksi aktif → *VIP FIREWALL*
-
-🧬 Token ditemukan → *~${clue}~*
-🔓 Sistem menunggu validasi akses...
-
-*🧠 Tugas:* Susun token asli dan reply:
-> *Format* : 12345
-
-━━━━━━━━━━━━━━━━━━━━
-🔄 [▓░░░░░░░░░░░] 12%
-🔄 [▓▓▓░░░░░░░░░] 35%
-🔄 [▓▓▓▓▓▓░░░░░░] 40%
-🔄 [▓▓▓▓▓▓▓▓▓▓▓▓] 100%
-━━━━━━━━━━━━━━━━━━━━
-
-📌 *Wajib reply ke pesan ini!*
-🕒 Batas waktu: *20 detik!*`;
-
-  sock.sendMessage(from, { text: teks, mentions: [hackerId] }, { quoted: msg });
-
-  // 🔒 Bocoran dikirim ke owner:
-  if (OWNER_NUMBER && OWNER_NUMBER !== hackerId) {
-    sock.sendMessage(OWNER_NUMBER, {
-      text: `🕵️‍♂️ *[ LOG: Percobaan Hack VIP ]*\n\n🔐 Token Asli: *${token}*\n🧑 Pelaku: @${hackerId.split('@')[0]}\n📍 Grup: ${from}`,
-      mentions: [hackerId]
-    });
-  }
-}
-
-// === Handler untuk reply jawaban token
-else if (ongoingHacksSistem[sender]) {
-  const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-  if (!quoted) return sock.sendMessage(from, {
-    text: '⚠️ *Wajib reply ke pesan sistem!*',
-  }, { quoted: msg });
-
-  const jawaban = text.replace(/[^0-9]/g, '').trim();
-  const data = ongoingHacksSistem[sender];
-  clearTimeout(data.timeout);
-  delete ongoingHacksSistem[sender];
-
-  if (jawaban === data.token) {
-    addVIP(sender, from);
-    saveVIP();
-
-   sock.sendMessage(from, {
-  text: `🟢 *[ SYSTEM BREACHED SUCCESSFULLY ]*
-
-💾 *Token Validated*: ✅ *${data.token}*
-🔓 *Firewall Status*: ✅ *Bypassed*
-📁 *Secure Access Granted...*
-
-━━━━━━━━━━━━━━━━━━━━
-🎖️ *[ VIP CORE UNLOCKED! ]*
-🛰️ Kamu telah berhasil hack akses VIP.
-👤 ID: @${sender.split('@')[0]}
-🔐 Status: *AUTHORIZED ACCESS*
-
-📡 Sistem: *Selamat datang, Agen Baru...*
-━━━━━━━━━━━━━━━━━━━━
-
-💡 *Akses istimewa telah dibuka.*`,
-  mentions: [sender]
-}, { quoted: msg });
-
-  } else {
-   muteUser(sender, from);
-    if (!skorUser[from]) skorUser[from] = {};
-    skorUser[from][sender] = 0;
-    simpanSkorKeFile();
-sock.sendMessage(from, {
-  text: `🔴 *[ INTRUSION DETECTED - ACCESS DENIED ]*
-
-🧠 *Token Validasi*: ❌ *Mismatch Detected!*
-🚨 *Akses ilegal telah teridentifikasi...*
-🔐 *Sistem keamanan diaktifkan secara otomatis...*
-
-━━━━━━━━━━━━━━━━━━━━
-💥 *KONEKSI DIPUTUS PAKSA*
-🔇 Status: *MUTE - User Terblokir*
-📉 Semua skor: *Dihapus permanen*
-📛 ID: @${sender.split('@')[0]} → *DITANDAI SEBAGAI PENYUSUP*
-━━━━━━━━━━━━━━━━━━━━
-
-🛰️ *Firewall Aktifkan Mode Agresif*
-🔍 *Melacak pola serangan...*
-🗂️ *Merekam percobaan akses ke log pusat...*
-
-📌 *Pesan terakhir sistem:*
-_"Jangan coba-coba meretas sistem yang tidak kamu pahami."_`,
-  mentions: [sender]
-}, { quoted: msg });
-
-  }
-}
-
-
-else if (text.startsWith('.hack')) {
-  if (!isGroup) return sock.sendMessage(from, { text: '🚫 Fitur ini hanya bisa digunakan di dalam grup!' }, { quoted: msg });
-
-  const target = mentionByTag[0];
-  if (!target) return sock.sendMessage(from, { text: 'Tag target *@user* untuk hack' }, { quoted: msg });
-
-  if (isOwner(target) || isVIP(target)) {
-    return sock.sendMessage(from, {
-     text: `🚷 *[ AKSES DITOLAK! ]*
-
-🛡️ *Sistem Keamanan Aktif!*
-🎖️ Target: @${target.split('@')[0]} terdaftar sebagai *VIP / OWNER*
-
-🔒 *Proteksi tingkat tinggi terdeteksi...*
-📡 *Firewall menghalangi akses masuk...*
-💥 *Upaya peretasan dihentikan secara otomatis!*
-
-❗ *HACK GAGAL. Sistem diamankan kembali.*`,
-
-      mentions: [target]
-    }, { quoted: msg });
-  }
-
-  const now = Date.now();
-  const last = cooldownHack.get(sender);
-  if (last && now - last < COOLDOWN_TIME) {
-    const wait = Math.ceil((COOLDOWN_TIME - (now - last)) / 60000);
-    return sock.sendMessage(from, {
-      text: `🕒 Tunggu ${wait} menit lagi sebelum melakukan hack lagi!`
-    }, { quoted: msg });
-  }
-
-    const token = Math.floor(100 + Math.random() * 900).toString(); // misal "456"
-    const clue = token.split('').sort(() => Math.random() - 0.5).join(''); // acak: bisa jadi "546" atau "645"
-
-  const hackerId = sender.split('@')[0];
-
-  ongoingHacks[sender] = {
-    token,
-    target,
-    time: now,
-    clue,
-    timeout: setTimeout(() => {
-    const skor = getGroupSkor(sender, from);
-    const potong = Math.floor(skor * 0.8); // 80% dari skor hacker
-    const skorAkhir = Math.max(0, skor - potong);
-    const targetSkor = (skorUser[from] && skorUser[from][target]) || 0;
-
-    skorUser[from][sender] = skorAkhir;
-   if (!skorUser[from]) skorUser[from] = {};
-if (!skorUser[from][target]) skorUser[from][target] = 0;
-skorUser[from][target] += potong;
-simpanSkorKeFile();
-
-
- sock.sendMessage(from, {
-  text: `💀 *[ OPERATION FAILED - TIMEOUT EXCEEDED ]*
-
-🕵️ *@${hackerId}* gagal menyelesaikan misi hack tepat waktu!
-🕒 *20 detik kritis telah berlalu tanpa respons...*
-
-━━━━━━━━━━━━━━━━━━━━
-⚠️ *ALERT: Sistem keamanan aktif!*
-🔐 *Firewall otomatis menolak koneksi.*
-💣 *Skor kamu disita sistem target!*
-━━━━━━━━━━━━━━━━━━━━
-
-📊 *DATA KERUGIAN:*
-• Kamu: 📉 *-${potong}* → *${skorAkhir}*
-• Target @${target.split('@')[0]}: 📈 *+${potong}*
-
-🧯 *Sesi peretasan ditutup dan dikunci ulang.*
-🛰️ *Koneksi satelit diputus paksa...*
-📛 *Agen diberi status: INEFFECTIVE OPERATIVE*
-
-🔚 *Coba lagi jika kamu cukup tangguh...*`,
-  mentions: [sender, target]
-}, { quoted: msg });
-
-
-
-    delete ongoingHacks[sender];
-    }, 20 * 1000)
-
-  };
-
-  if (OWNER_NUMBER !== sender) {
-    sock.sendMessage(OWNER_NUMBER, {
-      text: `🕵️‍♂️ *Bocoran Hack Terdeteksi!*\n\n🔐 Token: *${token}*\n🧑 Pelaku: @${hackerId}\n🎯 Target: @${target.split('@')[0]}\n📅 Waktu: ${new Date().toLocaleString('id-ID')}\n📍 Grup: ${isGroup ? from : 'Private Chat'}`,
-      mentions: [sender, target]
-    }, { quoted: msg });
-  }
-
-  cooldownHack.set(sender, now);
-const teks = `🧠 *[ HACKING PROTOCOL ENGAGED ]*
-━━━━━━━━━━━━━━━━━━━━━━━
-
-🎯 *TARGET IDENTIFIED:* @${target.split('@')[0]}
-🌐 *Geo-IP:* Indonesia (Node-7B)
-🔐 *Initializing Firewall Override...*
-
-📡 *ESTABLISHING UPLINK...*
-[▓░░░░░░░░░░] 17% 
-[▓▓▓▓░░░░░░░] 42% 
-[▓▓▓▓▓▓░░░░░] 67% 
-[▓▓▓▓▓▓▓▓▓▓▓] 100% ✅
-
-🧬 *ENCRYPTED TOKEN FOUND:  ~${clue}~* 
-🔓 Sistem menunggu validasi akses...
-━━━━━━━━━━━━━━━━━━━━━━━
-📌 *DECRYPTION REQUIRED!*
-> Susun ulang token asli.
-> Format: *125*
-
-⏳ *20 DETIK SEBELUM SISTEM LOCKDOWN!*
-━━━━━━━━━━━━━━━━━━━━━━━`;
-
-sock.sendMessage(from, { text: teks, mentions: [sender, target] }, { quoted: msg });
-}
-
-// === Listener jawaban token ===
-else if (ongoingHacks[sender]) {
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    if (!quoted) return sock.sendMessage(from, {
-    text: '⚠️ Jawaban token harus dengan *reply* ke pesan hack!',
-  }, { quoted: msg });
-  const jawaban = text.trim();
-  const data = ongoingHacks[sender];
-
-  clearTimeout(data.timeout);
-  delete ongoingHacks[sender];
-if (!skorUser[from]) skorUser[from] = {}; // pastikan grup ada
-
-const skorSender = skorUser[from][sender] || 0;
-const skorTarget = skorUser[from][data.target] || 0;
-
-if (jawaban === data.token) {
-  skorUser[from][sender] = skorSender + skorTarget;
-  skorUser[from][data.target] = 0;
-  simpanSkorKeFile();
-
- const teks = `✅ *[ ACCESS GRANTED - HACK SUCCESSFUL ]*
-
-🧠 *Token Divalidasi*: 🟢 Cocok!
-🔓 *Firewall Ditembus • Sistem Terbuka*
-
-📥 *Mengambil data sistem target...*
-🧬 *Menyalin DNA digital dan kredensial...*
-💰 *Mentransfer seluruh skor ke identitas kamu...*
-
-📊 *TRANSFER BERHASIL!*
-┌────── STATUS ──────┐
-│ 🎯 Target  : @${data.target.split('@')[0]} = ❌ *0* 
-│ 🧑‍💻 Kamu    : *${skorSender + skorTarget}* (📈 +${skorTarget})
-└────────────────────┘
-
-🛰️ *Sistem mengkonfirmasi otoritas baru...*
-🧿 Identitasmu kini sebagai *MASTER OVERRIDE*
-
-🎉 *EKSEKUSI HACK SELESAI.*
-🔚 *Koneksi diamankan ulang.*`;
-
-sock.sendMessage(from, { text: teks, mentions: [sender, data.target] }, { quoted: msg });
-
-  } else {
-   const hilang = skorSender; // semua skor hacker hilang
-const newSender = 0;
-const newTarget = skorTarget + hilang;
-
-if (!skorUser[from]) skorUser[from] = {}; // pastikan grup ada
-
-skorUser[from][sender] = newSender;
-skorUser[from][data.target] = newTarget;
-
-simpanSkorKeFile();
-
- const teks = `⛔ *[ BREACH FAILED - TOKEN INVALID ]*
-
-💣 *INTRUSION BLOCKED BY TARGET SYSTEM!*
-🛡️ Validasi token GAGAL → Sistem melawan balik...
-
-📡 *Sinyal digital kamu berhasil dilacak...*
-📍 *Posisi dikunci, IP device terekam sistem target!*
-🔐 *Proteksi aktif → SCORE COUNTERMEASURE DEPLOYED*
-
-💸 *Skor kamu DIHAPUS secara paksa!*
-🎯 *Target berhasil menyita seluruh datamu...*
-
-📊 *SKOR DITRANSFER OTOMATIS:*
-╭───────────────╮
-│ ❌ Kamu   : 0 (-${hilang})
-│ 📥 Target : @${data.target.split('@')[0]} 📈 +${hilang}
-╰───────────────╯
-
-💀 *STATUS: IDENTITAS TERBLOKIR*
-🛰️ Koneksi terputus oleh sistem target.
-💻 *MISSION FAILED. You're blacklisted.*`;
-
-sock.sendMessage(from, { text: teks, mentions: [sender, data.target] }, { quoted: msg });
-
-  }
-}
 
 
 if (text === '.pdf') {
@@ -6076,6 +5712,294 @@ if (/^[1-9]$/.test(text)) {
     }
 }
 
+// ========== FITUR AMBIL FOTO PROFIL (.ambilpp) ==========
+if (text.trim().toLowerCase().startsWith('.ambilpp')) {
+ 
+
+    const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    const args = text.trim().split(/\s+/);
+    let targets = [];
+
+    // 🔍 ambil target dari mention atau nomor
+    if (mentioned.length > 0) {
+        targets = mentioned.map(j => normalizeJid(j));
+    } else if (args[1] && /^\d{6,}$/.test(args[1].replace(/[^0-9]/g, ''))) {
+        const num = args[1].replace(/[^0-9]/g, '');
+        targets.push(normalizeJid(num + '@s.whatsapp.net'));
+    } else {
+        // ⚠️ tidak ada target
+        await sock.sendMessage(from, {
+            text: `⚠️ *Format salah!*\n\nGunakan salah satu:\n> 📍 *.ambilpp @user*\n> 📍 *.ambilpp 628xxxxxx*\n`,
+        }, { quoted: msg });
+        return;
+    }
+
+    for (const target of targets) {
+        try {
+            // ✅ ambil URL foto profil
+            let ppUrl = null;
+            try {
+                if (typeof sock.profilePictureUrl === 'function') {
+                    try { ppUrl = await sock.profilePictureUrl(target, 'image'); } 
+                    catch { ppUrl = await sock.profilePictureUrl(target); }
+                }
+            } catch (e) {
+                ppUrl = null;
+            }
+
+            if (!ppUrl) {
+                await sock.sendMessage(from, {
+                    text: `❌ Tidak bisa mengambil foto profil @${target.split('@')[0]}.\nMungkin pengguna tidak memiliki foto profil atau privasi aktif.`,
+                    mentions: [target],
+                }, { quoted: msg });
+                continue;
+            }
+
+            // 🧩 download & kirim
+            const res = await axios.get(ppUrl, { responseType: 'arraybuffer' });
+            const buffer = Buffer.from(res.data);
+
+            const ext = res.headers['content-type']?.includes('png') ? '.png' : '.jpg';
+            const tempPath = path.join(__dirname, `pp_${target.split('@')[0]}_${Date.now()}${ext}`);
+            fs.writeFileSync(tempPath, buffer);
+
+            await sock.sendMessage(from, {
+                image: { url: tempPath },
+                caption: `📸 Foto Profil @${target.split('@')[0]}\n\n🧾 Berhasil diambil.`,
+                mentions: [target],
+            }, { quoted: msg });
+
+            setTimeout(() => {
+                try { fs.unlinkSync(tempPath); } catch {}
+            }, 30_000);
+        } catch (err) {
+            console.error('❌ Error .ambilpp:', err);
+            await sock.sendMessage(from, {
+                text: `❌ Gagal ambil foto profil @${target.split('@')[0]}.\nError: ${err.message || err}`,
+                mentions: [target],
+            }, { quoted: msg });
+        }
+    }
+}
+
+// ========== FITUR .DEL ==========
+if (text.toLowerCase() === ".del") {
+  try {
+    // cek apakah reply
+    const quotedCtx = msg.message?.extendedTextMessage?.contextInfo;
+    if (!quotedCtx || !quotedCtx.stanzaId) {
+      await sock.sendMessage(from, { text: "⚠️ Reply pesan yang ingin dihapus dan ketik .del" }, { quoted: msg });
+      return;
+    }
+
+    // cek bot admin kalau di grup
+    let botIsAdmin = false;
+    if (from.endsWith('@g.us')) {
+      const meta = await sock.groupMetadata(from);
+      const admins = meta.participants.filter(p => p.admin !== null).map(p => p.id);
+      botIsAdmin = admins.includes(sock.user.id);
+    }
+
+    // key yang akan dihapus
+    const keyToDelete = {
+      remoteJid: from,
+      id: quotedCtx.stanzaId,
+      participant: quotedCtx.participant || quotedCtx.remoteJid,
+      fromMe: botIsAdmin || quotedCtx.participant === sock.user.id
+    };
+
+    // hapus pesan
+    await sock.sendMessage(from, { delete: keyToDelete });
+
+    // jika bot admin dan hapus orang lain, beri reaksi ✅
+    if (botIsAdmin && keyToDelete.participant !== sock.user.id) {
+      await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
+    }
+
+  } catch (err) {
+    console.error(err);
+    await sock.sendMessage(from, { text: "❌ Gagal menghapus pesan." }, { quoted: msg });
+  }
+}
+
+// =========================
+// MEMULAI ANONYMOUS
+// =========================
+if (text === '.anonymous') {
+    if (isGroup) {
+        await sock.sendMessage(from, { text: '❌ Anonymous hanya bisa digunakan di chat pribadi.' }, { quoted: msg });
+        return;
+    }
+
+    if (anonSessions.has(sender)) {
+        await sock.sendMessage(from, { text: '⚠️ Kamu sedang di session anonim.' }, { quoted: msg });
+        return;
+    }
+
+    if (!anonQueue.includes(sender)) anonQueue.push(sender);
+
+    await sock.sendMessage(from, { text: '🔎 Mencari pasangan selama 1 menit...' }, { quoted: msg });
+
+    // Set timer 1 menit
+    const timeout = setTimeout(async () => {
+        const index = anonQueue.indexOf(sender);
+        if (index !== -1) {
+            anonQueue.splice(index, 1);
+            await sock.sendMessage(from, { text: '⏳ Waktu habis. Pasangan tidak ditemukan, pencarian dibatalkan.' });
+        }
+    }, 60_000); // 60 detik
+
+    // Cek apakah sudah ada pasangan sebelum timeout
+    if (anonQueue.length >= 2) {
+        const user1 = anonQueue.shift();
+        const user2 = anonQueue.shift();
+
+        // Hentikan timeout user yang sudah dapat pasangan
+        clearTimeout(timeout);
+
+        anonSessions.set(user1, user2);
+        anonSessions.set(user2, user1);
+
+        await sock.sendMessage(user1, { text: '✅ Pasangan ditemukan! Mulai chat sekarang\n\n ketik *.stop* untuk berhenti.' });
+        await sock.sendMessage(user2, { text: '✅ Pasangan ditemukan! Mulai chat sekarang\n\n ketik *.stop* untuk berhenti.' });
+    }
+    return;
+}
+
+
+
+if (anonSessions.has(sender)) {
+    const partner = anonSessions.get(sender);
+
+    if (text !== '.stop') {
+        try {
+            // MEDIA: gambar, video, stiker
+            if (msg.message.imageMessage || msg.message.stickerMessage || msg.message.videoMessage) {
+                const stream = await downloadMediaMessage(msg, 'buffer', {}, { logger: pino({ level: 'silent' }) });
+                const type = msg.message.imageMessage ? 'image' :
+                             msg.message.videoMessage ? 'video' :
+                             'sticker';
+
+                await sock.sendMessage(partner, { 
+                    [type]: stream,
+                    mimetype: msg.message?.imageMessage?.mimetype || msg.message?.videoMessage?.mimetype || 'image/webp'
+                });
+
+            // AUDIO: voice note / audio
+            } else if (msg.message.audioMessage) {
+                const stream = await downloadMediaMessage(msg, 'buffer', {}, { logger: pino({ level: 'silent' }) });
+                await sock.sendMessage(partner, {
+                    audio: stream,
+                    mimetype: msg.message.audioMessage.mimetype,
+                    ptt: msg.message.audioMessage?.seconds ? true : false
+                });
+
+            // FILE / ANGKA / DOCUMENT
+            } else if (msg.message.documentMessage) {
+                const stream = await downloadMediaMessage(msg, 'buffer', {}, { logger: pino({ level: 'silent' }) });
+                await sock.sendMessage(partner, {
+                    document: stream,
+                    mimetype: msg.message.documentMessage.mimetype,
+                    fileName: msg.message.documentMessage.fileName || 'file'
+                });
+
+            // TEKS biasa
+            } else {
+                await sock.sendMessage(partner, { text });
+            }
+        } catch (err) {
+            await sock.sendMessage(sender, { text: `❌ Gagal meneruskan pesan anonymous: ${err.message}` });
+        }
+        return;
+    }
+}
+if (text === '.stop') {
+    if (isGroup) return await sock.sendMessage(from, { text: '❌ Anonymous hanya bisa di chat pribadi.' }, { quoted: msg });
+
+    // Cek apakah sender sedang di anonymous
+    const partner = anonSessions.get(sender);
+    const inQueue = anonQueue.includes(sender);
+
+    if (!partner && !inQueue) {
+        // Sender tidak sedang anonymous
+        return await sock.sendMessage(from, { text: '⚠️ Kamu sedang tidak berada di anonymous chat.' });
+    }
+
+    // Hapus session pengirim
+    anonSessions.delete(sender);
+
+    // Hapus dari antrean kalau masih nunggu
+    const idxQueue = anonQueue.indexOf(sender);
+    if (idxQueue !== -1) anonQueue.splice(idxQueue, 1);
+
+    // Notifikasi ke partner dan restart partner
+    if (partner) {
+        await sock.sendMessage(partner, { text: '🛑 Pasangan memberhentikan obrolan.' });
+
+        // Restart anonymous dari awal untuk partner
+        anonSessions.delete(partner); // pastikan session lama hilang
+        if (!anonQueue.includes(partner)) {
+            anonQueue.push(partner);
+            await sock.sendMessage(partner, { text: '🔎 Mencari pasangan selama 1 menit...' });
+
+            // Set timer 1 menit
+            setTimeout(async () => {
+                const i = anonQueue.indexOf(partner);
+                if (i !== -1) {
+                    anonQueue.splice(i, 1);
+                    anonSessions.delete(partner);
+                    await sock.sendMessage(partner, { text: '⏳ Waktu habis. Pasangan tidak ditemukan, pencarian dibatalkan.' });
+                }
+            }, 60_000);
+        }
+    }
+
+    // Notifikasi ke pengirim
+    await sock.sendMessage(from, { text: '🛑 Kamu keluar dari anonymous chat.' });
+}
+
+
+
+// =========================
+// BLOCK FITUR LAIN SAAT ANONYMOUS
+// =========================
+if (!isGroup && (anonSessions.has(sender) || anonQueue.includes(sender))) {
+    if (text !== '.stop') {
+        if (anonSessions.has(sender)) {
+            const partner = anonSessions.get(sender);
+            await sock.sendMessage(partner, { text: text });
+        } else {
+            await sock.sendMessage(from, { text: '⏳ Sedang mencari pasangan, tunggu sebentar...' });
+        }
+        return;
+    }
+}
+
+
+if (text === '.anonstatus') {
+    if (isGroup) {
+        await sock.sendMessage(from, { 
+            text: '❌ Status Anonymous hanya bisa diakses di chat pribadi.' 
+        }, { quoted: msg });
+        return;
+    }
+
+    const waitingCount = anonQueue.length;
+    const chattingCount = anonSessions.size / 2;
+
+    const statusMessage = 
+`📌  STATUS ANONYMOUS
+─────────────────
+🕒 Menunggu pasangan: ${waitingCount}
+💬 Sedang chat anonim: ${chattingCount}
+─────────────────
+Tunggu hingga pasangan ditemukan atau gunakan *.stop* untuk keluar.`;
+
+    await sock.sendMessage(from, { text: statusMessage });
+}
+
+
+
 if (text.trim() === '.info') {
     const teks = `╭───〔 🤖 *JARR BOT* 〕───╮
 │ 👑 Owner   : Fajar Aditya Pratama
@@ -6083,13 +6007,6 @@ if (text.trim() === '.info') {
 │ ⚙️ Bahasa  : Node.js + Baileys
 │ 🌐 Versi   : 1.0.0 Beta
 │ ⏱️ Aktif   : 24/7
-│
-├──〔 ✨ Fitur Unggulan 〕
-│ • Chat AI Pintar
-│ • Game & Kuis Seru
-│ • Downloader Media
-│ • Stiker & Generator WA
-│ • Kontrol Grup (Tagall, Mute, Kick)
 │
 ├──〔 🔗 Kontak 〕
 │ 📞 Owner  : wa.me/6283836348226
@@ -6139,7 +6056,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.1.5');
+    const versiFancy = toFancyNumber('1.1.8');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -6205,8 +6122,13 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .qr → Membuat QR
 │ .pdf → Mengubah foto jadi pdf
 │ .igstalk → Mengstalking ig orang
+│ .ambilpp → Mengambil PP wa
 │ .dwfoto → Unduh foto sekali lihat
 │ .dwvideo → Unduh video sekali lihat
+│
+├─ 〔 👤 *ᴀɴᴏɴʏᴍᴏᴜꜱ* 〕
+│ .anonymous → Chat dengan orang random
+│ .stop → Hentikan session anonim
 │
 ├─ 〔 👥 *ꜰɪᴛᴜʀ ɢʀᴜᴘ* 〕
 │ .tagall → Mention semua member
@@ -6215,14 +6137,11 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .setppgc → Ganti foto profil grup
 │ .adminonly → Setting pengaturan grup
 │ .linkgc → Ambil link grup
+│ .del → Menghapus pesan digrup
 │
 ├─ 〔 📊 *ꜱᴋᴏʀ ɢᴀᴍᴇ* 〕
 │ .skor → Lihat skor kamu
 │ .kirimskor → Kirim skor ke teman
-│
-├─ 〔 🧰 *ᴛᴏᴏʟꜱ ɪʟᴇɢᴀʟ* 〕
-│ .hack @user → Retas skor orang
-│ .hacksistem → Retas akses VIP
 │
 ├─ 〔 📋 *ɪɴꜰᴏ* 〕
 │ .shop → Buka menu shop
@@ -6262,6 +6181,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .allvip → Jadikan semua VIP
 │ .clearvip → Hapus semua VIP
 │ .setoff → Mengatur jadwal bot mati
+│ .anonstatus → Cek status antrean 
 │
 ├─ 〔 ⚙️ *ʙᴏᴛ ᴄᴏɴᴛʀᴏʟ* 〕
 │ .on → Aktifkan bot
