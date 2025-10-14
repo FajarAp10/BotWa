@@ -1072,53 +1072,55 @@ const soalBendera = [
 
 
 const userCooldownMap = new Map(); // Map<JID, timestamp>
-
-
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys');
+  const { version, isLatest } = await fetchLatestBaileysVersion();
 
+  console.log(`🌀 Menggunakan versi WhatsApp Web: ${version.join('.')}${isLatest ? ' (terbaru)' : ''}`);
 
-const sock = makeWASocket({
-  auth: state,
-  printQRInTerminal: true,
-  defaultQueryTimeoutMs: undefined
-});
+  const sock = makeWASocket({
+    auth: state,
+    version,
+    logger: pino({ level: 'silent' }),
+    printQRInTerminal: false,
+    defaultQueryTimeoutMs: undefined
+  });
 
-//Cek fitur kadaluarsa setiap 10 detik
-setInterval(() => {
-    cekKadaluarsa(sock); // Kirim pesan expired
-}, 10 * 1000);
-  sock.ev.on('creds.update', saveCreds);
-
-    let wasDisconnected = false;
-
-sock.ev.on('connection.update', async (update) => {
+  sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-        console.log('📸 Scan QR untuk login...');
-        qrcode.generate(qr, { small: true });
+      console.log('📱 Scan QR berikut untuk login:');
+      qrcode.generate(qr, { small: true });
+    }
+
+    if (connection === 'open') {
+      console.log('✅ Bot berhasil terhubung ke WhatsApp!');
     }
 
     if (connection === 'close') {
-        const code = lastDisconnect?.error?.output?.statusCode || 0;
-        const shouldReconnect = code !== DisconnectReason.loggedOut;
-        wasDisconnected = true;
+      const code = lastDisconnect?.error?.output?.statusCode || 0;
+      const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
+      const shouldReconnect = code !== DisconnectReason.loggedOut;
 
-        console.log('🔌 Terputus. Alasan:', code);
-        if (shouldReconnect) {
-            console.log('🔄 Reconnecting in 5 seconds...');
-            setTimeout(() => startBot(), 5000);
-        } else {
-            console.log('❌ Bot logout, scan ulang.');
-        }
+      console.log(`⚠️ Koneksi terputus (${reason || code}).`);
 
-    } else if (connection === 'open') {
-        console.log('✅ Bot aktif!');
-        wasDisconnected = false;
-
+      if (shouldReconnect) {
+        console.log('🔄 Mencoba koneksi ulang dalam 5 detik...');
+        setTimeout(startBot, 5000);
+      } else {
+        console.log('❌ Bot logout. Hapus folder "auth_info_baileys" lalu jalankan ulang untuk scan baru.');
+      }
     }
-});
+  });
+
+  sock.ev.on('creds.update', saveCreds);
+
+  // Jalankan fungsi cek fitur kadaluarsa setiap 10 detik
+  setInterval(() => {
+    cekKadaluarsa(sock);
+  }, 10 * 1000);
+
 
 
     // Anti spam cooldown
