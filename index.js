@@ -7,7 +7,6 @@ const {
 } = require('@whiskeysockets/baileys');
 
 const pino = require('pino');
-  
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode'); 
@@ -5377,9 +5376,6 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         return;
     }
 }
-// ==============================
-// 📌 FITUR CEPAT REPLY (Owner/VIP)
-// ==============================
 
 function randomString(length = 6) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
