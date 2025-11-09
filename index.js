@@ -17,15 +17,25 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const FormData = require("form-data");
-const moment = require('moment-timezone');
 const sharp = require('sharp');
+const moment = require('moment-timezone');
 const cheerio = require("cheerio")
 const fetch = require('node-fetch')
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
 const AdmZip = require('adm-zip');
 const gtts = require('google-tts-api');
 const mime = require('mime-types');
 const { PDFDocument } = require('pdf-lib');
 const { Document, Packer, Paragraph, TextRun } = require('docx');
+
+
+let historySiapa = {};
+let anonQueue = [];
+let anonSessions = new Map(); 
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+
 const pdfSessions = new Map(); 
 const antiLinkGroups = new Map();
 const antiStickerGroups = new Map();
@@ -39,10 +49,6 @@ const sesiTebakBendera = new Map();
 const sesiPilihGrup = new Map();
 const sesiUmumkan = new Map();
 
-let historySiapa = {};
-let anonQueue = [];
-let anonSessions = new Map(); 
-
 
 const pdfLimit = new Map(); 
 const MAX_PDF = 1;
@@ -50,7 +56,7 @@ const PDF_COOLDOWN = 10 * 60 * 60 * 1000;
 const pdfAksesSementara = new Map(); 
 
 const bratLimit = new Map(); 
-const MAX_BRAT = 3;
+const MAX_BRAT = 2;
 const BRAT_COOLDOWN = 10*  60 * 60 * 1000; 
 const bratAksesSementara = new Map(); 
 
@@ -61,7 +67,7 @@ const waifuAksesSementara = new Map();
 
 // Atur limit & cooldown
 const soundLimit = new Map(); // user -> { count, time }
-const MAX_SOUND = 1; // maksimal 3x
+const MAX_SOUND = 2; // maksimal 3x
 const SOUND_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
 const soundAksesSementara = new Map(); // user -> expireTime
 
@@ -80,6 +86,11 @@ const igstalkLimit = new Map();
 const MAX_IGSTALK = 1 // Max untuk pengguna biasa
 const IGSTALK_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
 const igstalkAksesSementara = new Map(); // Beli akses sementara
+
+const voiceLimit = new Map();
+const MAX_VOICE = 3;
+const VOICE_COOLDOWN = 10 * 60 * 60 * 1000; // 10 jam
+const voiceAksesSementara = new Map();
 
   const OWNER_NUMBER = '6283836348226@s.whatsapp.net'
   const PROXY_NUMBER = '6291100802986027@s.whatsapp.net'; 
@@ -462,10 +473,79 @@ async function getAIReply(text) {
         return response.data.choices[0].message.content.trim();
     } catch (e) {
         console.error('❌ Error AI:', e.response?.data || e.message);
-        return 'Maaf, saya tidak bisa menjawab sekarang.';
+        return 'Maaf, AI belum siap dipakai.';
     }
 }
 
+
+async function processVoiceEffect(inputBuffer, effectType, effectName) {
+    return new Promise((resolve, reject) => {
+        const tempInput = `./temp_input_${Date.now()}.ogg`;
+        const tempOutput = `./temp_output_${Date.now()}.opus`;
+        
+        // Save buffer ke file
+        fs.writeFileSync(tempInput, inputBuffer);
+
+        let command = ffmpeg(tempInput)
+            .audioCodec('libopus')
+            .audioFrequency(48000)
+            .audioChannels(1)
+            .audioBitrate('64k')
+            .outputOptions(['-application voip']);
+
+        // Terapkan efek berdasarkan type
+        switch(effectType) {
+            case 'high':
+                command.audioFilters('asetrate=48000*1.4,atempo=0.85');
+                break;
+            case 'chipmunk':
+                command.audioFilters('asetrate=48000*1.6,atempo=0.9');
+                break;
+            case 'robot':
+                command.audioFilters('afftfilt=real=\'hypot(re,im)*sin(0)\':imag=\'hypot(re,im)*cos(0)\':win_size=512:overlap=0.75');
+                break;
+            case 'duck':
+                command.audioFilters('vibrato=f=6:d=0.6');
+                break;
+            case 'pelo':
+                command.audioFilters('atempo=0.85,asetrate=48000*0.8');
+                break;
+            case 'slow':
+                command.audioFilters('atempo=0.7');
+                break;
+            case 'fast':
+                command.audioFilters('atempo=1.5');
+                break;
+            case 'echo':
+                command.audioFilters('aecho=0.8:0.7:500:0.5');
+                break;
+            case 'reverse':
+                command.audioFilters('areverse');
+                break;
+            default:
+                command.audioFilters('asetrate=48000*1.3,atempo=0.9');
+        }
+
+        command
+            .on('end', () => {
+                console.log('Voice processing finished');
+                // ✅ DELETE INPUT FILE SEKARANG!
+                try { 
+                    fs.unlinkSync(tempInput); 
+                    console.log('✅ Deleted input:', tempInput);
+                } catch (e) {}
+                resolve(tempOutput);
+            })
+            .on('error', (err) => {
+                console.error('FFmpeg error:', err);
+                // ✅ DELETE BOTH FILES KALAU ERROR!
+                try { fs.unlinkSync(tempInput); } catch (e) {}
+                try { fs.unlinkSync(tempOutput); } catch (e) {}
+                reject(err);
+            })
+            .save(tempOutput);
+    });
+}
 const truthList = [
   "Apa hal paling memalukan yang pernah kamu lakukan di depan umum?",
   "Siapa nama mantan yang masih suka kamu stalk?",
@@ -1342,6 +1422,7 @@ if (text === '.shop') {
 │ • .belibrat ➜ Akses *.brat*
 │ • .beliwaifu  ➜ Akses *.waifu*
 │ • .belisound  ➜ Akses *.sound*
+│ • .beliubahsuara  ➜ Akses *.ubahsuara*
 │ • .belihitamkan  ➜ Akses *.hitamkan*
 │
 │ 👑 *FITUR VIP PERMANEN*
@@ -1499,6 +1580,43 @@ if (text === '.belibrat') {
     });
 }
 
+if (text === '.beliubahsuara') {
+    const harga = 2500;
+    const durasiMs = 5 * 60 * 1000; // 5 menit
+    const skor = getGroupSkor(sender, from);
+
+    if (isOwner(sender) || isVIP(sender, from)) {
+        return sock.sendMessage(from, {
+            text: '✅ Kamu sudah punya akses permanen ke fitur *.ubahsuara*.'
+        });
+    }
+
+    const now = Date.now();
+    const expired = voiceAksesSementara.get(sender);
+
+    if (expired && now < expired) {
+        const sisaMenit = Math.ceil((expired - now) / 60000);
+        return sock.sendMessage(from, {
+            text: `✅ Kamu masih punya akses sementara ke *.ubahsuara* selama *${sisaMenit} menit* lagi.`
+        });
+    }
+
+    if (skor < harga) {
+        return sock.sendMessage(from, {
+            text: `❌ *Skor Tidak Cukup!*\n\n📛 Butuh *${harga} poin* untuk beli akses *.ubahsuara*\n🎯 Skor kamu: *${skor} poin*\n\n🔥 Main dan kumpulkan skor!`
+        });
+    }
+
+    addGroupSkor(sender, from, -harga);
+    simpanSkorKeFile();
+
+    const waktuBerakhir = moment(now + durasiMs).tz('Asia/Jakarta').format('HH:mm:ss');
+    voiceAksesSementara.set(sender, now + durasiMs);
+
+    return sock.sendMessage(from, {
+        text: `✅ *Akses Sementara Berhasil Dibeli!*\n\n📌 Akses *.ubahsuara* aktif selama *5 menit*\n💰 Harga: *${harga} poin*\n🕒 Berlaku sampai: *${waktuBerakhir} WIB*\n\nGunakan selama waktu berlaku! 🚀`
+    });
+}
 
 // ===== FITUR BELI AKSES SEMENTARA .BELIIGSTALK =====
 if (text === '.beliigstalk') {
@@ -3092,85 +3210,6 @@ if (text.startsWith('.ttmp3')) {
 
 
 
-if (text.startsWith('.ytmp3')) {
-    const url = text.split(' ')[1];
-    if (!url) {
-        await sock.sendMessage(from, { text: '❗ Masukkan link YouTube\nContoh: *.ytmp3 https://youtu.be/xxxx*' });
-        return;
-    }
-
-    // kasih reaction ⏳
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        // ambil info video
-        const info = await ytdl.getInfo(url);
-        const title = info.videoDetails.title;
-
-        // download langsung ke buffer (audio only)
-        const stream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
-        let chunks = [];
-        for await (const chunk of stream) {
-            chunks.push(chunk);
-        }
-        const buffer = Buffer.concat(chunks);
-
-        // kirim audio ke WhatsApp (bisa langsung diputar)
-        await sock.sendMessage(from, {
-            audio: buffer,
-            mimetype: 'audio/mpeg',
-            ptt: false // true = jadi VN (voice note style), false = audio biasa
-        }, { quoted: msg });
-
-        // ganti reaction jadi ✅
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (err) {
-        console.error('Error .ytmp3:', err);
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-        await sock.sendMessage(from, { text: '❌ Gagal download audio.' }, { quoted: msg });
-    }
-}
-if (text.startsWith('.ytmp4')) {
-    const url = text.split(' ')[1];
-    if (!url) {
-        await sock.sendMessage(from, { text: '❗ Masukkan link YouTube\nContoh: *.ytmp4 https://youtu.be/xxxx*' });
-        return;
-    }
-
-    // kasih reaction ⏳
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        // ambil info video
-        const info = await ytdl.getInfo(url);
-        const title = info.videoDetails.title;
-
-        // download video (video+audio, kualitas sedang biar ga lama)
-        const stream = ytdl(url, { quality: '18' }); // 18 = mp4 360p (cukup cepat)
-        let chunks = [];
-        for await (const chunk of stream) {
-            chunks.push(chunk);
-        }
-        const buffer = Buffer.concat(chunks);
-
-        // kirim ke WhatsApp sebagai video
-        await sock.sendMessage(from, {
-            video: buffer,
-            mimetype: 'video/mp4',
-            caption: `🎬 ${title}`
-        }, { quoted: msg });
-
-        // ganti reaction jadi ✅
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (err) {
-        console.error('Error .ytmp4:', err);
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-        await sock.sendMessage(from, { text: '❌ Gagal download video.' }, { quoted: msg });
-    }
-}
-
 
 if (text.startsWith('.wm')) {
     const tiktokUrl = text.split(' ')[1];
@@ -3224,6 +3263,8 @@ if (text.startsWith('.wm')) {
 
     return;
 }
+
+
 if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.sticker') {
     console.log(`📥 Permintaan stiker dari ${from}...`);
 
@@ -3300,6 +3341,115 @@ if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.s
     } catch (err) {
         console.error("❌ Gagal membuat stiker:", err);
         await sock.sendMessage(from, { text: "❌ Gagal membuat stiker. Pastikan file valid (gambar saja)." }, { quoted: msg });
+    }
+
+    return;
+}
+// ========== FITUR .STIKERCUSTOM ==========
+if (text.trim().toLowerCase().startsWith('.stikercustom')) {
+    console.log(`🎨 Permintaan stiker custom dari ${from}...`);
+
+    // ✅ CEK APAKAH VIP ATAU OWNER
+    if (!isVIP(sender, from) && !isOwner(sender)) {
+        await sock.sendMessage(from, { 
+            text: "❌ Fitur ini khusus untuk *VIP*!\n\n💡 Ketik *.shop* untuk beli akses VIP" 
+        }, { quoted: msg });
+        return;
+    }
+
+    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const imageDirect = msg.message?.imageMessage;
+    const imageQuoted = quoted?.imageMessage;
+
+    let messageForMedia = null;
+    if (imageDirect) {
+        messageForMedia = msg;
+    } else if (imageQuoted) {
+        messageForMedia = { ...msg, message: { imageMessage: imageQuoted } };
+    }
+
+    if (!messageForMedia) {
+        await sock.sendMessage(from, { text: "❌ Balas/kirim gambar dengan .stikercustom <pack>|<author>" }, { quoted: msg });
+        return;
+    }
+
+    // Parse custom pack & author
+    const args = text.replace('.stikercustom', '').trim().split('|').map(arg => arg.trim());
+    
+    // VALIDASI: Kalo cuma ".stikercustom" doang tanpa pack name
+    if (args.length === 0 || (args.length === 1 && args[0] === '')) {
+        await sock.sendMessage(from, { 
+            text: "❌ Kasih nama pack-nya!\nContoh: .stikercustom NamaPack | Author" 
+        }, { quoted: msg });
+        return;
+    }
+    
+    let customPack = args[0];
+    let customAuthor = '';
+    
+    if (args.length >= 2) {
+        customAuthor = args[1];
+    }
+
+    try {
+        await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+        console.log(`📥 Mengunduh media untuk stiker custom: "${customPack}"${customAuthor ? ` by "${customAuthor}"` : ''}...`);
+        const mediaBuffer = await downloadMediaMessage(messageForMedia, "buffer", {}, { logger: console });
+
+        const sharp = require("sharp");
+        const { Sticker } = require("wa-sticker-formatter");
+
+        let finalBuffer = mediaBuffer;
+        if (mediaBuffer.length > 1024 * 1024) {
+            console.log("⚠️ File > 1MB, kompresi...");
+            finalBuffer = await sharp(mediaBuffer)
+                .resize({ width: 512, height: 512, fit: 'inside', withoutEnlargement: true })
+                .webp({ quality: 80 })
+                .toBuffer();
+        }
+
+        const { width, height } = await sharp(finalBuffer).metadata();
+        const size = Math.max(width, height);
+
+        const resizedBuffer = await sharp(finalBuffer)
+            .resize({
+                width: size,
+                height: size,
+                fit: 'contain',
+                background: { r: 0, g: 0, b: 0, alpha: 0 }
+            })
+            .webp({ lossless: true })
+            .toBuffer();
+
+        const sticker = new Sticker(resizedBuffer, {
+            type: 'FULL',
+            pack: customPack,
+            author: customAuthor,
+            quality: 100
+        });
+
+        // ✅ kirim stiker custom
+        const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+        console.log(`✅ Stiker custom berhasil: "${customPack}"${customAuthor ? ` by "${customAuthor}"` : ''}`);
+
+        // 🚫 kalau antistiker aktif → hapus lagi
+        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+            try {
+                await sock.sendMessage(from, { delete: sent.key });
+                console.log("🗑️ Stiker custom dihapus (antistiker aktif).");
+            } catch (e) {
+                console.error("❌ Gagal hapus stiker custom:", e);
+            }
+        }
+
+    } catch (err) {
+        console.error("❌ Gagal membuat stiker custom:", err);
+        await sock.sendMessage(from, { 
+            text: "❌ Gagal membuat stiker custom. Pastikan file valid (gambar saja)." 
+        }, { quoted: msg });
     }
 
     return;
@@ -3503,7 +3653,7 @@ if (text.toLowerCase().startsWith('.brat')) {
                 if (record.count >= MAX_BRAT) {
                     const sisa = Math.ceil((BRAT_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.brat* 3x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibrat* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.brat* tanpa batas waktu.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.brat* ${MAX_BRAT}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibrat* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.brat* tanpa batas waktu.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -4241,7 +4391,7 @@ if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu "))
           if (record.count >= MAX_WAIFU) {
             const sisa = Math.ceil((WAIFU_COOLDOWN - (now - record.time)) / 60000);
             await sock.sendMessage(from, {
-              text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.waifu* 1x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi.\n\n💡 *Tips:* Jadi *VIP* atau beli akses *.beliwaifu* biar unlimited.`
+              text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.waifu* ${MAX_WAIFU}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi.\n\n💡 *Tips:* Jadi *VIP* atau beli akses *.beliwaifu* biar unlimited.`
             }, { quoted: msg });
             await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
             return;
@@ -4664,7 +4814,7 @@ if (text.toLowerCase().startsWith('.sound')) {
                 if (record.count >= MAX_SOUND) {
                     const sisa = Math.ceil((SOUND_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Sound Tercapai*\n\nKamu hanya bisa memakai *.sound* 1x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belisound* 5 menit.\n\n💡 *Tips:* Beli VIP agar bisa memakai *.sound* tanpa batas.`,
+                        text: `🚫 *Limit Sound Tercapai*\n\nKamu hanya bisa memakai *.sound* ${MAX_SOUND}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belisound* 5 menit.\n\n💡 *Tips:* Beli VIP agar bisa memakai *.sound* tanpa batas.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -4810,7 +4960,7 @@ if (text.toLowerCase().startsWith('.hitamkan')) {
                 if (record.count >= MAX_HITAMKAN) {
                     const sisa = Math.ceil((HITAMKAN_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.hitamkan* 1x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belihitamkan* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.hitamkan* tanpa batas waktu.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.hitamkan* ${MAX_HITAMKAN}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belihitamkan* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.hitamkan* tanpa batas waktu.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -5081,7 +5231,7 @@ if (text.toLowerCase().startsWith('.spotify') || text.toLowerCase().startsWith('
                 if (record.count >= MAX_SPOTIFY) {
                     const sisa = Math.ceil((SPOTIFY_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.spotify* 2x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belispotify* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.spotify* tanpa batas waktu.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.spotify* ${MAX_SPOTIFY}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belispotify* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.spotify* tanpa batas waktu.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -5204,7 +5354,7 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
                 if (record.count >= MAX_IGSTALK) {
                     const sisa = Math.ceil((IGSTALK_COOLDOWN - (now - record.time)) / 60000);
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.igstalk* 1x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses sementara *.beliigstalk* 5 menit.\n\n💡 *Tips:* Jadilah VIP atau Owner agar bisa memakai *.igstalk* tanpa batas.`,
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.igstalk* ${MAX_IGSTALK}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses sementara *.beliigstalk* 5 menit.\n\n💡 *Tips:* Jadilah VIP atau Owner agar bisa memakai *.igstalk* tanpa batas.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -6002,6 +6152,98 @@ Tunggu hingga pasangan ditemukan atau gunakan *.stop* untuk keluar.`;
     await sock.sendMessage(from, { text: statusMessage });
 }
 
+if (text.startsWith('.ubahsuara')) {
+    const args = text.split(' ');
+    const effect = args[1]?.toLowerCase();
+    
+    const validEffects = {
+        'cewek': 'high', 'perempuan': 'high', 'chipmunk': 'chipmunk',
+        'robot': 'robot', 'bebek': 'duck', 'maling': 'pelo',
+        'slow': 'slow', 'fast': 'fast', 'echo': 'echo', 'reverse': 'reverse'
+    };
+
+    if (!effect || !validEffects[effect]) {
+        return sock.sendMessage(from, {
+            text: `🎤 *VOICE CHANGER* 🎤\n\n❓ *Cara pakai:*\nReply voice note dengan:\n.ubahsuara [efek]\n\n🎭 *Efek tersedia:*\n• cewek / perempuan\n• chipmunk\n• robot\n• bebek\n• maling\n• slow\n• fast\n• echo\n• reverse\n\n💡 *Contoh:* .ubahsuara cewek`
+        });
+    }
+
+    // Cek apakah reply voice note
+    const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const voiceMessage = quotedMsg?.audioMessage || quotedMsg?.pttMessage;
+
+    if (!voiceMessage) {
+        return sock.sendMessage(from, { text: '❌ Reply voice note yang mau diubah suaranya!' });
+    }
+
+    // ===== CEK LIMIT & AKSES =====
+    const isBypass = isOwner(sender) || isVIP(sender, from);
+    const now = Date.now();
+    const aksesVoice = voiceAksesSementara.get(sender);
+    const isTemporaryActive = aksesVoice && now < aksesVoice;
+
+    if (!(isBypass || isTemporaryActive)) {
+        const record = voiceLimit.get(sender);
+        if (record) {
+            if (now - record.time < VOICE_COOLDOWN) {
+                if (record.count >= MAX_VOICE) {
+                    const sisa = Math.ceil((VOICE_COOLDOWN - (now - record.time)) / 60000);
+                    await sock.sendMessage(from, {
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.ubahsuara* ${MAX_VOICE}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.beliubahsuara* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.ubahsuara* tanpa batas waktu.`,
+                        mentions: [sender]
+                    }, { quoted: msg });
+                    return;
+                } else record.count++;
+            } else {
+                voiceLimit.set(sender, { count: 1, time: now });
+            }
+        } else {
+            voiceLimit.set(sender, { count: 1, time: now });
+        }
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        // Download voice note
+        const voiceBuffer = await downloadMediaMessage(
+            { 
+                message: { audioMessage: voiceMessage },
+                key: { remoteJid: from, id: msg.message.extendedTextMessage.contextInfo.stanzaId }
+            },
+            'buffer',
+            {},
+            { logger: console }
+        );
+
+        // Process voice
+        const outputPath = await processVoiceEffect(voiceBuffer, validEffects[effect], effect);
+        
+        // Kirim voice note
+        await sock.sendMessage(from, {
+            audio: fs.readFileSync(outputPath),
+            mimetype: 'audio/ogg; codecs=opus',
+            ptt: true,
+            caption: `🎤 Suara diubah jadi: *${effect}*`
+        }, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        // ✅ DELETE OUTPUT FILE SETELAH TERKIRIM!
+        setTimeout(() => {
+            try { 
+                fs.unlinkSync(outputPath); 
+                console.log('✅ Deleted output:', outputPath);
+            } catch (e) {}
+        }, 5000); // 5 detik aja
+
+    } catch (error) {
+        console.error('Voice changer error:', error);
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, { text: '❌ Gagal memproses voice note. Coba lagi!' });
+    }
+}
+
 
 
 if (text.trim() === '.info') {
@@ -6060,14 +6302,14 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.2.0');
+    const versiFancy = toFancyNumber('1.2.5');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
     const readmore = String.fromCharCode(8206).repeat(4001); // WA Read More
 
     await sock.sendMessage(from, {
-        image: { url: './logo.jpg' },
+        image: { url: './logo.png' },
         caption:
 `ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ
 
@@ -6107,10 +6349,9 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 ├─ 〔 🎵 *ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
 │ .spotify → Cari lagu Spotify
 │ .sound → Ubah teks jadi suara
+│ .ubahsuara → Ubah suara unik
 │ .wm → Unduh tanpa watermax
 │ .ttmp3 → Unduh mp3 TikTok
-│ .ytmp3 → Unduh mp3 Youtube
-│ .ytmp4 → Unduh mp4 Youtube
 │
 ├─ 〔 🖌️ *ᴍᴀᴋᴇʀ / ᴄʀᴇᴀᴛᴏʀ* 〕
 │ .stiker → Ubah gambar jadi stiker
@@ -6132,6 +6373,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │
 ├─ 〔 👤 *ᴀɴᴏɴʏᴍᴏᴜꜱ* 〕
 │ .anonymous → Chat orang random
+│ .anonstatus → Cek status antrean 
 │ .stop → Hentikan session anonim
 │
 ├─ 〔 👥 *ꜰɪᴛᴜʀ ɢʀᴜᴘ* 〕
@@ -6177,6 +6419,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .listvip → Daftar VIP
 │ .listskor → Daftar SKOR
 │ .umumkan → Pengumuman di Grup
+│ .stikercutom → Buat stiker custom
 │
 ├─ 〔 🔞 *ᴠɪᴘ ꜱᴘᴇᴄɪᴀʟ* 〕
 │ .waifux → Random waifu NSFW
@@ -6185,7 +6428,6 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .allvip → Jadikan semua VIP
 │ .clearvip → Hapus semua VIP
 │ .setoff → Mengatur jadwal bot mati
-│ .anonstatus → Cek status antrean 
 │
 ├─ 〔 ⚙️ *ʙᴏᴛ ᴄᴏɴᴛʀᴏʟ* 〕
 │ .on → Aktifkan bot
