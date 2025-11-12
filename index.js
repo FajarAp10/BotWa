@@ -71,11 +71,6 @@ const MAX_SOUND = 2; // maksimal 3x
 const SOUND_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
 const soundAksesSementara = new Map(); // user -> expireTime
 
-const hitamkanLimit = new Map();
-const MAX_HITAMKAN = 1;
-const HITAMKAN_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
-const hitamkanAksesSementara = new Map();
-
 const spotifyLimit = new Map();
 const MAX_SPOTIFY = 2;
 const SPOTIFY_COOLDOWN = 10 * 60 * 60 * 1000; // 1 jam
@@ -287,6 +282,38 @@ function unmuteUser(userId, groupId) {
     }
 }
 
+// ==================== BANNED SYSTEM ====================
+const bannedFilePath = path.join(__dirname,'banned.json');
+let bannedUsers = {};
+
+try {
+  if (fs.existsSync(bannedFilePath)) {
+    const raw = fs.readFileSync(bannedFilePath, 'utf8');
+    bannedUsers = raw ? JSON.parse(raw) : {};
+  } else {
+    fs.writeFileSync(bannedFilePath, JSON.stringify({}, null, 2));
+  }
+} catch (e) {
+  console.error('Error loading banned.json:', e);
+}
+
+function saveBanned() {
+  fs.writeFileSync(bannedFilePath, JSON.stringify(bannedUsers, null, 2));
+}
+
+function isBanned(jid) {
+  return !!bannedUsers[jid];
+}
+
+function banUser(jid) {
+  bannedUsers[jid] = true;
+  saveBanned();
+}
+
+function unbanUser(jid) {
+  delete bannedUsers[jid];
+  saveBanned();
+}
 
 
 const grupPath = './grupAktif.json';
@@ -1271,13 +1298,20 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
         console.log(`📩 Pesan dari ${from}: ${text}`);
 
         if (isGroup && !grupAktif.has(from)) {
-            grupAktif.set(from, false); // Otomatis aktif saat grup baru
+            grupAktif.set(from, false); 
             simpanGrupAktif();
         }
 
         if (isGroup && !grupAktif.get(from) && text.trim() !== '.on') {
-            return; // Masih bisa .off manual
+            return;
         }
+        const isBannedGlobal = 
+        (bannedUsers["ban-pribadi"] && bannedUsers["ban-pribadi"][normalizeJid(sender)]) ||
+        (bannedUsers["ban-grup"] && bannedUsers["ban-grup"][normalizeJid(sender)]);
+
+        if (isBannedGlobal) return; // 🚫 Bot diam total
+
+
 
 if (msg.message?.imageMessage) {
     const imageSenderKey = isGroup ? `${from}:${sender}` : sender;
@@ -1423,7 +1457,6 @@ if (text === '.shop') {
 │ • .beliwaifu  ➜ Akses *.waifu*
 │ • .belisound  ➜ Akses *.sound*
 │ • .beliubahsuara  ➜ Akses *.ubahsuara*
-│ • .belihitamkan  ➜ Akses *.hitamkan*
 │
 │ 👑 *FITUR VIP PERMANEN*
 │ 💰 Harga: *10.000 poin*
@@ -1690,38 +1723,6 @@ if (text === '.belisound') {
     });
 }
 
-// ===== BELI AKSES HITAMKAN SEMENTARA =====
-if (text === '.belihitamkan') {
-    const harga = 2500;
-    const durasiMs = 5 * 60 * 1000; // 5 menit
-    const skor = getGroupSkor(sender, from);
-
-    if (isOwner(sender) || isVIP(sender, from)) {
-        return sock.sendMessage(from, { text: '✅ Kamu sudah punya akses permanen ke fitur *.hitamkan*.' });
-    }
-
-    const now = Date.now();
-    const expired = hitamkanAksesSementara.get(sender);
-
-    if (expired && now < expired) {
-        const sisaMenit = Math.ceil((expired - now) / 60000);
-        return sock.sendMessage(from, { text: `✅ Kamu masih punya akses sementara ke *.hitamkan* selama *${sisaMenit} menit* lagi.` });
-    }
-
-    if (skor < harga) {
-        return sock.sendMessage(from, { text: `❌ *Skor Tidak Cukup!*\n\n📛 Butuh *${harga} poin* untuk beli akses *.hitamkan*\n🎯 Skor kamu: *${skor} poin*\n\n🔥 Main dan kumpulkan skor!` });
-    }
-
-    addGroupSkor(sender, from, -harga);
-    simpanSkorKeFile();
-
-    const waktuBerakhir = moment(now + durasiMs).tz('Asia/Jakarta').format('HH:mm:ss');
-    hitamkanAksesSementara.set(sender, now + durasiMs);
-
-    return sock.sendMessage(from, {
-        text: `✅ *Akses Sementara Berhasil Dibeli!*\n\n📌 Akses *.hitamkan* aktif selama *5 menit*\n💰 Harga: *${harga} poin*\n🕒 Berlaku sampai: *${waktuBerakhir} WIB*\n\nGunakan selama waktu berlaku! 🚀`
-    });
-}
 
 // ===== BELI AKSES SPOTIFY =====
 if (text === '.belispotify') {
@@ -2417,6 +2418,148 @@ if (body.startsWith('.clearvip') && isGroup) {
 
   await sock.sendMessage(from, { text: teks }, { quoted: msg });
 }
+// ========== FITUR BAN (Owner di pribadi, VIP & Owner di grup) ==========
+if (body.startsWith('.ban')) {
+  const args = body.trim().split(/\s+/);
+
+  // 💬 MODE 1: Chat pribadi (Owner saja)
+  if (!isGroup && isOwner(sender)) {
+    if (!args[1]) {
+      await sock.sendMessage(from, { text: '❌ Format salah!\nGunakan: *.ban 62xxxx*' }, { quoted: msg });
+      return;
+    }
+
+    const nomor = args[1].replace(/[^0-9]/g, '');
+    const target = normalizeJid(nomor + '@s.whatsapp.net');
+    const groupId = 'ban-pribadi';
+
+    if (!bannedUsers[groupId]) bannedUsers[groupId] = {};
+    if (bannedUsers[groupId][target]) {
+      await sock.sendMessage(from, { text: `⚠️ @${target.split('@')[0]} sudah dibanned.`, mentions: [target] }, { quoted: msg });
+      return;
+    }
+
+    bannedUsers[groupId][target] = true;
+    saveBanned();
+
+    // 📩 Chat korban hanya jika dari pribadi
+    await sock.sendMessage(target, { text: '🚫 Kamu telah dibanned oleh *Owner*. Tidak bisa menggunakan bot ini.' });
+
+    await sock.sendMessage(from, { text: `✅ @${target.split('@')[0]} berhasil dibanned.`, mentions: [target] }, { quoted: msg });
+    return;
+  }
+
+  // 👥 MODE 2: Grup (Owner & VIP bisa)
+  if (isGroup) {
+    if (!isOwner(sender) && !isVIP(sender, from)) {
+      await sock.sendMessage(from, { text: '❌ Hanya VIP atau Owner yang bisa menggunakan perintah ini di grup.' }, { quoted: msg });
+      return;
+    }
+
+    const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+    if (!mentioned || mentioned.length === 0) {
+      await sock.sendMessage(from, { text: '❌ Tag pengguna yang ingin diban.\nContoh: *.ban @user*' }, { quoted: msg });
+      return;
+    }
+
+    const target = normalizeJid(mentioned[0]);
+    const groupId = 'ban-grup';
+
+    if (!bannedUsers[groupId]) bannedUsers[groupId] = {};
+    if (bannedUsers[groupId][target]) {
+      await sock.sendMessage(from, { text: `⚠️ @${target.split('@')[0]} sudah dibanned.`, mentions: [target] }, { quoted: msg });
+      return;
+    }
+
+        // 🔒 Cegah ban Owner
+    if (isOwner(target) || ALIAS_OWNER[target]) {
+    await sock.sendMessage(from, { text: '❌ Tidak bisa ban *Owner*!' }, { quoted: msg });
+    return;
+    }
+
+    // 🤖 Cegah ban Bot
+    if (target === BOT_NUMBER || ALIAS_BOT[target]) {
+    await sock.sendMessage(from, { text: '❌ Tidak bisa ban *Bot*!' }, { quoted: msg });
+    return;
+    }
+
+
+
+    bannedUsers[groupId][target] = true;
+    saveBanned();
+
+    // 🚫 Jangan kirim pesan ke korban kalau diban di grup
+    await sock.sendMessage(from, { text: `✅ @${target.split('@')[0]} berhasil dibanned.`, mentions: [target] }, { quoted: msg });
+    return;
+  }
+
+  // 🚫 Selain dua mode di atas
+  await sock.sendMessage(from, { text: '❌ Perintah ini hanya bisa digunakan oleh Owner di pribadi atau VIP/Owner di grup.' }, { quoted: msg });
+}
+
+// ========== FITUR UNBAN (Owner di pribadi, VIP & Owner di grup) ==========
+if (body.startsWith('.unban')) {
+  const args = body.trim().split(/\s+/);
+
+  // 💬 MODE 1: Chat pribadi (Owner saja)
+  if (!isGroup && isOwner(sender)) {
+    if (!args[1]) {
+      await sock.sendMessage(from, { text: '❌ Format salah!\nGunakan: *.unban 62xxxx*' }, { quoted: msg });
+      return;
+    }
+
+    const nomor = args[1].replace(/[^0-9]/g, '');
+    const target = normalizeJid(nomor + '@s.whatsapp.net');
+    const groupId = 'ban-pribadi';
+
+    if (!bannedUsers[groupId] || !bannedUsers[groupId][target]) {
+      await sock.sendMessage(from, { text: `⚠️ @${target.split('@')[0]} tidak dibanned.`, mentions: [target] }, { quoted: msg });
+      return;
+    }
+
+    delete bannedUsers[groupId][target];
+    saveBanned();
+
+    // Notifikasi korban (karena ini ban-pribadi)
+    try { await sock.sendMessage(target, { text: '✅ Kamu telah di-unban oleh Owner dan bisa menggunakan bot pribadi lagi.' }); } catch {}
+
+    await sock.sendMessage(from, { text: `✅ @${target.split('@')[0]} berhasil di-unban.`, mentions: [target] }, { quoted: msg });
+    return;
+  }
+
+  // 👥 MODE 2: Grup (Owner & VIP bisa)
+  if (isGroup) {
+    if (!isOwner(sender) && !isVIP(sender, from)) {
+      await sock.sendMessage(from, { text: '❌ Hanya VIP atau Owner yang bisa menggunakan perintah ini di grup.' }, { quoted: msg });
+      return;
+    }
+
+    const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+    if (!mentioned || mentioned.length === 0) {
+      await sock.sendMessage(from, { text: '❌ Tag pengguna yang ingin di-unban.\nContoh: *.unban @user*' }, { quoted: msg });
+      return;
+    }
+
+    const target = normalizeJid(mentioned[0]);
+    const groupId = 'ban-grup';
+
+    if (!bannedUsers[groupId] || !bannedUsers[groupId][target]) {
+      await sock.sendMessage(from, { text: `⚠️ @${target.split('@')[0]} tidak dibanned (mode grup).`, mentions: [target] }, { quoted: msg });
+      return;
+    }
+
+    delete bannedUsers[groupId][target];
+    saveBanned();
+
+    // Jangan kirim pesan pribadi ke korban (sesuai permintaan)
+    await sock.sendMessage(from, { text: `✅ @${target.split('@')[0]} berhasil di-unban (mode grup).`, mentions: [target] }, { quoted: msg });
+    return;
+  }
+
+  // 🚫 Selain dua mode di atas
+  await sock.sendMessage(from, { text: '❌ Perintah ini hanya bisa digunakan oleh Owner di pribadi atau VIP/Owner di grup.' }, { quoted: msg });
+}
+
 
 
 // 🔒 KICK – Hanya untuk VIP
@@ -2681,6 +2824,7 @@ if (text.startsWith('.mute')) {
 
     console.log('📁 File muted.json sekarang:', JSON.stringify(mutedUsers, null, 2));
 }
+
 
 if (text.startsWith('.unmute')) {
     if (!from.endsWith('@g.us')) {
@@ -4924,78 +5068,6 @@ if (text.startsWith('.fakereply')) {
     return;
   }
 }
-// ===== HANDLER HITAMKAN =====
-if (text.toLowerCase().startsWith('.hitamkan')) {
-    console.log(`📥 Permintaan hitamkan dari ${from}...`);
-
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const imageDirect = msg.message?.imageMessage;
-    const imageQuoted = quoted?.imageMessage;
-
-    // Tentukan pesan yang akan dipakai media
-    let messageForMedia = null;
-    if (imageDirect) {
-        messageForMedia = msg;
-    } else if (imageQuoted) {
-        messageForMedia = { ...msg, message: { imageMessage: imageQuoted } };
-    }
-
-    if (!messageForMedia) {
-        await sock.sendMessage(from, { text: '❌ Balas atau kirim gambar dengan perintah *.hitamkan*' }, { quoted: msg });
-        return;
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    // ===== CEK LIMIT / VIP / OWNER =====
-    const isBypass = isOwner(sender) || isVIP(sender, from);
-    const now = Date.now();
-    const aksesHitam = hitamkanAksesSementara.get(sender);
-    const isTemporaryActive = aksesHitam && now < aksesHitam;
-
-    if (!(isBypass || isTemporaryActive)) {
-        const record = hitamkanLimit.get(sender);
-        if (record) {
-            if (now - record.time < HITAMKAN_COOLDOWN) {
-                if (record.count >= MAX_HITAMKAN) {
-                    const sisa = Math.ceil((HITAMKAN_COOLDOWN - (now - record.time)) / 60000);
-                    await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.hitamkan* ${MAX_HITAMKAN}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belihitamkan* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.hitamkan* tanpa batas waktu.`,
-                        mentions: [sender]
-                    }, { quoted: msg });
-                    return;
-                } else record.count++;
-            } else {
-                hitamkanLimit.set(sender, { count: 1, time: now });
-            }
-        } else {
-            hitamkanLimit.set(sender, { count: 1, time: now });
-        }
-    }
-
-    // ===== PROSES HITAMKAN =====
-    try {
-        const media = await downloadMediaMessage(messageForMedia, 'buffer');
-
-        const payload = { imageData: media.toString("base64"), filter: "hitam" };
-        const res = await axios.post("https://negro.consulting/api/process-image", payload);
-
-        if (res.data?.status === "success" && res.data.processedImageUrl) {
-            const imgRes = await axios.get(res.data.processedImageUrl, { responseType: "arraybuffer" });
-            const buffer = Buffer.from(imgRes.data);
-
-            await sock.sendMessage(from, { image: buffer, caption: "✅ Awokawokwkwk ireng" }, { quoted: msg });
-            await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-            console.log(`✅ Gambar berhasil dihitamkan untuk ${from}`);
-        } else {
-            throw new Error("API tidak mengembalikan gambar.");
-        }
-    } catch (err) {
-        console.error("❌ Gagal memproses gambar:", err);
-        await sock.sendMessage(from, { text: '❌ Gagal memproses gambar.' }, { quoted: msg });
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-    }
-}
 
 // 📌 FITUR .qc (Quote Sticker)
 if (text.toLowerCase().startsWith('.qc')) {
@@ -5095,47 +5167,6 @@ if (text.toLowerCase().startsWith('.qc')) {
         console.error(error);
         await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
         await sock.sendMessage(from, { text: '❌ Terjadi kesalahan saat membuat stiker.' }, { quoted: msg });
-    }
-}
-if (text.toLowerCase().startsWith('.srtdarksistem')) {
-    const args = text.split(' ').slice(1)
-    const nama = args.join(' ')
-
-    if (!nama) {
-        return sock.sendMessage(from, {
-            text: `Kirim perintah *.srtdarksistem [teks]*\nContoh: *.srtdarksistem Hilman*`
-        }, { quoted: msg })
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } })
-
-    try {
-        const url = `https://api.sxtream.xyz/maker/yapping?name=${encodeURIComponent(nama)}`
-        const res = await fetch(url)
-        if (!res.ok) throw '❌ Gagal mengambil data dari API.'
-
-        const buffer = await res.buffer()
-
-        // 📌 Simpan pesan kiriman bot
-        const sentMsg = await sock.sendMessage(from, {
-            image: buffer,
-            caption: `🗣️ Sertifikat Dark Sistem by *${nama}*`
-        }, { quoted: msg })
-
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } })
-
-        // 🔒 Antifoto aktif → hapus foto bot juga
-        if (from.endsWith('@g.us') && antiFotoGroups.has(from)) {
-            await sock.sendMessage(from, { delete: sentMsg.key })
-            console.log(`🗑️ Foto .srtdarksistem dihapus (antifoto aktif) di grup ${from}`)
-        }
-
-    } catch (e) {
-        console.error(e)
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } })
-        await sock.sendMessage(from, {
-            text: '❌ Terjadi kesalahan saat mengambil gambar.'
-        }, { quoted: msg })
     }
 }
 
@@ -5865,10 +5896,8 @@ if (/^[1-9]$/.test(text)) {
         return;
     }
 }
-
 // ========== FITUR AMBIL FOTO PROFIL (.ambilpp) ==========
 if (text.trim().toLowerCase().startsWith('.ambilpp')) {
- 
 
     const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
     const args = text.trim().split(/\s+/);
@@ -5889,6 +5918,14 @@ if (text.trim().toLowerCase().startsWith('.ambilpp')) {
     }
 
     for (const target of targets) {
+        // 🚫 Cegah ambil foto profil owner (kecuali oleh owner sendiri)
+        if (target === OWNER_NUMBER && sender !== OWNER_NUMBER) {
+            await sock.sendMessage(from, {
+                text: `🚫 Tidak dapat mengambil foto profil *Owner!*`,
+            }, { quoted: msg });
+            continue;
+        }
+
         try {
             // ✅ ambil URL foto profil
             let ppUrl = null;
@@ -5926,6 +5963,7 @@ if (text.trim().toLowerCase().startsWith('.ambilpp')) {
             setTimeout(() => {
                 try { fs.unlinkSync(tempPath); } catch {}
             }, 30_000);
+
         } catch (err) {
             console.error('❌ Error .ambilpp:', err);
             await sock.sendMessage(from, {
@@ -5935,6 +5973,7 @@ if (text.trim().toLowerCase().startsWith('.ambilpp')) {
         }
     }
 }
+
 
 // ========== FITUR .DEL ==========
 if (text.toLowerCase() === ".del") {
@@ -6302,7 +6341,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.2.5');
+    const versiFancy = toFancyNumber('1.2.6');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -6359,8 +6398,6 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .toimg → Stiker ke gambar
 │ .teks → Tambah teks di stiker
 │ .brat → Membuat stiker kata
-│ .srtdarksistem → Sertifikat Dark Sistem
-│ .hitamkan → Membuat wajah hitam
 │
 ├─ 〔 🖼️ *ᴍᴇᴅɪᴀ* 〕
 │ .waifu → Waifu random
@@ -6402,6 +6439,8 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .kick → Kick user
 │ .mute → Mute user
 │ .unmute → Buka mute
+│ .ban → Ban user 
+│ .unban → Buka ban
 │ .antilink → Dilarang kirim link
 │ .antifoto → Dilarang kirim foto
 │ .antistiker → Dilarang kirim stiker
@@ -6419,7 +6458,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .listvip → Daftar VIP
 │ .listskor → Daftar SKOR
 │ .umumkan → Pengumuman di Grup
-│ .stikercutom → Buat stiker custom
+│ .stikercustom → Buat stiker custom
 │
 ├─ 〔 🔞 *ᴠɪᴘ ꜱᴘᴇᴄɪᴀʟ* 〕
 │ .waifux → Random waifu NSFW
