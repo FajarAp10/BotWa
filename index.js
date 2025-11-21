@@ -769,7 +769,7 @@ async function getAIReply(sender, text, fromParam) {
         
         if (error.response?.status === 429) {
             // 🔥 AUTO RETRY SETELAH 2 DETIK
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 5000));
             return await getAIReply(sender, text, fromParam); // Retry
         }
         
