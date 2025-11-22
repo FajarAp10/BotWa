@@ -6703,6 +6703,8 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │
 ├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
 │ .ai <pertanyaan> → Tanya ke AI
+│ .clear → Reset obrolan
+
 │
 ├─ 〔 🎵 *ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
 │ .spotify → Cari lagu Spotify
