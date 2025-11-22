@@ -709,7 +709,7 @@ async function getAIReply(sender, text, fromParam) {
                         model: model,
                         messages: chatMemory[memoryId],
                         temperature: 0.9, // 🔥 Naikin dikit biar lebih kreatif
-                        max_tokens: 10000,
+                        max_tokens: 8000,
                         stream: false
                     },
                     {
