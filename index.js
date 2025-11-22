@@ -782,44 +782,79 @@ async function getAIReply(sender, text, fromParam) {
             content: text
         });
 
-        // 🔥 PAKAI MODEL: meta-llama/llama-4-maverick-17b-128e-instruct
-        const response = await axios.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-                model: "meta-llama/llama-4-maverick-17b-128e-instruct",
-                messages: chatMemory[memoryId],
-                temperature: 0.8,
-                max_tokens: 4000,
-                stream: false
-            },
-            {
-                headers: {
-                    "Authorization": `Bearer ${GROQ_API_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                timeout: 30000
+        // 🔥 MODEL YANG DIREKOMENDASIKAN (PILIH SALAH SATU)
+        const preferredModels = [
+            "groq/compound",           // No limit tokens, 70K TPM
+            "llama-3.1-8b-instant",    // 14.4K requests/hari
+            "groq/compound-mini",      // No limit tokens, 70K TPM  
+            "meta-llama/llama-4-maverick-17b-128e-instruct" // fallback
+        ];
+
+        let lastError = null;
+        
+        // 🔥 ROTATE MODEL JIKA ADA ERROR
+        for (const model of preferredModels) {
+            try {
+                console.log(`🔄 Trying model: ${model}`);
+                
+                const response = await axios.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    {
+                        model: model,
+                        messages: chatMemory[memoryId],
+                        temperature: 0.9, // 🔥 Naikin dikit biar lebih kreatif
+                        max_tokens: 4000,
+                        stream: false
+                    },
+                    {
+                        headers: {
+                            "Authorization": `Bearer ${GROQ_API_KEY}`,
+                            "Content-Type": "application/json"
+                        },
+                        timeout: 25000 // 🔥 Kurangi timeout
+                    }
+                );
+
+                let reply = response.data.choices[0].message.content.trim();
+
+                chatMemory[memoryId].push({
+                    role: "assistant", 
+                    content: reply
+                });
+
+                console.log(`✅ Success with model: ${model}`);
+                return reply;
+
+            } catch (error) {
+                console.log(`❌ Model ${model} failed:`, error.response?.status);
+                lastError = error;
+                
+                // 🔥 JANGAN AUTO-RETRY MODEL YANG SAMA, LANGSUNG COBA MODEL LAIN
+                if (error.response?.status === 429) {
+                    console.log(`⏳ Rate limit on ${model}, trying next model...`);
+                    continue; // Langsung coba model berikutnya
+                }
+                
+                // 🔥 UNTUK ERROR LAIN, TUNGGU SEBENTAR SEBELUM COBA MODEL LAIN
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
-        );
+        }
 
-        let reply = response.data.choices[0].message.content.trim();
-
-        chatMemory[memoryId].push({
-            role: "assistant", 
-            content: reply
-        });
-
-        return reply;
+        // 🔥 JIKA SEMUA MODEL GAGAL
+        throw lastError;
 
     } catch (error) {
-        console.error('GROQ ERROR:', error.response?.status, error.message);
+        console.error('💥 ALL MODELS FAILED:', error.message);
         
-        if (error.response?.status === 429) {
-            // 🔥 AUTO RETRY SETELAH 10 DETIK
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            return await getAIReply(sender, text, fromParam);
-        }
+        // 🔥 FALLBACK KE RANDOM TEXT JIKA SEMUA ERROR
+        const fallbackReplies = [
+            "Lagi sibuk nih, coba lagi ya...",
+            "Server lagi penuh, tunggu sebentar!",
+            "Bentar, lagi proses...",
+            "Coba ulangi pesannya..."
+        ];
         
-        return "❌ Limit! Hubungi Owner";
+        return fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
     }
 }
 
