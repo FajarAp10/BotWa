@@ -6660,7 +6660,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.2.6');
+    const versiFancy = toFancyNumber('1.2.8');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
