@@ -4797,6 +4797,8 @@ if (text === '.pdfgo') {
 
     return;
 }
+
+
 // ========== FITUR .WAIFU ==========
 if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu ")) {
   try {
@@ -4849,39 +4851,6 @@ if (text.toLowerCase() === ".waifu" || text.toLowerCase().startsWith(".waifu "))
   }
 }
 
-// ========== FITUR .WAIFUX ==========
-if (text.toLowerCase() === ".waifux" || text.toLowerCase().startsWith(".waifux ")) {
-  try {
-    if (!isVIP(sender, from) && sender !== OWNER_NUMBER) {
-      await sock.sendMessage(from, {
-        text: '🚫 Perintah *.waifux* hanya untuk pengguna *VIP* / *Owner*!'
-      }, { quoted: msg });
-      return;
-    }
-
-    await sock.sendMessage(from, { react: { text: "⏳", key: msg.key } });
-
-    const res = await axios.get("https://api.waifu.pics/nsfw/waifu");
-
-    const sentMsg = await sock.sendMessage(from, {
-      image: { url: res.data.url },
-      caption: "🔞 Your *NSFW Waifu*"
-    }, { quoted: msg });
-
-    await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
-    // 🔒 Antifoto aktif → hapus
-    if (from.endsWith('@g.us') && antiFotoGroups.has(from)) {
-      await sock.sendMessage(from, { delete: sentMsg.key });
-      console.log(`🗑️ Foto waifux dihapus (antifoto aktif) di grup ${from}`);
-    }
-
-  } catch (err) {
-    console.error(err);
-    await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
-    await sock.sendMessage(from, { text: "❌ Gagal mengambil waifux, coba lagi." }, { quoted: msg });
-  }
-}
 
 // ========== FITUR .QR ==========
 if (text.startsWith('.qr')) {
@@ -6740,9 +6709,6 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .listskor → Daftar SKOR
 │ .umumkan → Pengumuman di Grup
 │ .stikercustom → Buat stiker custom
-│
-├─ 〔 🔞 *ᴠɪᴘ ꜱᴘᴇᴄɪᴀʟ* 〕
-│ .waifux → Random waifu NSFW
 │
 ├─ 〔 👑 *ᴏᴡɴᴇʀ* 〕
 │ .allvip → Jadikan semua VIP
