@@ -64,6 +64,13 @@ const MAX_BRAT = 2;
 const BRAT_COOLDOWN = 10*  60 * 60 * 1000; 
 const bratAksesSementara = new Map(); 
 
+const bratVidLimit = new Map();
+const MAX_BRATVID = 2; // max pakai bratvid per cooldown
+const BRATVID_COOLDOWN = 10 * 60 * 60 * 1000; // 10 jam cooldown
+const bratVidAksesSementara = new Map(); // akses sementara 5 menit, kalau mau pakai belibrat
+
+
+
 const waifuLimit = new Map();
 const MAX_WAIFU = 1; // max 3 kali
 const WAIFU_COOLDOWN = 10 * 60 * 60 * 1000; // 10 jam
@@ -1892,6 +1899,44 @@ if (text === '.belibrat') {
     });
 }
 
+if (text === '.belibratvid') {
+    const harga = 2500;
+    const durasiMs = 5 * 60 * 1000; 
+    const skor = getGroupSkor(sender, from);
+
+    if (isOwner(sender) || isVIP(sender)) {
+        return sock.sendMessage(from, {
+            text: '✅ Kamu sudah punya akses permanen ke fitur *.bratvid*.'
+        });
+    }
+
+    const now = Date.now();
+    const expired = bratVidAksesSementara.get(sender);
+
+    if (expired && now < expired) {
+        const sisaMenit = Math.ceil((expired - now) / 60000);
+        return sock.sendMessage(from, {
+            text: `✅ Kamu masih punya akses sementara ke *.bratvid* selama *${sisaMenit} menit* lagi.`
+        });
+    }
+
+    if (skor < harga) {
+        return sock.sendMessage(from, {
+            text: `❌ *Skor Tidak Cukup!*\n\n📛 Butuh *${harga} poin* untuk beli akses *.bratvid*\n🎯 Skor kamu: *${skor} poin*\n\n🔥 Main dan kumpulkan skor!`
+        });
+    }
+
+    addGroupSkor(sender, from, -harga);
+    simpanSkorKeFile();
+
+    const waktuBerakhir = moment(now + durasiMs).tz('Asia/Jakarta').format('HH:mm:ss');
+    bratVidAksesSementara.set(sender, now + durasiMs);
+
+    return sock.sendMessage(from, {
+        text: `✅ *Akses Sementara Berhasil Dibeli!*\n\n📌 Akses *.bratvid* aktif selama *5 menit*\n💰 Harga: *${harga} poin*\n🕒 Berlaku sampai: *${waktuBerakhir} WIB*\n\nGunakan selama waktu berlaku! 🚀`
+    });
+}
+
 if (text === '.beliubahsuara') {
     const harga = 2500;
     const durasiMs = 5 * 60 * 1000; // 5 menit
@@ -3687,6 +3732,133 @@ if (text.startsWith('.wm')) {
     return;
 }
 
+// Fitur .ytmp3
+if (text.toLowerCase().startsWith('.ytmp3 ')) {
+    const url = text.split(' ')[1];
+    if (!url) {
+        await sock.sendMessage(from, { text: '❌ Contoh: *.ytmp3 https://youtu.be/...*' });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const api = `https://api.jerexd666.wongireng.my.id/download/ytmp3?url=${encodeURIComponent(url)}`;
+        const res = await fetch(api);
+        const data = await res.json();
+
+        if (!data.status) throw new Error("API gagal");
+
+        const dl = data.result.download.download_url;
+        const title = data.result.download.title || "audio";
+
+        // Fetch file mp3
+        const audioBuffer = Buffer.from(await (await fetch(dl)).arrayBuffer());
+
+        await sock.sendMessage(
+            from,
+            {
+                audio: audioBuffer,
+                mimetype: 'audio/mp4', // mp3 kadang error, audio/mp4 LANCAR
+                fileName: `${title}.mp3`
+            },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (e) {
+        console.log(e);
+        await sock.sendMessage(from, { text: '❌ Gagal mengambil MP3.' });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+
+    return;
+}
+
+// Fitur .ytmp4
+if (text.toLowerCase().startsWith('.ytmp4 ')) {
+    const url = text.split(' ')[1];
+    if (!url) {
+        await sock.sendMessage(from, { text: '❌ Contoh: *.ytmp4 https://youtu.be/...*' });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const api = `https://api.jerexd666.wongireng.my.id/download/ytmp4?url=${encodeURIComponent(url)}`;
+        const res = await fetch(api);
+        const data = await res.json();
+
+        if (!data.status) throw new Error("API gagal");
+
+        const dl = data.result.download_url;
+        const title = data.result.title || "video";
+
+        // Fetch file mp4
+        const videoBuffer = Buffer.from(await (await fetch(dl)).arrayBuffer());
+
+        await sock.sendMessage(
+            from,
+            {
+                video: videoBuffer,
+                mimetype: 'video/mp4',
+                caption: `🎬 *${title}*`
+            },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (e) {
+        console.log(e);
+        await sock.sendMessage(from, { text: '❌ Gagal mengambil video.' });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+
+    return;
+}
+
+// Fitur .ipchat
+if (text.toLowerCase().startsWith('.ipchat ')) {
+    const pesan = text.slice(8).trim();
+    if (!pesan) {
+        await sock.sendMessage(from, { text: '❗ Contoh: *.ipchat halo dunia*' });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const api = `https://api.jerexd666.wongireng.my.id/imagecreator/iqc?text=${encodeURIComponent(pesan)}`;
+
+        // Langsung ambil gambar (buffer)
+        const imgRes = await fetch(api);
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+
+        // Kirim gambar ke WA
+        await sock.sendMessage(
+            from,
+            {
+                image: buffer,
+                caption: `📱 *iPhone Chat*\n"${pesan}"`
+            },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (e) {
+        console.log(e);
+        await sock.sendMessage(from, { text: '❌ Gagal membuat gambar iPhone Chat.' });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+
+    return;
+}
+
+
 
 if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.sticker') {
     console.log(`📥 Permintaan stiker dari ${from}...`);
@@ -3768,6 +3940,8 @@ if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.s
 
     return;
 }
+
+
 // ========== FITUR .STIKERCUSTOM ==========
 if (text.trim().toLowerCase().startsWith('.stikercustom')) {
     console.log(`🎨 Permintaan stiker custom dari ${from}...`);
@@ -4051,8 +4225,81 @@ if (text.toLowerCase().startsWith('.teks')) {
 }
 
 
+if (text.toLowerCase().startsWith('.bratvid')) {
+    const userText = text.replace('.bratvid', '').trim();
+    if (!userText) {
+        await sock.sendMessage(from, {
+            text: '❌ Contoh: *.bratvid kamu kemana*'
+        }, { quoted: msg });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    const isBypass = isOwner(sender) || isVIP(sender, from);
+    const now = Date.now();
+    const aksesBratVid = bratVidAksesSementara.get(sender);
+    const isTemporaryActive = aksesBratVid && now < aksesBratVid;
+
+    // limit per user
+    if (!(isBypass || isTemporaryActive)) {
+        const record = bratVidLimit.get(sender);
+        if (record) {
+            if (now - record.time < BRATVID_COOLDOWN) {
+                if (record.count >= MAX_BRATVID) {
+                    const sisa = Math.ceil((BRATVID_COOLDOWN - (now - record.time)) / 60000);
+                    await sock.sendMessage(from, {
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.bratvid* ${MAX_BRATVID}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibratvid* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.bratvid* tanpa batas waktu.`,
+                        mentions: [sender]
+                    }, { quoted: msg });
+                    return;
+                } else record.count++;
+            } else {
+                bratVidLimit.set(sender, { count: 1, time: now });
+            }
+        } else {
+            bratVidLimit.set(sender, { count: 1, time: now });
+        }
+    }
+
+    try {
+        // 🔥 API BRAT-VIDEO
+        const apiURL = `https://api.jerexd666.wongireng.my.id/imagecreator/brat-video?text=${encodeURIComponent(userText)}`;
+        const res = await fetch(apiURL);
+        if (!res.ok) throw new Error("Gagal mengambil data dari API brat-video.");
+
+        const arrayBuf = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuf);
+
+        // buat stiker animasi
+        const sticker = new Sticker(buffer, {
+            pack: 'bratvid',
+            author: 'Jarr',
+            type: StickerTypes.FULL_ANIMATED, // pastikan pakai animasi
+            quality: 100
+        });
+
+        const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        // jika grup pakai anti-sticker → hapus
+        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+            await hapusPesan(from, sent);
+            console.log("🗑️ Stiker .bratvid bot ikut dihapus (antistiker aktif).");
+        }
+
+    } catch (err) {
+        console.error("Error .bratvid API:", err);
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, {
+            text: "❌ Gagal mengambil data dari API brat-video."
+        }, { quoted: msg });
+    }
+}
+
 // Fitur .brat
 if (text.toLowerCase().startsWith('.brat')) {
+    if (text.toLowerCase().startsWith('.bratvid')) return;
     const userText = text.replace('.brat', '').trim();
     if (!userText) {
         await sock.sendMessage(from, {
@@ -4090,12 +4337,18 @@ if (text.toLowerCase().startsWith('.brat')) {
     }
 
     try {
-        const url = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(userText)}&delay=1000`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Gagal mengambil data dari API.");
 
-        const buffer = await res.buffer();
+        // 🔥 API BARU FIX
+        const apiURL = `https://api.jerexd666.wongireng.my.id/imagecreator/brat-image?text=${encodeURIComponent(userText)}`;
 
+        const res = await fetch(apiURL);
+        if (!res.ok) throw new Error("Gagal mengambil data dari API baru.");
+
+        // 🔥 API OUTPUT GAMBAR → harus pakai arrayBuffer()
+        const arrayBuf = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuf);
+
+        // buat stiker
         const sticker = new Sticker(buffer, {
             pack: 'brat',
             author: 'Jarr',
@@ -4103,21 +4356,84 @@ if (text.toLowerCase().startsWith('.brat')) {
             quality: 100
         });
 
-        // kirim stiker
         const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
         await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
 
-        // ✅ langsung cek: kalau antistiker aktif → hapus stiker bot
+        // jika grup menggunakan antistiker → hapus
         if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
             await hapusPesan(from, sent);
             console.log("🗑️ Stiker .brat bot ikut dihapus (antistiker aktif).");
         }
 
     } catch (err) {
-        console.error("Error:", err);
+        console.error("Error .brat API baru:", err);
         await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, {
+            text: "❌ Gagal mengambil data dari API baru."
+        }, { quoted: msg });
     }
 }
+
+
+
+// Fitur .emojimix
+if (text.toLowerCase().startsWith('.emojimix')) {
+
+    // Ambil hanya setelah command
+    const raw = text.slice(9).trim(); 
+
+    // Regex menangkap emoji (unicode)
+    const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+    const emojis = raw.match(emojiRegex);
+
+    if (!emojis || emojis.length < 2) {
+        await sock.sendMessage(from, { 
+            text: "❌ Contoh: *.emojimix 😀😍*"
+        }, { quoted: msg });
+        return;
+    }
+
+    const emoji1 = emojis[0];
+    const emoji2 = emojis[1];
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const url = `https://api.jerexd666.wongireng.my.id/tools/emojimix?emoji1=${encodeURIComponent(emoji1)}&emoji2=${encodeURIComponent(emoji2)}`;
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Gagal ambil hasil API");
+
+        const imgBuffer = Buffer.from(await res.arrayBuffer());
+
+        const { Sticker, StickerTypes } = require("wa-sticker-formatter");
+        const sticker = new Sticker(imgBuffer, {
+            pack: "EmojiMix",
+            author: "Jarr",
+            type: StickerTypes.FULL,
+            quality: 100
+        });
+
+        const stickerMsg = await sticker.toMessage();
+        const sent = await sock.sendMessage(from, stickerMsg, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        // Auto-delete jika antistiker aktif
+        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+            await sock.sendMessage(from, { delete: sent.key });
+        }
+
+    } catch (err) {
+        console.error("❌ Error emojimix:", err);
+        await sock.sendMessage(from, { text: "❌ Gagal membuat EmojiMix." }, { quoted: msg });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+
+    return;
+}
+
+
 
                 // 📢 TAG SEMUA ANGGOTA GRUP
         if (text.trim() === '.tagall') {
@@ -5560,51 +5876,29 @@ if (text.toLowerCase().startsWith('.spotify') || text.toLowerCase().startsWith('
         }
     })();
 }
-
-
 // ===== FUNGSI IG STALK =====
 async function igstalk(user) {
     try {
-        const response = await axios.post(
-            "https://privatephotoviewer.com/wp-json/instagram-viewer/v1/fetch-profile",
-            { find: user },
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "*/*",
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-            }
-        );
-
-        const $ = cheerio.load(response.data.html);
-
-        let profilePicture = $("#profile-insta img").attr("src");
-        const nickname = $(".col-md-8 h4").text().trim();
-        const username = $(".col-md-8 h5").text().trim();
-        const posts = $(".col-md-8 .text-center").eq(0).find("strong").text().trim();
-        const followers = $(".col-md-8 .text-center").eq(1).find("strong").text().trim();
-        const following = $(".col-md-8 .text-center").eq(2).find("strong").text().trim();
-        const bio = $(".col-md-8 p").html()?.replace(/<br\s*\/?>/g, "\n").trim() || "-";
-
-        let statusAkun = "Public";
-        if ($("#profile-insta").text().includes("This Account is Private")) {
-            statusAkun = "Private";
+        const response = await axios.get(`https://api.jerexd666.wongireng.my.id/stalk/instagram?username=${encodeURIComponent(user)}`);
+        if (!response.data || !response.data.status || !response.data.result) {
+            return { status: false };
         }
+
+        const result = response.data.result;
 
         return {
             status: true,
             data: {
-                nickname,
-                username,
-                bio,
-                posts,
-                followers,
-                following,
-                profile: "https://www.instagram.com/" + username.replace("@", ""),
-                profileUrl: profilePicture,
-                statusAkun
-            },
+                nickname: result.fullname || "-",
+                username: result.username || "-",
+                bio: result.bio || "-",
+                posts: result.posts_count || "0",
+                followers: result.followers_count || "0",
+                following: result.following_count || "0",
+                profileUrl: result.profile_pic || "",
+                statusAkun: result.is_private ? "Private" : "Public",
+                profile: "https://www.instagram.com/" + result.username
+            }
         };
     } catch (e) {
         console.error("❌ IG Stalk Error:", e);
@@ -5648,6 +5942,7 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
 
     try {
         await sock.sendMessage(from, { react: { text: "⏳", key: msg.key } });
+
         const result = await igstalk(query);
 
         if (!result.status) {
@@ -5656,7 +5951,7 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
             return;
         }
 
-        let caption = `*📱 INSTAGRAM STALKER*\n\n` +
+        const caption = `*📱 INSTAGRAM STALKER*\n\n` +
             `*👤 Nickname :* ${result.data.nickname}\n` +
             `*🆔 Username :* ${result.data.username}\n` +
             `*🔒 Status :* ${result.data.statusAkun}\n` +
@@ -5675,6 +5970,69 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
         await sock.sendMessage(from, { text: "❌ Terjadi kesalahan saat mengambil data." }, { quoted: msg });
     }
 }
+
+// ===== FUNGSI SSWEB =====
+async function ssweb(url, view = "mobile") {
+    try {
+        // API Jerexd mendukung parameter view
+        // view = "mobile" atau "desktop"
+        const api = `https://api.jerexd666.wongireng.my.id/tools/ssweb?url=${encodeURIComponent(url)}&type=${view}`;
+        const res = await axios.get(api);
+
+        if (!res.data || !res.data.status) return { status: false };
+
+        return { status: true, image: res.data.result }; // result = URL gambar
+    } catch (e) {
+        console.error("❌ SSWEB Error:", e);
+        return { status: false };
+    }
+}
+
+// ===== HANDLER .SSWEB =====
+if (text.toLowerCase().startsWith(".ssweb")) {
+    let args = text.trim().split(/\s+/);
+    let view = "mobile"; // default
+    let link = "";
+
+    if (args[1] && args[1].toLowerCase() === "desktop") {
+        view = "desktop";
+        link = args[2] || "";
+    } else {
+        link = args[1] || "";
+    }
+
+    if (!link) {
+        await sock.sendMessage(from, {
+            text: "❗ Masukkan URL website!\n\nContoh:\n*.ssweb https://google.com* (mobile)\n*.ssweb desktop https://google.com* (desktop)"
+        }, { quoted: msg });
+        return;
+    }
+
+    try {
+        await sock.sendMessage(from, { react: { text: "⏳", key: msg.key } });
+
+        const result = await ssweb(link, view);
+
+        if (!result.status) {
+            await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
+            await sock.sendMessage(from, { text: "❌ Gagal mengambil screenshot website!" }, { quoted: msg });
+            return;
+        }
+
+        await sock.sendMessage(from, {
+            image: { url: result.image },
+            caption: `🖥️ *Screenshot Website*\n🌐 URL: ${link}\n📱 Tampilan: ${view}`
+        }, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
+
+    } catch (err) {
+        console.error("❌ SSWEB Handler Error:", err);
+        await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
+        await sock.sendMessage(from, { text: "❌ Error mengambil screenshot!" }, { quoted: msg });
+    }
+}
+
 
 // 📌 FITUR POLLING
 if (text.startsWith('.polling')) {
@@ -6532,24 +6890,26 @@ if (text.startsWith('.ubahsuara')) {
 }
 
 
-
 if (text.trim() === '.info') {
-    const teks = `╭───〔 🤖 *JARR BOT* 〕───╮
-│ 👑 Owner   : Fajar Aditya Pratama
-│ 🧠 AI      : GPT-3.5-turbo
-│ ⚙️ Bahasa  : Node.js + Baileys
-│ 🌐 Versi   : 1.0.0 Beta
-│ ⏱️ Aktif   : 24/7
-│
-├──〔 🔗 Kontak 〕
-│ 📞 Owner  : wa.me/6283836348226
-│ 🔒 VIP    : Ya
-│ 🛡️ Proteksi: Anti abuse
-╰────────────────────╯`;
+    const uptime = process.uptime(); // dalam detik
+    const jam = Math.floor(uptime / 3600);
+    const menit = Math.floor((uptime % 3600) / 60);
+    const detik = Math.floor(uptime % 60);
+
+    const teks = `
+🤖 *JARR BOT*
+👑 Owner      : Fajar Aditya Pratama
+🧠 AI         : QuantumX
+⚙️ Bahasa     : Node.js + Baileys
+🌐 Versi      : 1.3.0 
+⏱️ Aktif      : ${jam}j ${menit}m ${detik}s
+
+📞 Kontak Owner : wa.me/6283836348226`;
 
     await sock.sendMessage(from, { text: teks }, { quoted: msg });
     return;
 }
+
 
 if (text.trim() === '.menu') {
     await sock.sendMessage(from, {
@@ -6589,7 +6949,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.2.8');
+    const versiFancy = toFancyNumber('1.3.0');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -6631,7 +6991,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .polling → Buat polling
 │
 ├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
-│ .ai <pertanyaan> → Tanya ke AI
+│ .ai  → Tanya ke AI
 │ .clear → Reset obrolan
 
 │
@@ -6641,13 +7001,19 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .ubahsuara → Ubah suara unik
 │ .wm → Unduh tanpa watermax
 │ .ttmp3 → Unduh mp3 TikTok
+│ .ytmp3 → Unduh mp3 Youtube
+│ .ytmp4 → Unduh mp4 Youtube
+
 │
 ├─ 〔 🖌️ *ᴍᴀᴋᴇʀ / ᴄʀᴇᴀᴛᴏʀ* 〕
 │ .stiker → Ubah gambar jadi stiker
 │ .qc → Ubah teks jadi quote
+│ .ipchat → Chat iphone
+│ .emojimix → gabungkan dua emot
 │ .toimg → Stiker ke gambar
 │ .teks → Tambah teks di stiker
 │ .brat → Membuat stiker kata
+│ .bratvid → Membuat stiker video
 │
 ├─ 〔 🖼️ *ᴍᴇᴅɪᴀ* 〕
 │ .waifu → Waifu random
@@ -6835,6 +7201,8 @@ if (text.startsWith('.ai')) {
     tambahPakaiAI(idLimit);
     return;
 }
+
+
 
 // 🔥 MODIFIED .clear COMMAND - PAKAI from
 if (text === ".clear") {
