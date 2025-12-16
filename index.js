@@ -4463,17 +4463,14 @@ if (text.toLowerCase().startsWith('.emojimix')) {
             return;
         }
 
-        // 👤 TAG PERSONAL DENGAN JUMLAH
+       // 👤 TAG PERSONAL BERULANG (KIRIM CHAT SESUAI JUMLAH)
 if (text.startsWith('.tag')) {
     if (!msg.key.remoteJid.endsWith('@g.us')) {
         await sock.sendMessage(from, { text: '❌ Perintah ini hanya bisa dipakai di grup.' });
         return;
     }
 
-    // Ambil mention dari pesan
     const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
-
-    // Ambil angka dari teks
     const args = text.split(' ');
     const jumlah = parseInt(args[args.length - 1]);
 
@@ -4483,29 +4480,32 @@ if (text.startsWith('.tag')) {
     }
 
     if (isNaN(jumlah) || jumlah <= 0) {
-        await sock.sendMessage(from, { text: '❌ Jumlah tag harus angka.\nContoh: .tag @user 5' });
+        await sock.sendMessage(from, { text: '❌ Jumlah harus angka.\nContoh: .tag @user 5' });
         return;
     }
 
     const target = mentioned[0];
 
-    // bikin mention sesuai jumlah
-    let teks = '';
-    let mentions = [];
-
-    for (let i = 0; i < jumlah; i++) {
-        teks += `@${target.split('@')[0]} `;
-        mentions.push(target);
+    // OPTIONAL: BATAS AMAN
+    if (jumlah > 20) {
+        await sock.sendMessage(from, { text: '⚠️ Maksimal 20 tag biar gak kena limit WhatsApp.' });
+        return;
     }
 
-    await sock.sendMessage(from, {
-        text: `📢 *Tag Personal (${jumlah}x)*\n\n${teks}`,
-        mentions
-    });
+    for (let i = 0; i < jumlah; i++) {
+        await sock.sendMessage(from, {
+            text: `@${target.split('@')[0]}`,
+            mentions: [target]
+        });
 
-    console.log(`👤 Tag ${target} sebanyak ${jumlah} kali`);
+        // delay biar aman dari spam detection
+        await new Promise(res => setTimeout(res, 700));
+    }
+
+    console.log(`👤 Tag ${target} sebanyak ${jumlah} chat`);
     return;
 }
+
 
 
 
