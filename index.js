@@ -4463,6 +4463,53 @@ if (text.toLowerCase().startsWith('.emojimix')) {
             return;
         }
 
+        // 👤 TAG PERSONAL DENGAN JUMLAH
+if (text.startsWith('.tag')) {
+    if (!msg.key.remoteJid.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: '❌ Perintah ini hanya bisa dipakai di grup.' });
+        return;
+    }
+
+    // Ambil mention dari pesan
+    const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+
+    // Ambil angka dari teks
+    const args = text.split(' ');
+    const jumlah = parseInt(args[args.length - 1]);
+
+    if (!mentioned || mentioned.length === 0) {
+        await sock.sendMessage(from, { text: '❌ Tag user dulu.\nContoh: .tag @user 5' });
+        return;
+    }
+
+    if (isNaN(jumlah) || jumlah <= 0) {
+        await sock.sendMessage(from, { text: '❌ Jumlah tag harus angka.\nContoh: .tag @user 5' });
+        return;
+    }
+
+    const target = mentioned[0];
+
+    // bikin mention sesuai jumlah
+    let teks = '';
+    let mentions = [];
+
+    for (let i = 0; i < jumlah; i++) {
+        teks += `@${target.split('@')[0]} `;
+        mentions.push(target);
+    }
+
+    await sock.sendMessage(from, {
+        text: `📢 *Tag Personal (${jumlah}x)*\n\n${teks}`,
+        mentions
+    });
+
+    console.log(`👤 Tag ${target} sebanyak ${jumlah} kali`);
+    return;
+}
+
+
+
+
 if (text.startsWith('.kirimskor')) {
     if (!from.endsWith('@g.us')) {
         await sock.sendMessage(from, { text: '❌ Perintah ini hanya bisa dipakai di grup.' });
@@ -6949,7 +6996,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.3.0');
+    const versiFancy = toFancyNumber('1.3.5');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -7031,6 +7078,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │
 ├─ 〔 👥 *ꜰɪᴛᴜʀ ɢʀᴜᴘ* 〕
 │ .tagall → Mention semua member
+│ .tag → Mention 1 member
 │ .setnamagc → Ganti nama grup
 │ .setdesgc → Ganti deskripsi grup
 │ .setppgc → Ganti foto profil grup
