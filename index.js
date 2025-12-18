@@ -7589,6 +7589,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .family100 → Jawaban terbanyak
 │ .tebakbendera → Menebak bendera
 │ .tictactoe → Bermain X dan O
+│ .ulartangga → Main dengan teman
 │
 ├─ 〔 🏳️‍🌈 *ꜰɪᴛᴜʀ ʟᴜᴄᴜ* 〕
 │ .gay → Seberapa gay?
