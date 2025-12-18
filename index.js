@@ -7501,6 +7501,73 @@ if (text.startsWith('.ubahsuara')) {
 }
 
 
+
+// 📌 FITUR JADWAL PIKET
+if (text.startsWith('.jadwalpiket')) {
+    const allowedGroup = "120363397944162829@g.us";
+
+    if (msg.key.remoteJid !== allowedGroup) {
+        await sock.sendMessage(from, { text: '⚠️ Fitur ini hanya bisa dipakai di *grup Angkatan 21*!' });
+        return;
+    }
+
+    const args = text.split(' ');
+    const hari = (args[1] || '').toLowerCase();
+
+    const jadwal = {
+        senin: [
+           "Alif Miftahudin",
+           "Qoirul QolisunAgis",
+           "Nadiya Rizkayana Ramadhani",
+           "Naysila Kusuma Wardani",
+           "Anisa Putri"
+        ],
+        selasa: [
+            "Derriel Alvino Alvaro",
+            "Amelia Indah Pertiwi",
+            "Maulida Widya Ningrum",
+            "Nafisa Puji"
+        ],
+        rabu: [
+            "Desti Zakiah Rahma",
+            "Shafira Nasywa Putri Kirana",
+            "Ufi Faina",
+            "Guntur Dwi Pratama",
+            "Dani Saputra"
+        ],
+        kamis: [
+           "Fajar Josjis",
+           "Azzahra Cahrani Putri Pinanti",
+           "Arliezart Virly Achlya",
+           "Paramastri Sahita Prabaswari",
+           "Amalya Lutfiana"
+        ],
+        jumat: [
+            "Pradipta Nabil",
+            "Adinda Putri Fitriani",
+            "Rihmi Dwichahyani",
+            "Adelia angin",
+            "Nesyamelia Deka Pertiwi"
+        ],
+        sabtu: [
+            "Wayah e prei"
+        ],
+        minggu: [
+            "Wayah e turu"
+        ]
+    };
+
+    if (!hari || !jadwal[hari]) {
+        await sock.sendMessage(from, { text: "⚠️ Gunakan: `.jadwalpiket <hari>`\nContoh: `.jadwalpiket senin`" });
+        return;
+    }
+
+    const daftar = jadwal[hari].map(n => `👤 ${n}`).join('\n');
+    const hasil = `📅 *Jadwal Piket Hari ${hari.charAt(0).toUpperCase() + hari.slice(1)}*\n──────────────────\n${daftar}`;
+
+    await sock.sendMessage(from, { text: hasil });
+}
+
 if (text.trim() === '.info') {
     const uptime = process.uptime(); // dalam detik
     const jam = Math.floor(uptime / 3600);
