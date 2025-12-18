@@ -7517,7 +7517,7 @@ if (text.startsWith('.jadwalpiket')) {
     const jadwal = {
         senin: [
            "Alif Miftahudin",
-           "Qoirul QolisunAgis",
+           "Qoirul Qolisun Agis",
            "Nadiya Rizkayana Ramadhani",
            "Naysila Kusuma Wardani",
            "Anisa Putri"
@@ -7579,7 +7579,7 @@ if (text.trim() === '.info') {
 👑 Owner      : Fajar Aditya Pratama
 🧠 AI         : QuantumX
 ⚙️ Bahasa     : Node.js + Baileys
-🌐 Versi      : 1.3.0 
+🌐 Versi      : 1.4.0 
 ⏱️ Aktif      : ${jam}j ${menit}m ${detik}s
 
 📞 Kontak Owner : wa.me/6283836348226`;
