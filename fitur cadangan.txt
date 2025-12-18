@@ -344,3 +344,198 @@ if (text.startsWith('.spin')) {
 
     await sock.sendMessage(from, { text: pesan });
 }
+
+
+
+function normalize(teks) {
+    return teks
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function cocokMirip(jawabanAsli, jawabanUser) {
+    const a = normalize(jawabanAsli);
+    const u = normalize(jawabanUser);
+
+    // 1️⃣ substring langsung
+    if (a.includes(u) || u.includes(a)) return true;
+
+    const kataAsli = a.split(' ');
+    const kataUser = u.split(' ');
+
+    let cocok = 0;
+
+    for (const ku of kataUser) {
+        for (const ka of kataAsli) {
+            if (ka.includes(ku) || ku.includes(ka)) {
+                cocok++;
+                break;
+            }
+        }
+    }
+
+    // 2️⃣ minimal 60% kata user nyambung
+    return cocok / kataUser.length >= 0.6;
+}
+
+// ================= FAMILY 100 =================
+if (text === '.family100') {
+    if (sesiFamily100.has(from)) {
+        await sock.sendMessage(from, {
+            text: `⚠️ *Permainan Sedang Berlangsung!*
+━━━━━━━━━
+Selesaikan dulu game sebelumnya.`
+        });
+        return;
+    }
+
+    const soal = ambilSoalAcak('family100', soalFamily100);
+
+    const sent = await sock.sendMessage(from, {
+        text: `🎮 *Family 100 Dimulai!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${soal.pertanyaan}
+
+📋 *Jawaban:*
+${soal.jawaban.map((_, i) => `*${i + 1}.*`).join('\n')}
+
+⏳ *Waktu:* 60 detik
+↩️ *Balas pesan ini untuk menjawab.*`
+    });
+
+    const timeout = setTimeout(async () => {
+        const sesi = sesiFamily100.get(from);
+        if (!sesi) return;
+
+        const dataSoal = soalFamily100.find(s => s.pertanyaan === sesi.pertanyaan);
+
+        // ⬇️ TAMPILKAN PENJAWAB HANYA DI AKHIR
+        const jawabanAkhir = dataSoal.jawaban.map((j, i) => {
+            const user = sesi.penjawab[i];
+            return user
+                ? `*${i + 1}.* ✅ ${j} — @${user.split('@')[0]}`
+                : `*${i + 1}.* ❌ ${j}`;
+        }).join('\n');
+
+        await sock.sendMessage(from, {
+            text: `🎉 *Family 100 Selesai!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${sesi.pertanyaan}
+
+📋 *Jawaban Lengkap:*
+${jawabanAkhir}
+
+🎊 Terima kasih telah bermain!`,
+            mentions: sesi.penjawab.filter(Boolean)
+        });
+
+        sesiFamily100.delete(from);
+    }, 60000);
+
+    sesiFamily100.set(from, {
+        pesanId: sent.key.id,
+        pertanyaan: soal.pertanyaan,
+        jawaban: Array(soal.jawaban.length).fill(null),
+        penjawab: Array(soal.jawaban.length).fill(null),
+        timeout
+    });
+
+    return;
+}
+
+// ================= JAWAB =================
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const sesi = sesiFamily100.get(from);
+    if (!sesi) return;
+
+    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+    if (replyId !== sesi.pesanId) return;
+
+    const userJawab = text.trim().toLowerCase();
+    const sender = msg.key.participant || msg.key.remoteJid;
+
+    const dataSoal = soalFamily100.find(s => s.pertanyaan === sesi.pertanyaan);
+    const index = dataSoal.jawaban.findIndex(
+    j => cocokMirip(j, userJawab)
+);
+
+
+    // ⬇️ SAAT GAME BERJALAN (TANPA NAMA PENJAWAB)
+    const renderSaatMain = () =>
+        sesi.jawaban.map((j, i) =>
+            j ? `*${i + 1}.* ✅ ${j}` : `*${i + 1}.*`
+        ).join('\n');
+
+    // ✅ BENAR
+    if (index !== -1 && !sesi.jawaban[index]) {
+        sesi.jawaban[index] = dataSoal.jawaban[index];
+        sesi.penjawab[index] = sender;
+
+        tambahSkor(sender, from, 20);
+
+        const sentUpdate = await sock.sendMessage(from, {
+    text: `🎮 *Jawaban Diterima!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${sesi.pertanyaan}
+
+📋 *Jawaban Saat Ini:*
+${renderSaatMain()}
+
+🎁 +20 poin untuk @${sender.split('@')[0]}
+↩️ Balas pesan ini untuk menjawab.`,
+    mentions: [sender] // 🔥 TAG AMAN DI SINI
+});
+
+
+        sesi.pesanId = sentUpdate.key.id;
+
+        // 🔥 SEMUA TERJAWAB → LANGSUNG SELESAI
+        if (sesi.jawaban.every(j => j !== null)) {
+            clearTimeout(sesi.timeout);
+            sesiFamily100.delete(from);
+
+            const jawabanAkhir = dataSoal.jawaban.map((j, i) => {
+                const user = sesi.penjawab[i];
+                return user
+                    ? `*${i + 1}.* ✅ ${j} — @${user.split('@')[0]}`
+                    : `*${i + 1}.* ❌ ${j}`;
+            }).join('\n');
+
+            await sock.sendMessage(from, {
+                text: `🎉 *Family 100 Selesai!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${sesi.pertanyaan}
+
+📋 *Jawaban Lengkap:*
+${jawabanAkhir}
+
+🎊 Terima kasih telah bermain!`,
+                mentions: sesi.penjawab.filter(Boolean)
+            });
+        }
+        return;
+    }
+
+    // ❌ SALAH
+    const sentSalah = await sock.sendMessage(from, {
+        text: `🚫 *Jawaban Salah!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${sesi.pertanyaan}
+
+📋 *Jawaban Saat Ini:*
+${renderSaatMain()}
+
+❌ *"${userJawab}" tidak ada.*
+↩️ Balas pesan ini untuk menjawab.`
+    });
+
+    sesi.pesanId = sentSalah.key.id;
+}
+

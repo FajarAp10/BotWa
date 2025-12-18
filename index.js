@@ -4066,7 +4066,11 @@ ${jawabanAkhir}
 }
 
 // ================= JAWAB =================
-if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+if (
+    sesiFamily100.has(from) &&
+    msg.message?.extendedTextMessage?.contextInfo?.stanzaId
+) {
+
     const sesi = sesiFamily100.get(from);
     if (!sesi) return;
 
