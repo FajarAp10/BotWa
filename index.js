@@ -51,6 +51,7 @@ const sesiTebakBendera = new Map();
 const sesiPilihGrup = new Map();
 const sesiUmumkan = new Map();
 const DEFAULT_AI_LIMIT = 5;
+const sesiUlarTangga = new Map();
 
 
 
@@ -326,21 +327,23 @@ function unbanUser(jid) {
   saveBanned();
 }
 
-
 const grupPath = './grupAktif.json';
-
-function simpanGrupAktif() {
-    fs.writeFile(grupPath, JSON.stringify(Object.fromEntries(grupAktif), null, 2), err => {
-        if (err) console.error("❌ Gagal simpan grup:", err);
-    });
-}
-
 let grupAktif = new Map();
+
+// LOAD
 try {
     const data = JSON.parse(fs.readFileSync(grupPath));
     grupAktif = new Map(Object.entries(data));
-} catch (e) {
-    console.log('📁 grupAktif.json belum ada, dibuat otomatis saat .on atau .off');
+} catch {
+    console.log('📁 grupAktif.json belum ada');
+}
+
+// SAVE
+function simpanGrupAktif() {
+    fs.writeFileSync(
+        grupPath,
+        JSON.stringify(Object.fromEntries(grupAktif), null, 2)
+    );
 }
 
 const skorPath = './skor.json';
@@ -1172,226 +1175,353 @@ const sesiSusunKata = new Map(); // key: pengirim, value: { jawaban, timeout }
 
 const soalFamily100 = [
   {
-    pertanyaan: "Sesuatu yang ada di kamar mandi?",
-    jawaban: ["sabun", "handuk", "gayung", "sikat gigi", "pasta gigi"]
+    pertanyaan: "Sesuatu yang sering dicari sebelum berangkat?",
+    jawaban: ["hp", "kunci", "dompet", "helm", "jaket"]
   },
   {
-    pertanyaan: "Hewan yang bisa terbang?",
-    jawaban: ["burung", "kelelawar", "nyamuk", "lebah", "lalat"]
+    pertanyaan: "Alasan orang telat bangun pagi?",
+    jawaban: ["alarm mati", "tidur malam", "begadang", "kecapean", "lupa pasang alarm"]
   },
   {
-    pertanyaan: "Sesuatu yang ada di dapur?",
-    jawaban: ["kompor", "panci", "sendok", "pisau", "gas"]
+    pertanyaan: "Sesuatu yang bikin kuota cepat habis?",
+    jawaban: ["tiktok", "youtube", "instagram", "streaming", "game online"]
   },
   {
-    pertanyaan: "Minuman yang disukai banyak orang?",
-    jawaban: ["kopi", "teh", "susu", "jus", "air putih"]
+    pertanyaan: "Hal yang sering dilakukan sebelum tidur?",
+    jawaban: ["main hp", "rebahan", "scroll sosmed", "doa", "nonton"]
   },
   {
-    pertanyaan: "Sesuatu yang berwarna merah?",
-    jawaban: ["apel", "cabai", "darah", "mobil", "merah"]
+    pertanyaan: "Makanan yang enak dimakan malam hari?",
+    jawaban: ["mie instan", "nasi goreng", "ayam goreng", "martabak", "bakso"]
   },
   {
-    pertanyaan: "Hewan yang hidup di air?",
-    jawaban: ["ikan", "hiu", "lumba-lumba", "ubur-ubur", "paus"]
+    pertanyaan: "Alasan orang membuka WhatsApp?",
+    jawaban: ["chat masuk", "grup rame", "bales pesan", "gabut", "notif"]
   },
   {
-    pertanyaan: "Profesi di rumah sakit?",
-    jawaban: ["dokter", "perawat", "resepsionis", "satpam", "bidan"]
+    pertanyaan: "Barang yang wajib dibawa saat keluar rumah?",
+    jawaban: ["hp", "dompet", "kunci", "masker", "helm"]
   },
   {
-    pertanyaan: "Sesuatu yang digunakan saat hujan?",
-    jawaban: ["payung", "jas hujan", "sepatu boots", "jaket", "mantel"]
+    pertanyaan: "Hal yang sering bikin emosi di jalan?",
+    jawaban: ["macet", "klakson", "lampu merah", "diserobot", "jalan rusak"]
   },
   {
-    pertanyaan: "Makanan yang digoreng?",
-    jawaban: ["tempe", "tahu", "ayam", "ikan", "telur"]
+    pertanyaan: "Aktivitas favorit saat hujan?",
+    jawaban: ["tidur", "nonton", "rebahan", "minum hangat", "denger hujan"]
   },
   {
-    pertanyaan: "Alat yang ada di sekolah?",
-    jawaban: ["papan tulis", "penghapus", "meja", "kursi", "spidol"]
+    pertanyaan: "Sesuatu yang sering dilakukan saat bosan?",
+    jawaban: ["scroll hp", "tidur", "main game", "nonton", "makan"]
   },
   {
-    pertanyaan: "Buah yang berwarna kuning?",
-    jawaban: ["pisang", "nanas", "mangga", "jeruk", "pepaya"]
+    pertanyaan: "Aplikasi yang paling sering dibuka?",
+    jawaban: ["whatsapp", "tiktok", "instagram", "youtube", "browser"]
   },
   {
-    pertanyaan: "Hewan yang berkaki empat?",
-    jawaban: ["kucing", "anjing", "sapi", "kambing", "kuda"]
+    pertanyaan: "Makanan yang sering jadi pilihan cepat?",
+    jawaban: ["mie instan", "nasi goreng", "ayam geprek", "gorengan", "burger"]
   },
   {
-    pertanyaan: "Sesuatu yang ada di meja makan?",
-    jawaban: ["piring", "sendok", "garpu", "makanan", "gelas"]
+    pertanyaan: "Hal yang sering lupa dibawa ke sekolah?",
+    jawaban: ["pulpen", "buku", "tugas", "uang", "id card"]
   },
   {
-    pertanyaan: "Sesuatu yang sering dicari saat hilang?",
-    jawaban: ["hp", "kunci", "dompet", "remote", "kacamata"]
+    pertanyaan: "Alasan orang betah di rumah?",
+    jawaban: ["nyaman", "malas keluar", "ada wifi", "capek", "hemat"]
   },
   {
-    pertanyaan: "Warna yang sering dipakai untuk baju sekolah?",
-    jawaban: ["putih", "merah", "biru", "abu-abu", "coklat"]
+    pertanyaan: "Sesuatu yang sering ada di notifikasi HP?",
+    jawaban: ["chat", "grup", "promo", "update", "mention"]
   },
   {
-    pertanyaan: "Sesuatu yang dilakukan saat bosan?",
-    jawaban: ["main hp", "tidur", "makan", "nonton", "scroll tiktok"]
+    pertanyaan: "Hal yang bikin susah fokus belajar?",
+    jawaban: ["hp", "ngantuk", "berisik", "lapar", "bosan"]
   },
   {
-    pertanyaan: "Barang yang dibawa ke sekolah?",
-    jawaban: ["buku", "pulpen", "tas", "kotak pensil", "botol minum"]
+    pertanyaan: "Minuman favorit saat panas?",
+    jawaban: ["es teh", "es kopi", "air dingin", "jus", "es jeruk"]
   },
   {
-    pertanyaan: "Sesuatu yang panas?",
-    jawaban: ["matahari", "api", "air panas", "kompor", "mie rebus"]
+    pertanyaan: "Sesuatu yang sering dilakukan saat menunggu?",
+    jawaban: ["main hp", "scroll sosmed", "diam", "ngobrol", "denger musik"]
   },
   {
-    pertanyaan: "Hewan yang hidup di darat?",
-    jawaban: ["kucing", "anjing", "sapi", "kambing", "gajah"]
+    pertanyaan: "Alasan orang main game?",
+    jawaban: ["hiburan", "gabut", "ngilangin stress", "temen", "hadiah"]
   },
   {
-    pertanyaan: "Sesuatu yang dipakai di kepala?",
-    jawaban: ["topi", "helm", "bando", "kerudung", "kacamata"]
+    pertanyaan: "Hal yang bikin orang malas keluar rumah?",
+    jawaban: ["hujan", "capek", "macet", "mager", "panas"]
+  },
+
+    {
+    pertanyaan: "Hal pertama yang dicek setelah bangun tidur?",
+    jawaban: ["hp", "jam", "notifikasi", "waktu", "alarm"]
   },
   {
-    pertanyaan: "Minuman yang disajikan dingin?",
-    jawaban: ["es teh", "jus", "es kopi", "air", "soda"]
+    pertanyaan: "Alasan orang sering pegang HP?",
+    jawaban: ["chat", "bosan", "notif", "scroll", "gabut"]
   },
   {
-    pertanyaan: "Buah yang berwarna hijau?",
-    jawaban: ["melon", "apel", "anggur", "alpukat", "pir"]
+    pertanyaan: "Hal yang sering dilakukan di grup WhatsApp?",
+    jawaban: ["chat", "baca doang", "kirim stiker", "nge-spam", "silent"]
   },
   {
-    pertanyaan: "Sesuatu yang dilakukan saat bangun tidur?",
-    jawaban: ["ngucek mata", "minum", "mandi", "doa", "ngecek hp"]
+    pertanyaan: "Hal yang bikin HP cepat panas?",
+    jawaban: ["main game", "ngecas", "streaming", "lama dipakai", "data nyala"]
   },
   {
-    pertanyaan: "Sesuatu yang ada di tas sekolah?",
-    jawaban: ["buku", "pulpen", "penghapus", "bekal", "pensil"]
+    pertanyaan: "Hal yang sering dicari di Google?",
+    jawaban: ["jawaban", "arti kata", "cara", "lirik lagu", "harga"]
   },
   {
-    pertanyaan: "Sesuatu yang ada di langit?",
-    jawaban: ["matahari", "bulan", "bintang", "awan", "pesawat"]
+    pertanyaan: "Kegiatan yang sering dilakukan saat sendirian?",
+    jawaban: ["main hp", "tidur", "nonton", "denger musik", "rebahan"]
   },
   {
-    pertanyaan: "Sesuatu yang biasa dipakai saat olahraga?",
-    jawaban: ["sepatu", "kaos", "celana", "headband", "raket"]
+    pertanyaan: "Hal yang sering bikin ketawa di grup?",
+    jawaban: ["stiker", "chat typo", "video lucu", "meme", "voice note"]
   },
   {
-    pertanyaan: "Benda yang bisa mengeluarkan suara?",
-    jawaban: ["radio", "hp", "tv", "speaker", "alarm"]
+    pertanyaan: "Hal yang sering dilakukan saat nunggu balasan?",
+    jawaban: ["scroll", "buka chat lain", "refresh", "nunggu", "diemin hp"]
   },
   {
-    pertanyaan: "Sesuatu yang bisa dikunci?",
-    jawaban: ["pintu", "lemari", "motor", "mobil", "hp"]
+    pertanyaan: "Alasan orang malas balas chat?",
+    jawaban: ["sibuk", "males", "lupa", "ketiduran", "nggak mood"]
   },
   {
-    pertanyaan: "Hewan yang hidup di kebun binatang?",
-    jawaban: ["singa", "harimau", "gajah", "zebra", "unta"]
+    pertanyaan: "Hal yang sering bikin chat jadi panjang?",
+    jawaban: ["debat", "gosip", "salah paham", "bahasan random", "curhat"]
   },
   {
-    pertanyaan: "Alat yang digunakan untuk membersihkan?",
-    jawaban: ["sapu", "pel", "lap", "vacuum", "kain"]
+    pertanyaan: "Sesuatu yang sering bikin HP penuh?",
+    jawaban: ["foto", "video", "aplikasi", "cache", "file whatsapp"]
   },
   {
-    pertanyaan: "Sesuatu yang sering dipegang saat nonton TV?",
-    jawaban: ["remote", "bantal", "snack", "minuman", "selimut"]
+    pertanyaan: "Hal yang sering dilakukan sebelum keluar rumah?",
+    jawaban: ["cek hp", "pakai sepatu", "ambil kunci", "lihat cermin", "beresin barang"]
   },
   {
-    pertanyaan: "Sesuatu yang dipakai di kaki?",
-    jawaban: ["sepatu", "sandal", "kaos kaki", "sepatu roda", "sepatu bola"]
+    pertanyaan: "Hal yang bikin orang betah main HP lama?",
+    jawaban: ["tiktok", "youtube", "chat", "game", "scroll"]
   },
   {
-    pertanyaan: "Sesuatu yang sering ditemukan di meja belajar?",
-    jawaban: ["lampu", "buku", "pulpen", "penghapus", "catatan"]
+    pertanyaan: "Hal yang sering dilakukan saat lagi ngantuk?",
+    jawaban: ["rebahan", "minum", "scroll hp", "tutup mata", "tidur"]
   },
   {
-    pertanyaan: "Sesuatu yang bisa dipotong?",
-    jawaban: ["kertas", "rambut", "baju", "kue", "sayur"]
+    pertanyaan: "Alasan orang buka grup lama?",
+    jawaban: ["notif", "penasaran", "tag", "rame", "nyari info"]
   },
   {
-    pertanyaan: "Sesuatu yang bisa dibuka dan ditutup?",
-    jawaban: ["pintu", "jendela", "botol", "tas", "hp"]
+    pertanyaan: "Hal yang sering bikin salah paham di chat?",
+    jawaban: ["teks doang", "emoji", "nada", "typo", "salah baca"]
   },
   {
-    pertanyaan: "Sesuatu yang dipakai saat tidur?",
-    jawaban: ["bantal", "selimut", "sprei", "piyama", "guling"]
+    pertanyaan: "Sesuatu yang sering dilakukan saat hujan deras?",
+    jawaban: ["nunggu reda", "tidur", "nonton", "rebahan", "ngopi"]
   },
   {
-    pertanyaan: "Sesuatu yang bisa dikupas?",
-    jawaban: ["pisang", "jeruk", "mangga", "kentang", "bawang"]
+    pertanyaan: "Hal yang sering dilakukan kalau kuota mau habis?",
+    jawaban: ["matin data", "beli kuota", "cari wifi", "hemat", "ngedumel"]
   },
   {
-    pertanyaan: "Sesuatu yang bisa ditulis?",
-    jawaban: ["buku", "kertas", "papan", "note", "catatan"]
+    pertanyaan: "Hal yang sering bikin orang telat?",
+    jawaban: ["macet", "bangun kesiangan", "nunggu", "lupa waktu", "mager"]
   },
   {
-    pertanyaan: "Tempat yang ramai saat liburan?",
-    jawaban: ["pantai", "mall", "kebun binatang", "bioskop", "taman"]
+    pertanyaan: "Hal yang sering dilakukan saat lagi gabut?",
+    jawaban: ["scroll hp", "tidur", "nonton", "chat", "main game"]
   },
+
   {
-    pertanyaan: "Sesuatu yang bergerak cepat?",
-    jawaban: ["mobil", "motor", "pesawat", "kucing", "peluru"]
-  },
-  {
-    pertanyaan: "Sesuatu yang memiliki roda?",
-    jawaban: ["motor", "mobil", "sepeda", "gerobak", "skateboard"]
-  },
-  {
-    pertanyaan: "Sesuatu yang bisa dipeluk?",
-    jawaban: ["bantal", "boneka", "orang", "guling", "hewan"]
-  },
-  {
-    pertanyaan: "Sesuatu yang biasa diwarnai?",
-    jawaban: ["gambar", "tembok", "kertas", "baju", "kuku"]
-  },
-  {
-    pertanyaan: "Alat yang digunakan untuk makan?",
-    jawaban: ["sendok", "garpu", "tangan", "sumpit", "piring"]
-  },
-  {
-    pertanyaan: "Sesuatu yang bisa naik turun?",
-    jawaban: ["lift", "tangga", "berat badan", "kurs", "panas"]
-  },
-  {
-    pertanyaan: "Sesuatu yang bisa dimakan mentah?",
-    jawaban: ["salad", "buah", "timun", "wortel", "sushi"]
-  },
-  {
-    pertanyaan: "Sesuatu yang bisa dicium baunya?",
-    jawaban: ["bunga", "parfum", "makanan", "bensin", "kotoran"]
-  },
-  {
-    pertanyaan: "Sesuatu yang digunakan untuk menutup?",
-    jawaban: ["pintu", "tutup", "penutup", "masker", "selimut"]
-  },
-  {
-    pertanyaan: "Hewan yang bisa dijadikan peliharaan?",
-    jawaban: ["kucing", "anjing", "kelinci", "burung", "hamster"]
-  },
-  {
-    pertanyaan: "Transportasi di udara?",
-    jawaban: ["pesawat", "helikopter", "paralayang", "balon udara", "jet"]
-  },
-  {
-    pertanyaan: "Alat untuk menulis?",
-    jawaban: ["pulpen", "pensil", "spidol", "kapur", "pena"]
-  },
-  {
-    pertanyaan: "Sesuatu yang dilakukan saat libur?",
-    jawaban: ["jalan-jalan", "tidur", "nonton", "main game", "masak"]
-  },
-  {
-    pertanyaan: "Sesuatu yang ada di lemari es?",
-    jawaban: ["susu", "air", "sayur", "telur", "buah"]
-  },
-  {
-    pertanyaan: "Sesuatu yang bisa dibaca?",
-    jawaban: ["buku", "koran", "novel", "majalah", "artikel"]
-  },
-  {
-    pertanyaan: "Sesuatu yang bisa meledak?",
-    jawaban: ["bom", "kembang api", "balon", "ban", "tabung gas"]
-  }
+  pertanyaan: "Kalau lagi lapar, biasanya nyari apa?",
+  jawaban: ["makan", "nasi", "mie", "snack", "warung"]
+},
+{
+  pertanyaan: "Kalau bangun tidur, hal pertama yang sering dilakukan?",
+  jawaban: ["minum", "ke kamar mandi", "ngelamun", "mandi", "sarapan"]
+},
+{
+  pertanyaan: "Hewan yang sering bikin orang kaget di rumah?",
+  jawaban: ["cicak", "kecoa", "tikus", "nyamuk", "tokek"]
+},
+{
+  pertanyaan: "Kalau hujan deras, orang biasanya ngapain?",
+  jawaban: ["neduh", "tidur", "nonton", "minum hangat", "masuk rumah"]
+},
+{
+  pertanyaan: "Benda yang sering dicari tapi suka ilang?",
+  jawaban: ["kunci", "remote", "hp", "dompet", "sendal"]
+},
+{
+  pertanyaan: "Kalau malam hari, suara apa yang sering terdengar?",
+  jawaban: ["jangkrik", "motor", "anjing", "tv", "orang ngobrol"]
+},
+{
+  pertanyaan: "Kalau lagi capek, biasanya pengen apa?",
+  jawaban: ["tidur", "rebahan", "minum", "makan", "istirahat"]
+},
+{
+  pertanyaan: "Hewan yang sering lewat di atap rumah?",
+  jawaban: ["kucing", "tikus", "cicak", "musang", "burung"]
+},
+{
+  pertanyaan: "Kalau ke dapur, biasanya nyari apa?",
+  jawaban: ["air", "makan", "snack", "nasi", "gelas"]
+},
+{
+  pertanyaan: "Kalau bosan di rumah, biasanya ngapain?",
+  jawaban: ["tidur", "keluar", "nonton", "makan", "nongkrong"]
+},
+{
+  pertanyaan: "Hal yang sering bikin orang telat berangkat?",
+  jawaban: ["bangun kesiangan", "macet", "mandi lama", "lupa", "males"]
+},
+{
+  pertanyaan: "Kalau listrik mati, yang langsung dicari?",
+  jawaban: ["lilin", "senter", "korek", "lampu", "hp"]
+},
+{
+  pertanyaan: "Kalau malam-malam lapar, biasanya makan apa?",
+  jawaban: ["mie", "nasi", "snack", "roti", "gorengan"]
+},
+{
+  pertanyaan: "Benda yang sering ada di kantong?",
+  jawaban: ["uang", "kunci", "hp", "tisu", "koin"]
+},
+{
+  pertanyaan: "Kalau ke pasar, orang biasanya beli apa?",
+  jawaban: ["sayur", "ikan", "buah", "daging", "bumbu"]
+},
+{
+  pertanyaan: "Kalau bangun kesiangan, yang sering dilewatin?",
+  jawaban: ["sarapan", "mandi", "rapihin kamar", "beresin kasur", "doa"]
+},
+{
+  pertanyaan: "Kalau hujan-hujanan, yang biasanya basah duluan?",
+  jawaban: ["baju", "sepatu", "rambut", "celana", "tas"]
+},
+{
+  pertanyaan: "Kalau di rumah sepi, biasanya ngapain?",
+  jawaban: ["tidur", "nonton", "denger musik", "rebahan", "keluar"]
+},
+{
+  pertanyaan: "Hewan yang sering bikin jijik?",
+  jawaban: ["kecoa", "cacing", "tikus", "lintah", "ulat"]
+},
+{
+  pertanyaan: "Kalau lagi sakit, yang paling sering diminta?",
+  jawaban: ["istirahat", "obat", "air", "selimut", "makanan"]
+},
+
+{
+  pertanyaan: "Pelajaran yang sering bikin pusing di sekolah?",
+  jawaban: ["matematika", "fisika", "kimia", "akuntansi", "statistika"]
+},
+{
+  pertanyaan: "Alasan siswa dimarahi guru?",
+  jawaban: ["ribut", "telat", "tidak ngerjain tugas", "main hp", "tidur"]
+},
+{
+  pertanyaan: "Barang yang sering ada di tas sekolah?",
+  jawaban: ["buku", "pulpen", "pensil", "penghapus", "botol minum"]
+},
+{
+  pertanyaan: "Hal yang sering dilakukan saat pelajaran membosankan?",
+  jawaban: ["melamun", "gambar", "tidur", "main hp", "ngobrol"]
+},
+{
+  pertanyaan: "Tempat yang sering dikunjungi setelah pulang sekolah?",
+  jawaban: ["rumah", "warung", "kantin", "tempat les", "rumah teman"]
+},
+{
+  pertanyaan: "Alasan orang tidak masuk sekolah?",
+  jawaban: ["sakit", "ijin", "ketiduran", "malas", "acara keluarga"]
+},
+{
+  pertanyaan: "Hal yang sering terjadi saat ujian?",
+  jawaban: ["deg-degan", "lupa jawaban", "nyontek", "ngantuk", "panik"]
+},
+{
+  pertanyaan: "Barang yang sering dipinjam di kelas?",
+  jawaban: ["pulpen", "penghapus", "penggaris", "buku", "kertas"]
+},
+{
+  pertanyaan: "Hal yang sering dilakukan guru di kelas?",
+  jawaban: ["ngajar", "marah", "nanya", "nulis", "ceramah"]
+},
+{
+  pertanyaan: "Alasan PR tidak dikerjakan?",
+  jawaban: ["lupa", "tidak paham", "ketiduran", "malas", "banyak tugas"]
+},
+{
+  pertanyaan: "Pekerjaan yang sering ditemui di sekitar rumah?",
+  jawaban: ["pedagang", "satpam", "tukang", "ojek", "penjual makanan"]
+},
+{
+  pertanyaan: "Alasan orang bekerja?",
+  jawaban: ["uang", "kebutuhan", "tanggung jawab", "keluarga", "pengalaman"]
+},
+{
+  pertanyaan: "Hal yang sering dilakukan saat istirahat kerja?",
+  jawaban: ["makan", "minum", "main hp", "ngobrol", "rokok"]
+},
+{
+  pertanyaan: "Barang yang sering ada di meja kerja?",
+  jawaban: ["komputer", "pulpen", "kertas", "hp", "minuman"]
+},
+{
+  pertanyaan: "Tempat yang sering bikin capek?",
+  jawaban: ["kantor", "sekolah", "jalan", "pabrik", "pasar"]
+},
+{
+  pertanyaan: "Alasan orang berhenti kerja?",
+  jawaban: ["capek", "gaji kecil", "lingkungan", "kontrak habis", "pindah"]
+},
+{
+  pertanyaan: "Tempat yang biasanya ramai pagi hari?",
+  jawaban: ["sekolah", "pasar", "jalan", "terminal", "kantor"]
+},
+{
+  pertanyaan: "Benda yang sering ditemukan di rumah orang tua?",
+  jawaban: ["lemari", "kursi", "jam dinding", "kipas", "tv"]
+},
+{
+  pertanyaan: "Hal yang sering dilakukan orang tua di rumah?",
+  jawaban: ["nonton tv", "masak", "bersih-bersih", "ngobrol", "tidur"]
+},
+{
+  pertanyaan: "Benda yang sering rusak di rumah?",
+  jawaban: ["remote", "kipas", "charger", "lampu", "stop kontak"]
+},
+{
+  pertanyaan: "Tempat yang sering bikin orang ngantri?",
+  jawaban: ["bank", "kasir", "atm", "rumah sakit", "kantin"]
+},
+{
+  pertanyaan: "Hal yang sering bikin orang sabar?",
+  jawaban: ["nunggu", "ngalah", "diam", "doa", "menahan emosi"]
+},
+{
+  pertanyaan: "Hal yang sering bikin orang kesel?",
+  jawaban: ["nunggu lama", "dibohongi", "diganggu", "macet", "disalahkan"]
+},
+{
+  pertanyaan: "Barang yang sering ada di ruang tamu?",
+  jawaban: ["sofa", "kursi", "meja", "tv", "karpet"]
+},
+{
+  pertanyaan: "Tempat yang sering didatangi saat akhir pekan?",
+  jawaban: ["rumah", "mall", "tempat makan", "pasar", "rumah keluarga"]
+}
+
+
+
 ];
+
 
 
 // Database bendera (100+ negara, contoh sebagian)
@@ -1576,27 +1706,449 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
 
 }
 
-
-
-
         const msgType = Object.keys(msg.message)[0];
         const body = text.toLowerCase(); // ⬅ WAJIB ADA!
         console.log(`📩 Pesan dari ${from}: ${text}`);
 
-        if (isGroup && !grupAktif.has(from)) {
-            grupAktif.set(from, false); 
-            simpanGrupAktif();
-        }
+     if (isGroup) {
+    if (!grupAktif.has(from)) {
+        grupAktif.set(from, false);
+        simpanGrupAktif();
+    }
 
-        if (isGroup && !grupAktif.get(from) && text.trim() !== '.on') {
+    const status = grupAktif.get(from);
+    if (status === 'true') grupAktif.set(from, true);
+    if (status === 'false') grupAktif.set(from, false);
+}
+
+if (text.trim() === '.on') {
+    if (!from.endsWith('@g.us')) return;
+
+    const realJid = normalizeJid(sender);
+    const isRealOwner =
+        realJid === normalizeJid(OWNER_NUMBER) ||
+        msg.key.fromMe;
+
+    if (!isRealOwner) {
+        await sock.sendMessage(from, {
+            text: '❌ *Hanya orang yang punya kemampuan surgawi yang bisa aktifin bot ini.'
+        });
+        return;
+    }
+
+    if (grupAktif.get(from) === true) {
+        await sock.sendMessage(from, {
+            text: '⚙️ *Bot Sudah Aktif*\n\n🟢 Status saat ini: *ON*'
+        });
+        return;
+    }
+
+    grupAktif.set(from, true);
+    simpanGrupAktif();
+
+    const waktu = new Date().toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    await sock.sendMessage(from, {
+        text: `✅ *BOT DIAKTIFKAN*
+━━━━━━━━━
+🟢 Status: *ON*
+📅 Waktu: ${waktu}
+
+👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
+        mentions: [OWNER_NUMBER]
+    });
+    return;
+}
+
+if (text.trim() === '.off') {
+    if (!from.endsWith('@g.us')) return;
+
+    const realJid = normalizeJid(sender);
+    const isRealOwner =
+        realJid === normalizeJid(OWNER_NUMBER) ||
+        msg.key.fromMe;
+
+    if (!isRealOwner) {
+        await sock.sendMessage(from, {
+            text: '❌ Yaelah aktifin aja gabisa, ini malah mau matiin lawak.'
+        });
+        return;
+    }
+
+    if (grupAktif.get(from) === false) {
+        await sock.sendMessage(from, {
+            text: '⚙️ *Bot Sudah Nonaktif*\n\n🔴 Status saat ini: *OFF*'
+        });
+        return;
+    }
+
+    grupAktif.set(from, false);
+    simpanGrupAktif();
+
+    const waktu = new Date().toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    await sock.sendMessage(from, {
+        text: `🔴 *BOT DIMATIKAN*
+━━━━━━━━━
+📅 Waktu: ${waktu}
+
+👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
+        mentions: [OWNER_NUMBER]
+    });
+    return;
+}
+
+
+// .setoff <angka> <satuan>
+if (body.startsWith('.setoff') && isGroup) {
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, {
+            text: '❌ Hanya *Owner* yang bisa menggunakan perintah ini.'
+        }, { quoted: msg });
+        return;
+    }
+
+    const args = body.trim().split(/\s+/);
+    const jumlah = parseInt(args[1]);
+    const satuan = (args[2] || '').toLowerCase();
+
+    if (!jumlah || isNaN(jumlah) || jumlah <= 0) {
+        await sock.sendMessage(from, {
+            text: '⚠️ Format salah.\n\nGunakan: *.setoff <angka> <satuan>*\nContoh:\n• *.setoff 1 jam*\n• *.setoff 5 menit*\n• *.setoff 30 detik*'
+        }, { quoted: msg });
+        return;
+    }
+
+    let ms = 0;
+    if (satuan.startsWith('jam')) {
+        ms = jumlah * 60 * 60 * 1000;
+    } else if (satuan.startsWith('menit')) {
+        ms = jumlah * 60 * 1000;
+    } else if (satuan.startsWith('detik')) {
+        ms = jumlah * 1000;
+    } else {
+        await sock.sendMessage(from, {
+            text: '❌ Satuan waktu tidak dikenal. Gunakan *jam*, *menit*, atau *detik*.'
+        }, { quoted: msg });
+        return;
+    }
+
+    // Hitung kapan bot akan dimatikan
+    const now = new Date();
+    const waktuOff = new Date(now.getTime() + ms);
+
+    // Format waktu
+    const formatWaktu = waktuOff.toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+
+    // Konfirmasi ke grup
+    await sock.sendMessage(from, {
+        text: `⏳ *Timer Bot OFF*\n\n🕒 Durasi: *${jumlah} ${satuan}*\n📅 Bot akan mati pada:\n👉 ${formatWaktu}\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
+        mentions: [OWNER_NUMBER]
+    }, { quoted: msg });
+
+    // Jalankan timer
+    setTimeout(async () => {
+        grupAktif.set(from, false);
+        simpanGrupAktif();
+
+        await sock.sendMessage(from, {
+            text: `🔴 *Bot Dimatikan Otomatis*\n\n📅 Waktu: ${formatWaktu}\n⏰ Durasi: *${jumlah} ${satuan}*\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
+            mentions: [OWNER_NUMBER]
+        });
+    }, ms);
+}
+// ================== ULAR TANGGA ==================
+
+// ================== ULAR & TANGGA ==================
+const ularTangga = {
+    16: 6, 47: 26, 49: 11, 56: 53, 62: 19,
+    64: 60, 87: 24, 93: 73, 95: 75, 98: 78,
+    1: 38, 4: 14, 9: 31, 21: 42, 28: 84,
+    36: 44, 51: 67, 71: 91, 80: 100
+};
+
+// ================== STATUS POSISI ==================
+function statusPosisi(sesi) {
+    return `📍 *Posisi Pemain:*
+${sesi.pemain.map((p, i) =>
+        `${i + 1}️⃣ @${p.split('@')[0]} : ${sesi.posisi[p]}`
+    ).join('\n')}`;
+}
+
+// ================== START GAME ==================
+if (text === '.ulartangga') {
+    if (!from.endsWith('@g.us')) return;
+
+    if (sesiUlarTangga.has(from)) {
+        await sock.sendMessage(from, { text: '⚠️ Game masih berlangsung!' });
+        return;
+    }
+
+    const creator = normalizeJid(sender);
+
+    const sent = await sock.sendMessage(from, {
+        text: `🐍🎲 *ULARTANGGA*
+━━━━━━━━━
+@${creator.split('@')[0]} membuat game
+
+🕒 30 detik
+📌 Reply pesan ini dengan *ikut*
+
+👥 Maks: 4 pemain (termasuk pembuat)`,
+        mentions: [creator]
+    });
+
+    const timeout = setTimeout(async () => {
+        const sesi = sesiUlarTangga.get(from);
+        if (!sesi) return;
+
+        if (sesi.pemain.length < 2) {
+            await sock.sendMessage(from, { text: '❌ Game dibatalkan (pemain kurang).' });
+            sesiUlarTangga.delete(from);
             return;
         }
+
+        sesi.status = 'main';
+        await mulaiGame(from, sesi);
+    }, 30000);
+
+    sesiUlarTangga.set(from, {
+        status: 'menunggu',
+        pemain: [creator],
+        posisi: { [creator]: 1 },
+        giliran: 0,
+        pesanId: sent.key.id,
+        timeout
+    });
+    return;
+}
+
+// ================== IKUT ==================
+if (
+    msg.message?.extendedTextMessage?.contextInfo?.stanzaId &&
+    text.toLowerCase() === 'ikut'
+) {
+    const sesi = sesiUlarTangga.get(from);
+    if (!sesi || sesi.status !== 'menunggu') return;
+    if (msg.message.extendedTextMessage.contextInfo.stanzaId !== sesi.pesanId) return;
+
+    const jid = normalizeJid(sender);
+    if (sesi.pemain.includes(jid)) return;
+
+    if (sesi.pemain.length >= 4) {
+        await sock.sendMessage(from, { text: '⚠️ Pemain penuh (4/4)!' });
+        return;
+    }
+
+    sesi.pemain.push(jid);
+    sesi.posisi[jid] = 1;
+
+    await sock.sendMessage(from, {
+        text: `✅ @${jid.split('@')[0]} ikut bermain! (${sesi.pemain.length}/4)`,
+        mentions: [jid]
+    });
+
+    if (sesi.pemain.length === 4) {
+        clearTimeout(sesi.timeout);
+        sesi.status = 'main';
+        await mulaiGame(from, sesi);
+    }
+    return;
+}
+
+// ================== MULAI ==================
+async function mulaiGame(from, sesi) {
+    await sock.sendMessage(from, {
+        text: `🎉 *GAME DIMULAI*
+━━━━━━━━━
+👥 Pemain:
+${sesi.pemain.map((p, i) => `${i + 1}. @${p.split('@')[0]}`).join('\n')}
+
+${statusPosisi(sesi)}
+
+➡️ Giliran:
+@${sesi.pemain[sesi.giliran].split('@')[0]}
+🎲 ketik *.dadu*`,
+        mentions: sesi.pemain
+    });
+}
+
+if (text === '.dadu') {
+    const sesi = sesiUlarTangga.get(from);
+    if (!sesi || sesi.status !== 'main') return;
+
+    const pemain = sesi.pemain[sesi.giliran];
+    if (normalizeJid(sender) !== pemain) {
+        await sock.sendMessage(from, { text: '⛔ Bukan giliranmu!' });
+        return;
+    }
+
+    // 1️⃣ Kirim pesan awal (TANPA mention)
+    const animasi = await sock.sendMessage(from, {
+        text: '🎲 Mengocok dadu'
+    });
+
+    // 2️⃣ Animasi edit (AMAN karena tanpa mention)
+    await new Promise(r => setTimeout(r, 700));
+    await sock.sendMessage(from, {
+        text: '🎲 Mengocok dadu.',
+        edit: animasi.key
+    });
+
+    await new Promise(r => setTimeout(r, 700));
+    await sock.sendMessage(from, {
+        text: '🎲 Mengocok dadu..',
+        edit: animasi.key
+    });
+
+    await new Promise(r => setTimeout(r, 700));
+    await sock.sendMessage(from, {
+        text: '🎲 Mengocok dadu...',
+        edit: animasi.key
+    });
+
+    // 3️⃣ Hitung dadu
+    const dadu = Math.floor(Math.random() * 6) + 1;
+    let posisiBaru = sesi.posisi[pemain] + dadu;
+
+    if (posisiBaru > 100) posisiBaru = sesi.posisi[pemain];
+
+    let infoTambahan = '';
+    if (ularTangga[posisiBaru]) {
+        infoTambahan =
+            ularTangga[posisiBaru] > posisiBaru
+                ? `🪜 Tangga naik ke ${ularTangga[posisiBaru]}`
+                : `🐍 Ular turun ke ${ularTangga[posisiBaru]}`;
+        posisiBaru = ularTangga[posisiBaru];
+    }
+
+    sesi.posisi[pemain] = posisiBaru;
+
+    // 4️⃣ MENANG
+    if (posisiBaru === 100) {
+        tambahSkor(pemain, from, 100);
+        sesi.pemain.forEach(p => p !== pemain && tambahSkor(p, from, -120));
+
+        await sock.sendMessage(from, {
+            text: `🏆 *MENANG!*
+━━━━━━━━━
+@${pemain.split('@')[0]} mencapai 100!
+
+🎁 +100 poin
+❌ Pemain lain -120 poin`,
+            mentions: sesi.pemain
+        });
+
+        sesiUlarTangga.delete(from);
+        return;
+    }
+
+    // 5️⃣ Giliran berikutnya
+    sesi.giliran = (sesi.giliran + 1) % sesi.pemain.length;
+
+    await sock.sendMessage(from, {
+        text: `🎲 *HASIL DADU*
+━━━━━━━━━
+@${pemain.split('@')[0]} mendapat *${dadu}*
+📍 Posisi sekarang: *${posisiBaru}*
+${infoTambahan ? '\n' + infoTambahan : ''}
+
+${statusPosisi(sesi)}
+
+➡️ Giliran:
+@${sesi.pemain[sesi.giliran].split('@')[0]}
+🎲 ketik *.dadu*`,
+        mentions: sesi.pemain
+    });
+}
+
+
+
+if (text === '.keluar') {
+    const sesi = sesiUlarTangga.get(from);
+    if (!sesi) return;
+
+    const jid = normalizeJid(sender);
+    if (!sesi.pemain.includes(jid)) return;
+
+    // ❌ pengurangan skor keluar
+    tambahSkor(jid, from, -120);
+
+    // 🎁 kasih 50 ke yang masih main
+    const sisaPemain = sesi.pemain.filter(p => p !== jid);
+    sisaPemain.forEach(p => tambahSkor(p, from, 50));
+
+    await sock.sendMessage(from, {
+        text: `🏳️ @${jid.split('@')[0]} keluar dari game!
+❌ -120 poin
+
+🎁 Pemain tersisa +50 poin`,
+        mentions: [jid, ...sisaPemain]
+    });
+
+    // hapus player
+    delete sesi.posisi[jid];
+    sesi.pemain = sisaPemain;
+
+    // 🔥 JIKA TINGGAL 1 → MENANG OTOMATIS
+    if (sesi.pemain.length === 1) {
+        const winner = sesi.pemain[0];
+        tambahSkor(winner, from, 100);
+
+        await sock.sendMessage(from, {
+            text: `🏆 *GAME SELESAI*
+━━━━━━━━━
+@${winner.split('@')[0]} adalah pemenang terakhir!
+🎁 +100 poin`,
+            mentions: [winner]
+        });
+
+        sesiUlarTangga.delete(from);
+        return;
+    }
+
+    // pastikan giliran aman
+    sesi.giliran %= sesi.pemain.length;
+}
+
+if (
+    isGroup &&
+    grupAktif.get(from) !== true &&
+    !['.on', '.off', '.status'].includes(text.trim())
+) {
+    return;
+}
+
         const isBannedGlobal = 
         (bannedUsers["ban-pribadi"] && bannedUsers["ban-pribadi"][normalizeJid(sender)]) ||
         (bannedUsers["ban-grup"] && bannedUsers["ban-grup"][normalizeJid(sender)]);
 
         if (isBannedGlobal) return; // 🚫 Bot diam total
-
 
 
 if (msg.message?.imageMessage) {
@@ -1628,14 +2180,22 @@ function tambahSkor(jid, groupId, poin) {
 
 
 //mute
-if (isMuted(sender, from)) {
+// mute (KECUALI OWNER & COMMAND SISTEM)
+if (
+    isMuted(sender, from) &&
+    !['.on', '.off', '.status'].includes(text.trim()) &&
+    normalizeJid(sender) !== normalizeJid(OWNER_NUMBER)
+) {
     try {
-        await sock.sendMessage(from, { delete: msg.key }); // hapus pesannya
+        await sock.sendMessage(from, { delete: msg.key });
     } catch (e) {
         console.log('Gagal hapus pesan dari user yang dimute.');
     }
     return;
 }
+
+
+
 // 🔧 fungsi hapus pesan universal
 async function hapusPesan(from, msg) {
     try {
@@ -1717,8 +2277,6 @@ if (currentPdfSession) {
         return;
     }
 }
-
-
 
 
 if (text === '.shop') {
@@ -3406,39 +3964,91 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         return;
     }
 }
+
+function normalize(teks) {
+    return teks
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function cocokMirip(jawabanAsli, jawabanUser) {
+    const a = normalize(jawabanAsli);
+    const u = normalize(jawabanUser);
+
+    // 1️⃣ substring langsung
+    if (a.includes(u) || u.includes(a)) return true;
+
+    const kataAsli = a.split(' ');
+    const kataUser = u.split(' ');
+
+    let cocok = 0;
+
+    for (const ku of kataUser) {
+        for (const ka of kataAsli) {
+            if (ka.includes(ku) || ku.includes(ka)) {
+                cocok++;
+                break;
+            }
+        }
+    }
+
+    // 2️⃣ minimal 60% kata user nyambung
+    return cocok / kataUser.length >= 0.6;
+}
+
+// ================= FAMILY 100 =================
 if (text === '.family100') {
     if (sesiFamily100.has(from)) {
         await sock.sendMessage(from, {
-            text: `⚠️ *Permainan Sedang Berlangsung!*\n━━━━━━━━━\nMohon selesaikan permainan sebelumnya terlebih dahulu.\nBalas (reply) pertanyaan yang muncul untuk menjawab.`
+            text: `⚠️ *Permainan Sedang Berlangsung!*
+━━━━━━━━━
+Selesaikan dulu game sebelumnya.`
         });
         return;
     }
 
     const soal = ambilSoalAcak('family100', soalFamily100);
-    const kosong = soal.jawaban.map((_, i) => `*${i + 1}.*`).join("\n");
 
-    const pesanPertanyaan = `🎮 *Family 100 Dimulai!*\n━━━━━━━━━\n🧠 *Pertanyaan:*\n${soal.pertanyaan}\n\n📋 *Jawaban:*\n${kosong}\n\n⏳ *Waktu:* 60 detik\n↩️ *Balas pesan ini untuk menjawab.*`;
+    const sent = await sock.sendMessage(from, {
+        text: `🎮 *Family 100 Dimulai!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${soal.pertanyaan}
 
-    const sent = await sock.sendMessage(from, { text: pesanPertanyaan });
+📋 *Jawaban:*
+${soal.jawaban.map((_, i) => `*${i + 1}.*`).join('\n')}
+
+⏳ *Waktu:* 60 detik
+↩️ *Balas pesan ini untuk menjawab.*`
+    });
 
     const timeout = setTimeout(async () => {
         const sesi = sesiFamily100.get(from);
         if (!sesi) return;
 
-        const jawabanBenar = soalFamily100.find(s => s.pertanyaan === sesi.pertanyaan).jawaban;
+        const dataSoal = soalFamily100.find(s => s.pertanyaan === sesi.pertanyaan);
 
-        const jawabanAkhir = jawabanBenar.map((j, i) => {
-            const user = sesi.jawabanLolos[i];
-            if (user) {
-                return `*${i + 1}.* ✅ ${j} (@${user.split('@')[0]})`;
-            } else {
-                return `*${i + 1}.* ❌ ${j}`;
-            }
-        }).join("\n");
+        // ⬇️ TAMPILKAN PENJAWAB HANYA DI AKHIR
+        const jawabanAkhir = dataSoal.jawaban.map((j, i) => {
+            const user = sesi.penjawab[i];
+            return user
+                ? `*${i + 1}.* ✅ ${j} — @${user.split('@')[0]}`
+                : `*${i + 1}.* ❌ ${j}`;
+        }).join('\n');
 
         await sock.sendMessage(from, {
-            text: `⏱️ *Waktu Habis!*\n🎉 *Family 100 Selesai!*\n━━━━━━━━━\n🧠 *Pertanyaan:*\n${sesi.pertanyaan}\n\n📋 *Jawaban Lengkap:*\n${jawabanAkhir}\n\n🎊 Terima kasih telah bermain!`,
-            mentions: sesi.jawabanLolos.filter(Boolean)
+            text: `🎉 *Family 100 Selesai!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${sesi.pertanyaan}
+
+📋 *Jawaban Lengkap:*
+${jawabanAkhir}
+
+🎊 Terima kasih telah bermain!`,
+            mentions: sesi.penjawab.filter(Boolean)
         });
 
         sesiFamily100.delete(from);
@@ -3448,69 +4058,105 @@ if (text === '.family100') {
         pesanId: sent.key.id,
         pertanyaan: soal.pertanyaan,
         jawaban: Array(soal.jawaban.length).fill(null),
-        jawabanLolos: Array(soal.jawaban.length).fill(null),
+        penjawab: Array(soal.jawaban.length).fill(null),
         timeout
     });
 
     return;
 }
 
-// 🔹 Tangani jawaban
+// ================= JAWAB =================
 if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
     const sesi = sesiFamily100.get(from);
-    if (sesi && msg.message.extendedTextMessage.contextInfo.stanzaId === sesi.pesanId) {
-        const userJawab = text.trim().toLowerCase();
-        const sender = msg.key.participant || msg.key.remoteJid;
+    if (!sesi) return;
 
-        const index = soalFamily100.find(s => s.pertanyaan === sesi.pertanyaan)
-            .jawaban.findIndex(j => j.toLowerCase() === userJawab);
+    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+    if (replyId !== sesi.pesanId) return;
 
-        if (index !== -1 && !sesi.jawaban[index]) {
-            sesi.jawaban[index] = soalFamily100.find(s => s.pertanyaan === sesi.pertanyaan).jawaban[index];
-            sesi.jawabanLolos[index] = sender; // simpan full JID
+    const userJawab = text.trim().toLowerCase();
+    const sender = msg.key.participant || msg.key.remoteJid;
 
-            tambahSkor(sender, from, 20);
+    const dataSoal = soalFamily100.find(s => s.pertanyaan === sesi.pertanyaan);
+    const index = dataSoal.jawaban.findIndex(
+    j => cocokMirip(j, userJawab)
+);
 
-            const isi = sesi.jawaban.map((j, i) => {
-                if (j) {
-                    return `*${i + 1}.* ✅ ${j} (@${sesi.jawabanLolos[i].split('@')[0]})`;
-                } else {
-                    return `*${i + 1}.*`;
-                }
-            }).join("\n");
 
-            await sock.sendMessage(from, {
-                text: `🎮 *Jawaban Diterima!*\n━━━━━━━━━\n🧠 *Pertanyaan:* ${sesi.pertanyaan}\n\n📋 *Jawaban Saat Ini:*\n${isi}\n\n✅ *Jawaban "${userJawab}" benar!*\n🎁 +20 poin untuk @${sender.split('@')[0]}\n↩️ Balas pesan ini untuk menjawab.`,
-                mentions: [sender]
-            });
+    // ⬇️ SAAT GAME BERJALAN (TANPA NAMA PENJAWAB)
+    const renderSaatMain = () =>
+        sesi.jawaban.map((j, i) =>
+            j ? `*${i + 1}.* ✅ ${j}` : `*${i + 1}.*`
+        ).join('\n');
 
-            if (sesi.jawaban.every(j => j !== null)) {
-                clearTimeout(sesi.timeout);
-                sesiFamily100.delete(from);
-                await sock.sendMessage(from, {
-                    text: `🎉 *Family 100 Selesai!*\n📢 *Pertanyaan:* ${sesi.pertanyaan}\n\n📋 *Jawaban Akhir:*\n${isi}\n\n🎊 Terima kasih sudah bermain!`
-                });
-            }
-        } else {
-            const isi = sesi.jawaban.map((j, i) => {
-            if (j) {
-                const user = sesi.jawabanLolos[i];
+    // ✅ BENAR
+    if (index !== -1 && !sesi.jawaban[index]) {
+        sesi.jawaban[index] = dataSoal.jawaban[index];
+        sesi.penjawab[index] = sender;
+
+        tambahSkor(sender, from, 20);
+
+        const sentUpdate = await sock.sendMessage(from, {
+    text: `🎮 *Jawaban Diterima!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${sesi.pertanyaan}
+
+📋 *Jawaban Saat Ini:*
+${renderSaatMain()}
+
+🎁 +20 poin untuk @${sender.split('@')[0]}
+↩️ Balas pesan ini untuk menjawab.`,
+    mentions: [sender] // 🔥 TAG AMAN DI SINI
+});
+
+
+        sesi.pesanId = sentUpdate.key.id;
+
+        // 🔥 SEMUA TERJAWAB → LANGSUNG SELESAI
+        if (sesi.jawaban.every(j => j !== null)) {
+            clearTimeout(sesi.timeout);
+            sesiFamily100.delete(from);
+
+            const jawabanAkhir = dataSoal.jawaban.map((j, i) => {
+                const user = sesi.penjawab[i];
                 return user
-                    ? `*${i + 1}.* ✅ ${j} (@${user.split('@')[0]})`
-                    : `*${i + 1}.* ✅ ${j}`;
-            } else {
-                return `*${i + 1}.*`;
-            }
-        }).join("\n");
+                    ? `*${i + 1}.* ✅ ${j} — @${user.split('@')[0]}`
+                    : `*${i + 1}.* ❌ ${j}`;
+            }).join('\n');
 
             await sock.sendMessage(from, {
-                text: `🚫 *Jawaban Salah!*\n━━━━━━━━━\n🧠 *Pertanyaan:* ${sesi.pertanyaan}\n\n📋 *Jawaban Saat Ini:*\n${isi}\n\n❌ *"${userJawab}" tidak ada dalam daftar jawaban.*\n↩️ Balas pesan ini untuk menjawab.`,
-                mentions: [sender]
+                text: `🎉 *Family 100 Selesai!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${sesi.pertanyaan}
+
+📋 *Jawaban Lengkap:*
+${jawabanAkhir}
+
+🎊 Terima kasih telah bermain!`,
+                mentions: sesi.penjawab.filter(Boolean)
             });
         }
         return;
     }
+
+    // ❌ SALAH
+    const sentSalah = await sock.sendMessage(from, {
+        text: `🚫 *Jawaban Salah!*
+━━━━━━━━━
+🧠 *Pertanyaan:*
+${sesi.pertanyaan}
+
+📋 *Jawaban Saat Ini:*
+${renderSaatMain()}
+
+❌ *"${userJawab}" tidak ada.*
+↩️ Balas pesan ini untuk menjawab.`
+    });
+
+    sesi.pesanId = sentSalah.key.id;
 }
+
 
 
 if (text.startsWith('.judi')) {
@@ -4661,152 +5307,6 @@ if (text === '.dwvideo') {
     }
 
     return;
-}
-
-if (text.trim() === '.off') {
-    const realJid = normalizeJid(sender);
-    const isRealOwner = realJid === OWNER_NUMBER || msg.key.fromMe;
-
-    if (!isRealOwner) {
-        await sock.sendMessage(from, {
-            text: '❌ Lu bukan orang terpilih buat matiin.'
-        });
-        return;
-    }
-
-    // cek status dulu
-    if (grupAktif.get(from) === false) {
-        await sock.sendMessage(from, {
-            text: '⚙️ Bot sudah dalam keadaan *OFF*.'
-        });
-        return;
-    }
-
-    grupAktif.set(from, false);
-    simpanGrupAktif();
-
-    const waktu = new Date().toLocaleString('id-ID', {
-        timeZone: 'Asia/Jakarta',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-
-    await sock.sendMessage(from, {
-        text: `🔴 *Bot Dimatikan*\n\n📅 Tanggal: ${waktu}\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
-        mentions: [OWNER_NUMBER]
-    });
-    return;
-}
-
-
-if (text.trim() === '.on') {
-    const isRealOwner = isOwner(sender) || msg.key.fromMe;
-
-    if (!isRealOwner) {
-        await sock.sendMessage(from, {
-            text: '❌ Hanya orang beriman yang bisa nyalain.'
-        });
-        return;
-    }
-
-    // cek status dulu
-    if (grupAktif.get(from) === true) {
-        await sock.sendMessage(from, {
-            text: '⚙️ Bot sudah dalam keadaan *ON*.'
-        });
-        return;
-    }
-
-    grupAktif.set(from, true);
-    simpanGrupAktif();
-
-    const waktu = new Date().toLocaleString('id-ID', {
-        timeZone: 'Asia/Jakarta',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-
-    await sock.sendMessage(from, {
-        text: `✅ *Bot Aktif*\n\n🟢 Status: *ON*\n📅 Tanggal: ${waktu}\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
-        mentions: [OWNER_NUMBER]
-    });
-    return;
-}
-
-// .setoff <angka> <satuan>
-if (body.startsWith('.setoff') && isGroup) {
-    if (!isOwner(sender)) {
-        await sock.sendMessage(from, {
-            text: '❌ Hanya *Owner* yang bisa menggunakan perintah ini.'
-        }, { quoted: msg });
-        return;
-    }
-
-    const args = body.trim().split(/\s+/);
-    const jumlah = parseInt(args[1]);
-    const satuan = (args[2] || '').toLowerCase();
-
-    if (!jumlah || isNaN(jumlah) || jumlah <= 0) {
-        await sock.sendMessage(from, {
-            text: '⚠️ Format salah.\n\nGunakan: *.setoff <angka> <satuan>*\nContoh:\n• *.setoff 1 jam*\n• *.setoff 5 menit*\n• *.setoff 30 detik*'
-        }, { quoted: msg });
-        return;
-    }
-
-    let ms = 0;
-    if (satuan.startsWith('jam')) {
-        ms = jumlah * 60 * 60 * 1000;
-    } else if (satuan.startsWith('menit')) {
-        ms = jumlah * 60 * 1000;
-    } else if (satuan.startsWith('detik')) {
-        ms = jumlah * 1000;
-    } else {
-        await sock.sendMessage(from, {
-            text: '❌ Satuan waktu tidak dikenal. Gunakan *jam*, *menit*, atau *detik*.'
-        }, { quoted: msg });
-        return;
-    }
-
-    // Hitung kapan bot akan dimatikan
-    const now = new Date();
-    const waktuOff = new Date(now.getTime() + ms);
-
-    // Format waktu
-    const formatWaktu = waktuOff.toLocaleString('id-ID', {
-        timeZone: 'Asia/Jakarta',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-
-    // Konfirmasi ke grup
-    await sock.sendMessage(from, {
-        text: `⏳ *Timer Bot OFF*\n\n🕒 Durasi: *${jumlah} ${satuan}*\n📅 Bot akan mati pada:\n👉 ${formatWaktu}\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
-        mentions: [OWNER_NUMBER]
-    }, { quoted: msg });
-
-    // Jalankan timer
-    setTimeout(async () => {
-        grupAktif.set(from, false);
-        simpanGrupAktif();
-
-        await sock.sendMessage(from, {
-            text: `🔴 *Bot Dimatikan Otomatis*\n\n📅 Waktu: ${formatWaktu}\n⏰ Durasi: *${jumlah} ${satuan}*\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
-            mentions: [OWNER_NUMBER]
-        });
-    }, ms);
 }
 
 
@@ -6220,6 +6720,17 @@ function randomString(length = 6) {
     return result;
 }
 
+// ======================= RANDOM STRING =======================
+function randomString(length = 6) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+// ======================= COMMAND .TANTANGAN =======================
 if (text.startsWith('.tantangan')) {
     const args = text.split(' ');
     const poin = parseInt(args[1]) || 10;
@@ -6232,7 +6743,7 @@ if (text.startsWith('.tantangan')) {
         return;
     }
 
-    // kalau chat pribadi
+    // ======================= CHAT PRIBADI =======================
     if (!from.endsWith('@g.us')) {
         let grupAktif = {};
         try {
@@ -6264,23 +6775,24 @@ if (text.startsWith('.tantangan')) {
         return;
     }
 
-    // kalau dari grup langsung
+    // ======================= GRUP LANGSUNG =======================
     const sent = await sock.sendMessage(from, {
         text: `🎯 *Tantangan Cepat!*\n──────────────────\nBalas pesan ini dengan kata berikut:\n\n➡️ *${challenge}*\n\n🏆 Hadiah: *${poin} poin*\n⏳ Waktu: ${waktu} detik`
     });
 
+    const sesiKey = sent.key.id + '_' + from;
     const timeout = setTimeout(() => {
-        if (sesiCepat.has(sent.key.id)) {
+        if (sesiCepat.has(sesiKey)) {
             sock.sendMessage(from, { text: `⏰ *Waktu habis!* Tidak ada yang berhasil.` });
-            sesiCepat.delete(sent.key.id);
+            sesiCepat.delete(sesiKey);
         }
     }, waktu * 1000);
 
-    sesiCepat.set(sent.key.id, { poin, timeout, jawaban: challenge });
+    sesiCepat.set(sesiKey, { poin, timeout, jawaban: challenge, selesai: false });
     return;
 }
 
-// kalau user sedang memilih grup
+// ======================= PILIH GRUP =======================
 if (sesiPilihGrup.has(sender)) {
     const pilihan = parseInt(text.trim());
     const data = sesiPilihGrup.get(sender);
@@ -6297,17 +6809,68 @@ if (sesiPilihGrup.has(sender)) {
         text: `🎯 *Tantangan Cepat!*\n──────────────────\nBalas pesan ini dengan kata berikut:\n\n➡️ *${data.challenge}*\n\n🏆 Hadiah: *${data.poin} poin*\n⏳ Waktu: ${data.waktu} detik`
     });
 
+    const sesiKey = sent.key.id + '_' + groupId;
     const timeout = setTimeout(() => {
-        if (sesiCepat.has(sent.key.id)) {
+        if (sesiCepat.has(sesiKey)) {
             sock.sendMessage(groupId, { text: `⏰ *Waktu habis!* Tidak ada yang berhasil.` });
-            sesiCepat.delete(sent.key.id);
+            sesiCepat.delete(sesiKey);
         }
     }, data.waktu * 1000);
 
-    sesiCepat.set(sent.key.id, { poin: data.poin, timeout, jawaban: data.challenge });
+    sesiCepat.set(sesiKey, { poin: data.poin, timeout, jawaban: data.challenge, selesai: false });
 
     await sock.sendMessage(from, { text: `✅ Tantangan berhasil dikirim ke grup yang dipilih!` });
     return;
+}
+
+// ======================= HANDLE JAWABAN =======================
+const senderId = msg.key.participant || msg.key.remoteJid;
+const chatId = from;
+
+// 1️⃣ Cek reply
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId + '_' + chatId;
+    const sesi = sesiCepat.get(replyId);
+
+    if (sesi && !sesi.selesai) {
+        const jawabanUser = text.trim();
+        if (jawabanUser.toLowerCase() === sesi.jawaban.toLowerCase()) {
+            sesi.selesai = true;
+            clearTimeout(sesi.timeout);
+            sesiCepat.delete(replyId);
+
+            tambahSkor(senderId, chatId, sesi.poin);
+
+            await sock.sendMessage(chatId, {
+                text: `🎉 *TANTANGAN SELESAI!*\n━━━━━━━━━\n✅ Jawaban benar: *${sesi.jawaban}*\n👑 Pemenang: @${senderId.split('@')[0]}\n🏆 +${sesi.poin} poin`,
+                mentions: [senderId]
+            });
+        } else {
+            await sock.sendMessage(chatId, { text: '❌ Salah!\nCoba lagi sebelum waktu habis.' });
+        }
+        return;
+    }
+}
+
+// 2️⃣ Cek jawaban direct (bukan reply)
+for (let [key, sesi] of sesiCepat) {
+    if (key.endsWith('_' + chatId) && !sesi.selesai) {
+        if (text.trim().toLowerCase() === sesi.jawaban.toLowerCase()) {
+            sesi.selesai = true;
+            clearTimeout(sesi.timeout);
+            sesiCepat.delete(key);
+
+            tambahSkor(senderId, chatId, sesi.poin);
+
+            await sock.sendMessage(chatId, {
+                text: `🎉 *TANTANGAN SELESAI!*\n━━━━━━━━━\n✅ Jawaban benar: *${sesi.jawaban}*\n👑 Pemenang: @${senderId.split('@')[0]}\n🏆 +${sesi.poin} poin`,
+                mentions: [senderId]
+            });
+        } else {
+            await sock.sendMessage(chatId, { text: '❌ Salah!\nCoba lagi sebelum waktu habis.' });
+        }
+        break;
+    }
 }
 
 if (text.startsWith('.umumkan')) {
@@ -6549,6 +7112,7 @@ if (/^[1-9]$/.test(text)) {
         return;
     }
 }
+
 // ========== FITUR AMBIL FOTO PROFIL (.ambilpp) ==========
 if (text.trim().toLowerCase().startsWith('.ambilpp')) {
 
@@ -6996,7 +7560,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.3.5');
+    const versiFancy = toFancyNumber('1.4.0');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
