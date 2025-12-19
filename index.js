@@ -6107,6 +6107,292 @@ if (text.toLowerCase().startsWith('.sound')) {
     }
 }
 
+if (
+    text?.toLowerCase().startsWith('.audiovid') ||
+    msg.message?.videoMessage?.caption?.toLowerCase().startsWith('.audiovid')
+) {
+
+    let videoMsg = null;
+
+    // 🔹 KIRIM VIDEO + CAPTION
+    if (msg.message?.videoMessage) {
+        videoMsg = msg.message.videoMessage;
+    }
+
+    // 🔹 REPLY VIDEO
+    if (!videoMsg) {
+        videoMsg =
+            msg.message?.extendedTextMessage
+                ?.contextInfo
+                ?.quotedMessage
+                ?.videoMessage;
+    }
+
+    if (!videoMsg) {
+        await sock.sendMessage(from, {
+            text: '❌ Reply video atau kirim video dengan caption *.audiovid*'
+        }, { quoted: msg });
+        return;
+    }
+
+    // ⏳ LOADING
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const buffer = await downloadMediaMessage(
+            { message: { videoMessage: videoMsg } },
+            'buffer',
+            {},
+            { logger: pino({ level: 'silent' }) }
+        );
+
+        const inputPath = `./temp_vid_${Date.now()}.mp4`;
+        const outputPath = `./temp_audio_${Date.now()}.mp3`;
+
+        fs.writeFileSync(inputPath, buffer);
+
+        await new Promise((resolve, reject) => {
+            ffmpeg(inputPath)
+                .noVideo()
+                .audioCodec('libmp3lame')
+                .audioBitrate(128)
+                .save(outputPath)
+                .on('end', resolve)
+                .on('error', reject);
+        });
+
+        await sock.sendMessage(from, {
+            audio: fs.readFileSync(outputPath),
+            mimetype: 'audio/mpeg'
+        }, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        fs.unlinkSync(inputPath);
+        fs.unlinkSync(outputPath);
+
+    } catch (err) {
+        console.error(err);
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, {
+            text: '❌ Gagal mengubah video menjadi audio.'
+        }, { quoted: msg });
+    }
+}
+
+if (
+    text?.toLowerCase().startsWith('.rotate') ||
+    msg.message?.imageMessage?.caption?.toLowerCase().startsWith('.rotate') ||
+    msg.message?.videoMessage?.caption?.toLowerCase().startsWith('.rotate')
+) {
+    // =====================
+    // PARSE DEGREE (NO DEFAULT)
+    // =====================
+    let raw = text?.split(' ')[1];
+    let degree = parseInt(raw);
+
+    if (isNaN(degree)) {
+        await sock.sendMessage(from, {
+            text: '❌ Gunakan: *.rotate 90 / 180 / 270 / -90 / 360*'
+        }, { quoted: msg });
+        return;
+    }
+
+    // normalisasi ke 0–359
+    degree = ((degree % 360) + 360) % 360;
+
+    if (![0, 90, 180, 270].includes(degree)) {
+        await sock.sendMessage(from, {
+            text: '❌ Derajat tidak valid. Gunakan 90 / 180 / 270'
+        }, { quoted: msg });
+        return;
+    }
+
+    let mediaType = null;
+    let mediaMsg = null;
+
+    // ===== KIRIM LANGSUNG =====
+    if (msg.message?.imageMessage) {
+        mediaType = 'image';
+        mediaMsg = msg.message.imageMessage;
+    } else if (msg.message?.videoMessage) {
+        mediaType = 'video';
+        mediaMsg = msg.message.videoMessage;
+    }
+
+    // ===== REPLY =====
+    if (!mediaMsg) {
+        const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        if (quoted?.imageMessage) {
+            mediaType = 'image';
+            mediaMsg = quoted.imageMessage;
+        } else if (quoted?.videoMessage) {
+            mediaType = 'video';
+            mediaMsg = quoted.videoMessage;
+        }
+    }
+
+    if (!mediaMsg) {
+        await sock.sendMessage(from, {
+            text: '❌ Reply foto/video atau kirim dengan caption *.rotate 90*'
+        }, { quoted: msg });
+        return;
+    }
+
+    // ⏳ LOADING
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const buffer = await downloadMediaMessage(
+            { message: mediaType === 'image'
+                ? { imageMessage: mediaMsg }
+                : { videoMessage: mediaMsg }
+            },
+            'buffer',
+            {},
+            { logger: pino({ level: 'silent' }) }
+        );
+
+        // ===== DEGREE 0 → KIRIM ULANG =====
+        if (degree === 0) {
+            await sock.sendMessage(from,
+                mediaType === 'image'
+                    ? { image: buffer, caption: '🔄 Rotated 0°' }
+                    : { video: buffer, caption: '🔄 Rotated 0°' },
+                { quoted: msg }
+            );
+
+            await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+            return;
+        }
+
+        const input = `./rotate_in_${Date.now()}.${mediaType === 'image' ? 'jpg' : 'mp4'}`;
+        const output = `./rotate_out_${Date.now()}.${mediaType === 'image' ? 'jpg' : 'mp4'}`;
+
+        fs.writeFileSync(input, buffer);
+
+        const rotateMap = {
+            90: 'transpose=1',
+            180: 'transpose=1,transpose=1',
+            270: 'transpose=2'
+        };
+
+        await new Promise((resolve, reject) => {
+            ffmpeg(input)
+                .outputOptions('-vf', rotateMap[degree])
+                .save(output)
+                .on('end', resolve)
+                .on('error', reject);
+        });
+
+        await sock.sendMessage(from,
+            mediaType === 'image'
+                ? { image: fs.readFileSync(output), caption: `🔄 Rotated ${degree}°` }
+                : { video: fs.readFileSync(output), caption: `🔄 Rotated ${degree}°` },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        fs.unlinkSync(input);
+        fs.unlinkSync(output);
+
+    } catch (err) {
+        console.error(err);
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, {
+            text: '❌ Gagal rotate media.'
+        }, { quoted: msg });
+    }
+}
+
+if (
+    text?.toLowerCase().startsWith('.mirror') ||
+    msg.message?.imageMessage?.caption?.toLowerCase().startsWith('.mirror') ||
+    msg.message?.videoMessage?.caption?.toLowerCase().startsWith('.mirror')
+) {
+    let mediaType = null;
+    let mediaMsg = null;
+
+    // ===== KIRIM LANGSUNG =====
+    if (msg.message?.imageMessage) {
+        mediaType = 'image';
+        mediaMsg = msg.message.imageMessage;
+    } else if (msg.message?.videoMessage) {
+        mediaType = 'video';
+        mediaMsg = msg.message.videoMessage;
+    }
+
+    // ===== REPLY =====
+    if (!mediaMsg) {
+        const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        if (quoted?.imageMessage) {
+            mediaType = 'image';
+            mediaMsg = quoted.imageMessage;
+        } else if (quoted?.videoMessage) {
+            mediaType = 'video';
+            mediaMsg = quoted.videoMessage;
+        }
+    }
+
+    if (!mediaMsg) {
+        await sock.sendMessage(from, {
+            text: '❌ Reply foto/video atau kirim dengan caption *.mirror*'
+        }, { quoted: msg });
+        return;
+    }
+
+    // ⏳ LOADING
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const buffer = await downloadMediaMessage(
+            {
+                message:
+                    mediaType === 'image'
+                        ? { imageMessage: mediaMsg }
+                        : { videoMessage: mediaMsg }
+            },
+            'buffer',
+            {},
+            { logger: pino({ level: 'silent' }) }
+        );
+
+        const input = `./mirror_in_${Date.now()}.${mediaType === 'image' ? 'jpg' : 'mp4'}`;
+        const output = `./mirror_out_${Date.now()}.${mediaType === 'image' ? 'jpg' : 'mp4'}`;
+
+        fs.writeFileSync(input, buffer);
+
+        await new Promise((resolve, reject) => {
+            ffmpeg(input)
+                .outputOptions('-vf', 'hflip')
+                .save(output)
+                .on('end', resolve)
+                .on('error', reject);
+        });
+
+        await sock.sendMessage(
+            from,
+            mediaType === 'image'
+                ? { image: fs.readFileSync(output), caption: '🪞 Mirrored' }
+                : { video: fs.readFileSync(output), caption: '🪞 Mirrored' },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        fs.unlinkSync(input);
+        fs.unlinkSync(output);
+
+    } catch (err) {
+        console.error(err);
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, {
+            text: '❌ Gagal mirror media.'
+        }, { quoted: msg });
+    }
+}
+
 
 if (text.startsWith('.fakereply')) {
   const raw = text.replace('.fakereply', '').trim();
@@ -7631,7 +7917,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.4.0');
+    const versiFancy = toFancyNumber('1.4.5');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -7681,6 +7967,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 ├─ 〔 🎵 *ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
 │ .spotify → Cari lagu Spotify
 │ .sound → Ubah teks jadi suara
+│ .audiovid → Video jadi audio
 │ .ubahsuara → Ubah suara unik
 │ .wm → Unduh tanpa watermax
 │ .ttmp3 → Unduh mp3 TikTok
@@ -7706,6 +7993,8 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .ambilpp → Mengambil PP wa
 │ .dwfoto → Unduh foto sekali lihat
 │ .dwvideo → Unduh video sekali lihat
+│ .mirror → Cermin foto/video
+│ .rotate → Ubah posisi foto/video
 │
 ├─ 〔 👤 *ᴀɴᴏɴʏᴍᴏᴜꜱ* 〕
 │ .anonymous → Chat orang random
