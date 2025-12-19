@@ -8175,13 +8175,52 @@ if (text.startsWith('.ai')) {
     return;
 }
 
+if (text === '.ceklimit') {
+
+    // ID limit: grup atau private
+    const idLimit = from.endsWith('@g.us') ? from : sender;
+
+    // auto init kalau belum ada
+    initDefaultAiLimit(idLimit);
+
+    const data = aiLimit[idLimit];
+
+    if (!data) {
+        await sock.sendMessage(from, {
+            text: '❌ Data limit AI tidak ditemukan.'
+        });
+        return;
+    }
+
+    const sisa = Math.max(data.limit - data.used, 0);
+
+    let lokasi = from.endsWith('@g.us')
+        ? '👥 *Grup*'
+        : '👤 *Private*';
+
+    let teks =
+`📊 *AI Limit Status*
+${lokasi}
+
+🔢 Total Limit : *${data.limit}*
+📉 Terpakai   : *${data.used}*
+✅ Sisa       : *${sisa}*`;
+
+    // info tambahan kalau habis
+    if (sisa <= 0) {
+        teks += `\n\n⚠️ *Limit AI sudah habis*\nHubungi owner untuk isi ulang.`;
+    }
+
+    await sock.sendMessage(from, { text: teks });
+    return;
+}
 
 
 // 🔥 MODIFIED .clear COMMAND - PAKAI from
 if (text === ".clear") {
     const memoryId = from.endsWith("@g.us") ? from : sender;
     resetChatMemory(memoryId);
-    await sock.sendMessage(from, { text: "🧹 Obrolan AI berhasil direset! System prompt tetap aktif." });
+    await sock.sendMessage(from, { text: "🧹 Obrolan AI berhasil direset!" });
     return;
 }
 
