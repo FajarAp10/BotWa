@@ -1731,7 +1731,7 @@ if (text.trim() === '.on') {
 
     if (!isRealOwner) {
         await sock.sendMessage(from, {
-            text: '❌ *Hanya orang yang punya kemampuan surgawi yang bisa aktifin bot ini.'
+            text: '❌ Hanya orang yang punya kemampuan *surgawi* yang bisa aktifin bot ini.'
         });
         return;
     }
