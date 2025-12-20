@@ -6912,26 +6912,35 @@ if (text.toLowerCase().startsWith('.qc')) {
 
 //SPOTIFY
 async function convert(ms) {
-    var minutes = Math.floor(ms / 60000);
-    var seconds = ((ms % 60000) / 1000).toFixed(0);
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
     return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
 }
 
+
 async function down(url) {
-    const BASEURL = "https://api.fabdl.com";
-    const headers = {
-        Accept: "application/json, text/plain, */*",
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-    };
+    try {
+        const BASEURL = "https://api.fabdl.com";
+        const headers = {
+            Accept: "application/json, text/plain, */*",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0"
+        };
 
-    const { data: info } = await axios.get(`${BASEURL}/spotify/get?url=${url}`, { headers });
-    const { gid, id } = info.result;
+        const { data: info } = await axios.get(`${BASEURL}/spotify/get?url=${url}`, { headers });
+        if (!info?.result) return null;
 
-    const { data: download } = await axios.get(`${BASEURL}/spotify/mp3-convert-task/${gid}/${id}`, { headers });
-    if (download.result.download_url) return `${BASEURL}${download.result.download_url}`;
-    throw new Error("Gagal mendownload audio dari Spotify");
+        const { gid, id } = info.result;
+        const { data: download } = await axios.get(`${BASEURL}/spotify/mp3-convert-task/${gid}/${id}`, { headers });
+
+        return download?.result?.download_url
+            ? `${BASEURL}${download.result.download_url}`
+            : null;
+    } catch {
+        return null; // ⬅️ PENTING
+    }
 }
+
 
 async function spotifyCreds() {
     try {
@@ -6952,106 +6961,92 @@ async function spotifyCreds() {
         return { status: false, msg: e.message };
     }
 }
-
 async function play(query) {
-    try {
-        const creds = await spotifyCreds();
-        if (!creds.status) return creds;
+    const creds = await spotifyCreds();
+    if (!creds.status) return { status: false, msg: "Spotify token gagal." };
 
-        const json = await axios.get(`https://api.spotify.com/v1/search?query=${encodeURIComponent(query)}&type=track&offset=0&limit=1`, {
-            headers: { Authorization: "Bearer " + creds.data.access_token },
-        });
-        if (!json.data.tracks.items || json.data.tracks.items.length < 1) return { status: false, msg: "Music not found!" };
+    const json = await axios.get(
+        `https://api.spotify.com/v1/search?query=${encodeURIComponent(query)}&type=track&limit=5`,
+        { headers: { Authorization: "Bearer " + creds.data.access_token } }
+    );
 
-        let v = json.data.tracks.items[0];
-        let url = await down(v.external_urls.spotify);
+    const items = json.data?.tracks?.items;
+    if (!items || items.length === 0) {
+        return { status: false, msg: "Lagu tidak ditemukan." };
+    }
 
-        const metadata = {
-            title: `${v.album.artists[0].name} - ${v.name}`,
-            artist: v.album.artists[0].name,
-            name: v.name,
+    const v =
+        items.find(i =>
+            i.name.toLowerCase().includes(query.toLowerCase())
+        ) || items[0];
+
+    const audioUrl = await down(v.external_urls.spotify);
+
+    return {
+        status: true,
+        metadata: {
+            title: `${v.artists[0].name} - ${v.name}`,
+            artist: v.artists[0].name,
             duration: await convert(v.duration_ms),
             popularity: `${v.popularity}%`,
-            preview: v.preview_url || "No preview audio available",
-            thumbnail: v.album.images[0].url,
+            thumbnail: v.album.images[0]?.url,
             url: v.external_urls.spotify,
-        };
-
-        return { status: true, metadata, audio: { url } };
-    } catch (e) {
-        return { status: false, msg: e.message };
-    }
+        },
+        audio: audioUrl
+    };
 }
 
-// ===== HANDLER SPOTIFY =====
 if (text.toLowerCase().startsWith('.spotify') || text.toLowerCase().startsWith('.plays')) {
     const query = text.split(' ').slice(1).join(' ');
-    if (!query) return sock.sendMessage(from, { text: '❌ Masukkan nama lagu atau artis!' }, { quoted: msg });
+    if (!query) {
+        return sock.sendMessage(from, { text: '❌ Masukkan nama lagu atau artis!' }, { quoted: msg });
+    }
 
     await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
 
-    const isBypass = isOwner(sender) || isVIP(sender, from);
-    const now = Date.now();
-    const aksesSpotify = spotifyAksesSementara.get(sender);
-    const isTemporaryActive = aksesSpotify && now < aksesSpotify;
-
-    if (!(isBypass || isTemporaryActive)) {
-        const record = spotifyLimit.get(sender);
-        if (record) {
-            if (now - record.time < SPOTIFY_COOLDOWN) {
-                if (record.count >= MAX_SPOTIFY) {
-                    const sisa = Math.ceil((SPOTIFY_COOLDOWN - (now - record.time)) / 60000);
-                    await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.spotify* ${MAX_SPOTIFY}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belispotify* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.spotify* tanpa batas waktu.`,
-                        mentions: [sender]
-                    }, { quoted: msg });
-                    return;
-                } else record.count++;
-            } else {
-                spotifyLimit.set(sender, { count: 1, time: now });
-            }
-        } else {
-            spotifyLimit.set(sender, { count: 1, time: now });
+    try {
+        const result = await play(query);
+        if (!result.status) {
+            await sock.sendMessage(from, { text: `❌ ${result.msg}` }, { quoted: msg });
+            return;
         }
-    }
 
-    (async () => {
-        try {
-            const result = await play(query);
-            if (!result.status) {
-                await sock.sendMessage(from, { text: `❌ Error: ${result.msg}`, quoted: msg });
-                return;
-            }
+        const { metadata, audio } = result;
 
-            const { metadata, audio } = result;
-
-            await sock.sendMessage(from, {
-                image: { url: metadata.thumbnail },
-                caption: `
-🎵 *Spotify Track Info* 🎵
-────────────────────────
+       let caption = `
+🎵 *Spotify Track Info*
+──────────────────────
 *🎶 Judul:* ${metadata.title}
 *👤 Artis:* ${metadata.artist}
 *⏱️ Durasi:* ${metadata.duration}
 *🔥 Popularitas:* ${metadata.popularity}
-*🔊 Preview:* ${metadata.preview}
 *🔗 Spotify:* ${metadata.url}
-────────────────────────
-`,
-            }, { quoted: msg });
+`;
 
-            if (audio.url) {
-                await sock.sendMessage(from, { audio: { url: audio.url }, mimetype: 'audio/mpeg' }, { quoted: msg });
-            }
-
-            await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-        } catch (e) {
-            console.error(e);
-            await sock.sendMessage(from, { text: '❌ Terjadi kesalahan saat mengambil lagu.', quoted: msg });
-            await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-        }
-    })();
+if (!audio) {
+    caption += `\n⚠️ *Audio tidak tersedia untuk lagu ini*`;
 }
+
+        await sock.sendMessage(from, {
+            image: { url: metadata.thumbnail },
+            caption
+        }, { quoted: msg });
+
+        if (audio) {
+            await sock.sendMessage(
+                from,
+                { audio: { url: audio }, mimetype: 'audio/mpeg' },
+                { quoted: msg }
+            );
+        }
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+    } catch (e) {
+        console.error(e);
+        await sock.sendMessage(from, { text: '❌ Terjadi kesalahan internal.' }, { quoted: msg });
+    }
+}
+
 // ===== FUNGSI IG STALK =====
 async function igstalk(user) {
     try {
