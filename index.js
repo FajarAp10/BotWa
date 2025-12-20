@@ -968,100 +968,411 @@ const soalTebakan = [
 ];
 
 const sesiTebakan = new Map(); // key: pengirim, value: { jawaban: string, timeout: TimeoutObject }
-
 const soalKuis = [
-  { soal: "Ibu kota Indonesia adalah?", pilihan: ["A. Jakarta", "B. Bandung", "C. Surabaya", "D. Medan"], jawaban: "A" },
-  { soal: "Berapa 7 x 6?", pilihan: ["A. 42", "B. 36", "C. 48", "D. 56"], jawaban: "A" },
-  { soal: "Siapa yang menemukan telepon?", pilihan: ["A. Alexander Graham Bell", "B. Thomas Edison", "C. Nikola Tesla", "D. Albert Einstein"], jawaban: "A" },
-  { soal: "Benua terbesar di dunia?", pilihan: ["A. Afrika", "B. Asia", "C. Eropa", "D. Amerika"], jawaban: "B" },
-  { soal: "Apa warna hasil campuran merah dan putih?", pilihan: ["A. Pink", "B. Ungu", "C. Merah muda", "D. Jingga"], jawaban: "A" },
-  { soal: "Planet tempat kita tinggal?", pilihan: ["A. Mars", "B. Bumi", "C. Venus", "D. Jupiter"], jawaban: "B" },
-  { soal: "Lambang kimia air?", pilihan: ["A. CO2", "B. O2", "C. H2O", "D. NaCl"], jawaban: "C" },
-  { soal: "Siapa presiden pertama Indonesia?", pilihan: ["A. Soekarno", "B. Soeharto", "C. Joko Widodo", "D. Habibie"], jawaban: "A" },
-  { soal: "Apa bahasa resmi Brasil?", pilihan: ["A. Spanyol", "B. Portugis", "C. Inggris", "D. Prancis"], jawaban: "B" },
-  { soal: "Apa nama alat untuk mengukur suhu?", pilihan: ["A. Termometer", "B. Barometer", "C. Kompas", "D. Altimeter"], jawaban: "A" },
-  { soal: "Siapa penulis 'Harry Potter'?", pilihan: ["A. J.K. Rowling", "B. Tolkien", "C. Suzanne Collins", "D. Stephen King"], jawaban: "A" },
-  { soal: "Berapa jumlah sisi segitiga?", pilihan: ["A. 2", "B. 3", "C. 4", "D. 5"], jawaban: "B" },
-  { soal: "Apa warna bendera Indonesia?", pilihan: ["A. Merah Putih", "B. Merah Biru", "C. Hijau Kuning", "D. Hitam Putih"], jawaban: "A" },
-  { soal: "Hewan yang bisa terbang?", pilihan: ["A. Kucing", "B. Ikan", "C. Burung", "D. Kuda"], jawaban: "C" },
-  { soal: "Siapa yang menemukan listrik?", pilihan: ["A. Benjamin Franklin", "B. Thomas Edison", "C. Nikola Tesla", "D. Semua benar"], jawaban: "D" },
-  { soal: "Apa nama ibu kota Jepang?", pilihan: ["A. Seoul", "B. Tokyo", "C. Beijing", "D. Bangkok"], jawaban: "B" },
-  { soal: "Berapa 12 + 15?", pilihan: ["A. 27", "B. 25", "C. 28", "D. 30"], jawaban: "A" },
-  { soal: "Gunung tertinggi di dunia?", pilihan: ["A. Kilimanjaro", "B. Everest", "C. Fuji", "D. Andes"], jawaban: "B" },
-  { soal: "Apa fungsi jantung?", pilihan: ["A. Menghasilkan energi", "B. Memompa darah", "C. Mengatur suhu tubuh", "D. Menyaring darah"], jawaban: "B" },
-  { soal: "Negara dengan piramida terkenal?", pilihan: ["A. Mesir", "B. Italia", "C. Yunani", "D. Meksiko"], jawaban: "A" },
-  { soal: "Apa nama senyawa garam dapur?", pilihan: ["A. NaCl", "B. KCl", "C. CO2", "D. H2O"], jawaban: "A" },
-  { soal: "Berapa warna dasar pada bendera Indonesia?", pilihan: ["A. 1", "B. 2", "C. 3", "D. 4"], jawaban: "B" },
-  { soal: "Apa nama mata uang Jepang?", pilihan: ["A. Won", "B. Yuan", "C. Yen", "D. Dollar"], jawaban: "C" },
-  { soal: "Siapa ilmuwan yang terkenal dengan teori relativitas?", pilihan: ["A. Isaac Newton", "B. Albert Einstein", "C. Galileo", "D. Nikola Tesla"], jawaban: "B" },
-  { soal: "Apa nama hewan terbesar di dunia?", pilihan: ["A. Gajah", "B. Paus Biru", "C. Hiu", "D. Beruang"], jawaban: "B" },
-  { soal: "Berapa sisi segi enam?", pilihan: ["A. 5", "B. 6", "C. 7", "D. 8"], jawaban: "B" },
-  { soal: "Siapa tokoh utama dalam cerita 'Malin Kundang'?", pilihan: ["A. Malin", "B. Nurbaya", "C. Zainuddin", "D. Sangkuriang"], jawaban: "A" },
-  { soal: "Apa nama benua tempat Mesir berada?", pilihan: ["A. Asia", "B. Afrika", "C. Eropa", "D. Amerika"], jawaban: "B" },
-  { soal: "Berapa jumlah warna pelangi?", pilihan: ["A. 5", "B. 6", "C. 7", "D. 8"], jawaban: "C" },
-  { soal: "Siapa penemu bola lampu pijar?", pilihan: ["A. Alexander Graham Bell", "B. Thomas Edison", "C. Nikola Tesla", "D. Albert Einstein"], jawaban: "B" },
-  { soal: "Apa nama alat musik tiup yang terbuat dari kayu?", pilihan: ["A. Gitar", "B. Drum", "C. Seruling", "D. Piano"], jawaban: "C" },
-  { soal: "Apa lambang kimia emas?", pilihan: ["A. Au", "B. Ag", "C. Fe", "D. Pb"], jawaban: "A" },
-  { soal: "Apa nama ibu kota Prancis?", pilihan: ["A. Berlin", "B. Madrid", "C. Paris", "D. Roma"], jawaban: "C" },
-  { soal: "Berapa kecepatan cahaya dalam vakum (km/s)?", pilihan: ["A. 300.000", "B. 150.000", "C. 299.792", "D. 1.000.000"], jawaban: "C" },
-  { soal: "Siapa penulis novel 'Laskar Pelangi'?", pilihan: ["A. Andrea Hirata", "B. Tere Liye", "C. Dee Lestari", "D. Habiburrahman El Shirazy"], jawaban: "A" },
-  { soal: "Apa fungsi paru-paru?", pilihan: ["A. Memompa darah", "B. Menyaring darah", "C. Bernapas", "D. Menghasilkan sel darah"], jawaban: "C" },
-  { soal: "Berapa jumlah provinsi di Indonesia (2025)?", pilihan: ["A. 34", "B. 36", "C. 38", "D. 40"], jawaban: "C" },
-  { soal: "Apa nama alat untuk mengukur tekanan udara?", pilihan: ["A. Termometer", "B. Barometer", "C. Kompas", "D. Altimeter"], jawaban: "B" },
-  { soal: "Siapa pahlawan wanita dari Aceh?", pilihan: ["A. Cut Nyak Dien", "B. RA Kartini", "C. Dewi Sartika", "D. Martha Christina"], jawaban: "A" },
-  { soal: "Apa warna dasar bendera Italia?", pilihan: ["A. Merah, Putih, Hijau", "B. Merah, Kuning, Biru", "C. Putih, Biru, Merah", "D. Kuning, Hijau, Hitam"], jawaban: "A" },
-  { soal: "Apa nama gunung berapi tertinggi di Indonesia?", pilihan: ["A. Merapi", "B. Rinjani", "C. Semeru", "D. Krakatau"], jawaban: "C" },
-  { soal: "Berapa jumlah pemain sepak bola dalam satu tim?", pilihan: ["A. 9", "B. 10", "C. 11", "D. 12"], jawaban: "C" },
-  { soal: "Apa fungsi hati dalam tubuh?", pilihan: ["A. Menyaring darah", "B. Menghasilkan empedu", "C. Memompa darah", "D. Mengatur suhu tubuh"], jawaban: "B" },
-  { soal: "Planet apa yang dikenal sebagai planet merah?", pilihan: ["A. Mars", "B. Jupiter", "C. Venus", "D. Saturnus"], jawaban: "A" },
-  { soal: "Apa nama alat musik tradisional Jawa?", pilihan: ["A. Sasando", "B. Angklung", "C. Gamelan", "D. Saluang"], jawaban: "C" },
-  { soal: "Berapa sisi segi empat?", pilihan: ["A. 3", "B. 4", "C. 5", "D. 6"], jawaban: "B" },
-  { soal: "Apa warna primer?", pilihan: ["A. Merah, Hijau, Biru", "B. Merah, Kuning, Biru", "C. Merah, Kuning, Hijau", "D. Biru, Kuning, Ungu"], jawaban: "B" },
-  { soal: "Apa bahasa resmi negara Kanada?", pilihan: ["A. Inggris dan Prancis", "B. Inggris dan Spanyol", "C. Inggris dan Jerman", "D. Inggris dan Italia"], jawaban: "A" },
-  { soal: "Siapa yang menciptakan lagu 'Indonesia Raya'?", pilihan: ["A. WR Supratman", "B. Ismail Marzuki", "C. Chairil Anwar", "D. Soekarno"], jawaban: "A" },
-  { soal: "Berapa huruf vokal dalam kata 'Indonesia'?", pilihan: ["A. 3", "B. 4", "C. 5", "D. 6"], jawaban: "C" },
-  { soal: "Apa kepanjangan dari CPU?", pilihan: ["A. Central Print Unit", "B. Core Processing Unit", "C. Central Processing Unit", "D. Control Power Unit"], jawaban: "C" },
-  { soal: "Apa warna bendera Prancis?", pilihan: ["A. Merah, Putih, Biru", "B. Merah, Kuning, Biru", "C. Putih, Hijau, Merah", "D. Biru, Kuning, Merah"], jawaban: "A" },
-  { soal: "Berapa planet di tata surya kita?", pilihan: ["A. 7", "B. 8", "C. 9", "D. 10"], jawaban: "B" },
-  { soal: "Siapa penemu pesawat terbang?", pilihan: ["A. Wright Bersaudara", "B. Alexander Graham Bell", "C. Thomas Edison", "D. Nikola Tesla"], jawaban: "A" },
-  { soal: "Apa nama mata uang Amerika Serikat?", pilihan: ["A. Euro", "B. Dollar", "C. Yen", "D. Peso"], jawaban: "B" },
-  { soal: "Apa fungsi ginjal?", pilihan: ["A. Menyaring darah", "B. Memompa darah", "C. Menghasilkan hormon", "D. Mengatur suhu tubuh"], jawaban: "A" },
-  { soal: "Siapa tokoh perjuangan kemerdekaan Indonesia yang juga proklamator?", pilihan: ["A. Soekarno", "B. Mohammad Hatta", "C. Sutan Sjahrir", "D. Ahmad Subardjo"], jawaban: "B" },
-  { soal: "Apa simbol kimia besi?", pilihan: ["A. Fe", "B. Ag", "C. Au", "D. Pb"], jawaban: "A" },
-  { soal: "Apa nama alat musik petik?", pilihan: ["A. Drum", "B. Gitar", "C. Terompet", "D. Biola"], jawaban: "B" },
-  { soal: "Apa hasil dari 15 ÷ 3?", pilihan: ["A. 5", "B. 6", "C. 3", "D. 4"], jawaban: "A" },
-  { soal: "Siapa penulis novel 'Bumi'?", pilihan: ["A. Tere Liye", "B. Andrea Hirata", "C. Dee Lestari", "D. Habiburrahman El Shirazy"], jawaban: "A" },
-  { soal: "Apa jenis hewan katak?", pilihan: ["A. Reptil", "B. Mamalia", "C. Amfibi", "D. Burung"], jawaban: "C" },
-  { soal: "Apa nama alat pengukur kecepatan angin?", pilihan: ["A. Termometer", "B. Anemometer", "C. Barometer", "D. Altimeter"], jawaban: "B" },
-  { soal: "Berapa jumlah kaki laba-laba?", pilihan: ["A. 6", "B. 8", "C. 10", "D. 12"], jawaban: "B" },
-  { soal: "Apa ibu kota Thailand?", pilihan: ["A. Kuala Lumpur", "B. Bangkok", "C. Hanoi", "D. Manila"], jawaban: "B" },
-  { soal: "Siapa ilmuwan yang menemukan hukum gravitasi?", pilihan: ["A. Albert Einstein", "B. Galileo Galilei", "C. Isaac Newton", "D. Nikola Tesla"], jawaban: "C" },
-  { soal: "Apa nama alat untuk melihat benda jauh?", pilihan: ["A. Mikroskop", "B. Teleskop", "C. Kamera", "D. Kacamata"], jawaban: "B" },
-  { soal: "Berapa sisi segi lima?", pilihan: ["A. 4", "B. 5", "C. 6", "D. 7"], jawaban: "B" },
-  { soal: "Apa nama planet terdekat dengan matahari?", pilihan: ["A. Venus", "B. Merkurius", "C. Mars", "D. Bumi"], jawaban: "B" },
-  { soal: "Siapa tokoh pahlawan nasional yang berasal dari Jawa Tengah?", pilihan: ["A. Diponegoro", "B. Cut Nyak Dien", "C. RA Kartini", "D. Sultan Hasanuddin"], jawaban: "A" },
-  { soal: "Apa nama kapal pertama yang berhasil mengelilingi dunia?", pilihan: ["A. Titanic", "B. Santa Maria", "C. Endeavour", "D. Magellan"], jawaban: "D" },
-  { soal: "Apa bahasa resmi di negara Inggris?", pilihan: ["A. Inggris", "B. Prancis", "C. Jerman", "D. Spanyol"], jawaban: "A" },
-  { soal: "Berapa warna dasar bendera Jerman?", pilihan: ["A. Merah, Kuning, Hitam", "B. Merah, Putih, Biru", "C. Hijau, Kuning, Hitam", "D. Merah, Hijau, Putih"], jawaban: "A" },
-  { soal: "Apa nama unsur dengan simbol 'O'?", pilihan: ["A. Oksigen", "B. Emas", "C. Perak", "D. Hidrogen"], jawaban: "A" },
-  { soal: "Apa nama bagian terkecil dari makhluk hidup?", pilihan: ["A. Organ", "B. Sel", "C. Jaringan", "D. Sistem"], jawaban: "B" },
-  { soal: "Siapa tokoh sejarah yang dijuluki 'Bapak Teknologi Indonesia'?", pilihan: ["A. BJ Habibie", "B. Soekarno", "C. Hatta", "D. Gus Dur"], jawaban: "A" },
-  { soal: "Apa nama sungai terpanjang di dunia?", pilihan: ["A. Amazon", "B. Nil", "C. Mississippi", "D. Yangtze"], jawaban: "B" },
-  { soal: "Apa lambang kimia karbon?", pilihan: ["A. Ca", "B. C", "C. K", "D. Co"], jawaban: "B" },
-  { soal: "Apa jenis olahraga yang menggunakan bola kecil dan tongkat?", pilihan: ["A. Sepak bola", "B. Golf", "C. Basket", "D. Tenis"], jawaban: "B" },
-  { soal: "Berapa angka Romawi untuk 50?", pilihan: ["A. X", "B. L", "C. C", "D. V"], jawaban: "B" },
-  { soal: "Apa nama hewan yang dikenal sebagai raja hutan?", pilihan: ["A. Singa", "B. Harimau", "C. Macan", "D. Serigala"], jawaban: "A" },
-  { soal: "Siapa penulis puisi 'Aku'?", pilihan: ["A. Chairil Anwar", "B. WS Rendra", "C. Taufiq Ismail", "D. Sapardi Djoko Damono"], jawaban: "A" },
-  { soal: "Apa nama alat untuk mengukur berat?", pilihan: ["A. Penggaris", "B. Timbangan", "C. Termometer", "D. Barometer"], jawaban: "B" },
-  { soal: "Apa nama pulau terbesar di Indonesia?", pilihan: ["A. Sumatra", "B. Kalimantan", "C. Sulawesi", "D. Papua"], jawaban: "D" },
-  { soal: "Berapa sisi segi delapan?", pilihan: ["A. 6", "B. 7", "C. 8", "D. 9"], jawaban: "C" },
-  { soal: "Apa nama tokoh fiksi yang memakai topi penyihir dan sihir?", pilihan: ["A. Harry Potter", "B. Frodo", "C. Gandalf", "D. Merlin"], jawaban: "A" },
-  { soal: "Siapa presiden Indonesia sekarang (2025)?", pilihan: ["A. Joko Widodo", "B. Megawati", "C. Susilo Bambang Yudhoyono", "D. Prabowo"], jawaban: "A" },
-  { soal: "Apa warna campuran biru dan kuning?", pilihan: ["A. Hijau", "B. Ungu", "C. Orange", "D. Coklat"], jawaban: "A" },
-  { soal: "Apa nama alat untuk mengukur tekanan darah?", pilihan: ["A. Termometer", "B. Tensimeter", "C. Barometer", "D. Stetoskop"], jawaban: "B" },
-  { soal: "Siapa yang dikenal sebagai Bapak Pendidikan Indonesia?", pilihan: ["A. Ki Hajar Dewantara", "B. Soekarno", "C. Mohammad Hatta", "D. R.A. Kartini"], jawaban: "A" },
-  { soal: "Apa lambang kimia natrium?", pilihan: ["A. Na", "B. N", "C. Nm", "D. Nt"], jawaban: "A" },
-  { soal: "Apa bahasa resmi negara Australia?", pilihan: ["A. Inggris", "B. Prancis", "C. Spanyol", "D. Jerman"], jawaban: "A" }
+  {
+    soal: "Jika 2 + 3 = 10, 3 + 4 = 21, maka 4 + 5 = ?",
+    pilihan: ["A. 20", "B. 27", "C. 36", "D. 45"],
+    jawaban: "B" // (2×5, 3×7, 4×9)
+  },
+  {
+    soal: "Benda apa yang makin diisi justru makin ringan?",
+    pilihan: ["A. Tas", "B. Botol", "C. Balon", "D. Ember"],
+    jawaban: "C"
+  },
+  {
+    soal: "Urutan yang benar: Januari, Februari, ?, April",
+    pilihan: ["A. Mei", "B. Maret", "C. Juni", "D. Desember"],
+    jawaban: "B"
+  },
+  {
+    soal: "Jika semua bloop adalah blap, dan semua blap adalah blip, maka bloop pasti?",
+    pilihan: ["A. Blip", "B. Bloop", "C. Bukan blip", "D. Tidak bisa ditentukan"],
+    jawaban: "A"
+  },
+  {
+    soal: "Angka berikutnya dari 2, 4, 8, 16 adalah?",
+    pilihan: ["A. 18", "B. 24", "C. 30", "D. 32"],
+    jawaban: "D"
+  },
+  {
+    soal: "Apa yang selalu datang tapi tidak pernah tiba?",
+    pilihan: ["A. Hujan", "B. Besok", "C. Malam", "D. Libur"],
+    jawaban: "B"
+  },
+  {
+    soal: "Jika kamu menghadap ke timur lalu berputar 180°, kamu menghadap ke?",
+    pilihan: ["A. Timur", "B. Utara", "C. Selatan", "D. Barat"],
+    jawaban: "D"
+  },
+  {
+    soal: "Mana yang BUKAN termasuk segitiga?",
+    pilihan: ["A. Sama sisi", "B. Sama kaki", "C. Siku-siku", "D. Persegi"],
+    jawaban: "D"
+  },
+  {
+    soal: "Huruf apa yang tidak pernah muncul dalam angka Romawi?",
+    pilihan: ["A. L", "B. C", "C. M", "D. K"],
+    jawaban: "D"
+  },
+  {
+    soal: "Jika hari ini Jumat, 10 hari lagi hari apa?",
+    pilihan: ["A. Minggu", "B. Senin", "C. Selasa", "D. Rabu"],
+    jawaban: "C"
+  },
+  {
+    soal: "Benda apa yang punya jarum tapi tidak bisa menjahit?",
+    pilihan: ["A. Jam", "B. Pohon", "C. Landak", "D. Kompas"],
+    jawaban: "A"
+  },
+  {
+    soal: "3 orang menangkap 3 ikan dalam 3 menit. 6 orang butuh berapa menit untuk menangkap 6 ikan?",
+    pilihan: ["A. 3", "B. 6", "C. 9", "D. 12"],
+    jawaban: "A"
+  },
+  {
+    soal: "Kata mana yang paling berbeda?",
+    pilihan: ["A. Merah", "B. Biru", "C. Hijau", "D. Meja"],
+    jawaban: "D"
+  },
+  {
+    soal: "Jika semua kucing adalah hewan, apakah semua hewan adalah kucing?",
+    pilihan: ["A. Ya", "B. Tidak", "C. Mungkin", "D. Kadang"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa yang bisa pecah walau tidak dijatuhkan?",
+    pilihan: ["A. Gelas", "B. Telur", "C. Janji", "D. Batu"],
+    jawaban: "C"
+  },
+  {
+    soal: "Huruf ke-3 dari belakang alfabet?",
+    pilihan: ["A. X", "B. Y", "C. Z", "D. W"],
+    jawaban: "A"
+  },
+  {
+    soal: "Jika 5 mesin membuat 5 barang dalam 5 menit, berapa mesin untuk membuat 10 barang dalam 5 menit?",
+    pilihan: ["A. 5", "B. 8", "C. 10", "D. 15"],
+    jawaban: "C"
+  },
+  {
+    soal: "Yang mana lebih berat?",
+    pilihan: ["A. 1 kg kapas", "B. 1 kg besi", "C. Sama berat", "D. Tidak tahu"],
+    jawaban: "C"
+  },
+  {
+    soal: "Apa yang selalu basah saat mengeringkan?",
+    pilihan: ["A. Handuk", "B. Air", "C. Sabun", "D. Kain"],
+    jawaban: "A"
+  },
+  {
+    soal: "Jika kamu punya satu korek api dan masuk ke ruangan gelap berisi lilin dan lampu minyak, apa yang dinyalakan dulu?",
+    pilihan: ["A. Lilin", "B. Lampu", "C. Korek api", "D. Minyak"],
+    jawaban: "C"
+  },
+   {
+    soal: "Siapa proklamator Indonesia selain Soekarno?",
+    pilihan: ["A. Soeharto", "B. BJ Habibie", "C. Mohammad Hatta", "D. Sutan Sjahrir"],
+    jawaban: "C"
+  },
+  {
+    soal: "Tanggal berapa Indonesia merdeka?",
+    pilihan: ["A. 20 Mei 1945", "B. 17 Agustus 1945", "C. 1 Juni 1945", "D. 10 November 1945"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa dasar negara Indonesia?",
+    pilihan: ["A. UUD 1945", "B. Bhinneka Tunggal Ika", "C. Trisila", "D. Pancasila"],
+    jawaban: "D"
+  },
+  {
+    soal: "Lambang sila ke-2 Pancasila adalah?",
+    pilihan: ["A. Rantai", "B. Bintang", "C. Pohon beringin", "D. Banteng"],
+    jawaban: "A"
+  },
+  {
+    soal: "Negara pertama yang mengakui kemerdekaan Indonesia?",
+    pilihan: ["A. Jepang", "B. Amerika", "C. Mesir", "D. Belanda"],
+    jawaban: "C"
+  },
+  {
+    soal: "Apa ibu kota Australia?",
+    pilihan: ["A. Sydney", "B. Melbourne", "C. Canberra", "D. Perth"],
+    jawaban: "C"
+  },
+  {
+    soal: "Planet terbesar di tata surya?",
+    pilihan: ["A. Mars", "B. Saturnus", "C. Bumi", "D. Jupiter"],
+    jawaban: "D"
+  },
+  {
+    soal: "Siapa penemu listrik yang terkenal dengan eksperimen petir?",
+    pilihan: ["A. Edison", "B. Tesla", "C. Benjamin Franklin", "D. Newton"],
+    jawaban: "C"
+  },
+  {
+    soal: "Alat untuk mengukur gempa bumi disebut?",
+    pilihan: ["A. Barometer", "B. Seismograf", "C. Termometer", "D. Anemometer"],
+    jawaban: "B"
+  },
+  {
+    soal: "Samudra terluas di dunia?",
+    pilihan: ["A. Atlantik", "B. Hindia", "C. Arktik", "D. Pasifik"],
+    jawaban: "D"
+  },
+
+  {
+    soal: "Siapa penulis buku Laskar Pelangi?",
+    pilihan: ["A. Andrea Hirata", "B. Tere Liye", "C. Dee Lestari", "D. Habiburrahman"],
+    jawaban: "A"
+  },
+  {
+    soal: "Pulau terbesar di Indonesia?",
+    pilihan: ["A. Sumatra", "B. Kalimantan", "C. Sulawesi", "D. Papua"],
+    jawaban: "D"
+  },
+  {
+    soal: "Apa fungsi utama jantung?",
+    pilihan: ["A. Bernapas", "B. Menyaring darah", "C. Memompa darah", "D. Mengatur suhu"],
+    jawaban: "C"
+  },
+  {
+    soal: "Siapa ilmuwan dengan teori relativitas?",
+    pilihan: ["A. Newton", "B. Galileo", "C. Tesla", "D. Albert Einstein"],
+    jawaban: "D"
+  },
+  {
+    soal: "Negara dengan Menara Eiffel?",
+    pilihan: ["A. Italia", "B. Jerman", "C. Prancis", "D. Inggris"],
+    jawaban: "C"
+  },
+  {
+    soal: "Gunung tertinggi di dunia?",
+    pilihan: ["A. Everest", "B. Kilimanjaro", "C. Elbrus", "D. Fuji"],
+    jawaban: "A"
+  },
+  {
+    soal: "Apa nama alat untuk melihat benda kecil?",
+    pilihan: ["A. Teleskop", "B. Mikroskop", "C. Periskop", "D. Kamera"],
+    jawaban: "B"
+  },
+  {
+    soal: "Siapa pahlawan wanita dari Aceh?",
+    pilihan: ["A. RA Kartini", "B. Dewi Sartika", "C. Cut Nyak Dien", "D. Martha Christina"],
+    jawaban: "C"
+  },
+  {
+    soal: "Apa mata uang Jepang?",
+    pilihan: ["A. Yuan", "B. Yen", "C. Won", "D. Dollar"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa semboyan negara Indonesia?",
+    pilihan: ["A. Merdeka atau Mati", "B. Indonesia Raya", "C. Tut Wuri Handayani", "D. Bhinneka Tunggal Ika"],
+    jawaban: "D"
+  },
+
+  {
+    soal: "Berapa hasil 12 × 8?",
+    pilihan: ["A. 96", "B. 88", "C. 108", "D. 86"],
+    jawaban: "A"
+  },
+  {
+    soal: "Hewan tercepat di darat?",
+    pilihan: ["A. Kuda", "B. Cheetah", "C. Singa", "D. Macan"],
+    jawaban: "B"
+  },
+  {
+    soal: "Zat hijau pada daun disebut?",
+    pilihan: ["A. Karbon", "B. Oksigen", "C. Klorofil", "D. Nitrogen"],
+    jawaban: "C"
+  },
+  {
+    soal: "Siapa penemu pesawat terbang?",
+    pilihan: ["A. Edison", "B. Wright Bersaudara", "C. Tesla", "D. Bell"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa nama planet terdekat dengan Matahari?",
+    pilihan: ["A. Venus", "B. Bumi", "C. Mars", "D. Merkurius"],
+    jawaban: "D"
+  },
+  {
+    soal: "Bahasa resmi Brasil?",
+    pilihan: ["A. Spanyol", "B. Inggris", "C. Portugis", "D. Prancis"],
+    jawaban: "C"
+  },
+  {
+    soal: "Apa lambang kimia air?",
+    pilihan: ["A. CO2", "B. O2", "C. NaCl", "D. H2O"],
+    jawaban: "D"
+  },
+  {
+    soal: "Berapa jumlah sisi segi enam?",
+    pilihan: ["A. 5", "B. 6", "C. 7", "D. 8"],
+    jawaban: "B"
+  },
+  {
+    soal: "Siapa penulis Harry Potter?",
+    pilihan: ["A. Tolkien", "B. Suzanne Collins", "C. J.K. Rowling", "D. Stephen King"],
+    jawaban: "C"
+  },
+  {
+    soal: "Apa fungsi paru-paru?",
+    pilihan: ["A. Memompa darah", "B. Menyaring darah", "C. Bernapas", "D. Mengatur suhu"],
+    jawaban: "C"
+  },
+
+  {
+    soal: "Apa warna campuran biru dan kuning?",
+    pilihan: ["A. Hijau", "B. Ungu", "C. Jingga", "D. Coklat"],
+    jawaban: "A"
+  },
+  {
+    soal: "Berapa planet di tata surya?",
+    pilihan: ["A. 7", "B. 8", "C. 9", "D. 10"],
+    jawaban: "B"
+  },
+  {
+    soal: "Siapa Bapak Pendidikan Indonesia?",
+    pilihan: ["A. Soekarno", "B. Ki Hajar Dewantara", "C. Hatta", "D. Kartini"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa alat pengukur suhu?",
+    pilihan: ["A. Barometer", "B. Termometer", "C. Altimeter", "D. Seismograf"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa nama hewan terbesar di dunia?",
+    pilihan: ["A. Gajah", "B. Paus Biru", "C. Hiu", "D. Dinosaurus"],
+    jawaban: "B"
+  },
+  {
+    soal: "Berapa hasil 100 ÷ 4?",
+    pilihan: ["A. 20", "B. 30", "C. 25", "D. 40"],
+    jawaban: "C"
+  },
+  {
+    soal: "Apa alat untuk mengukur tekanan udara?",
+    pilihan: ["A. Termometer", "B. Barometer", "C. Kompas", "D. Anemometer"],
+    jawaban: "B"
+  },
+  {
+    soal: "Negara dengan Tembok Besar?",
+    pilihan: ["A. Jepang", "B. Korea", "C. China", "D. Mongolia"],
+    jawaban: "C"
+  },
+  {
+    soal: "Siapa presiden pertama Indonesia?",
+    pilihan: ["A. Soeharto", "B. Jokowi", "C. BJ Habibie", "D. Soekarno"],
+    jawaban: "D"
+  },
+  {
+    soal: "Berapa warna pelangi?",
+    pilihan: ["A. 5", "B. 6", "C. 7", "D. 8"],
+    jawaban: "C"
+  },
+    {
+    soal: "Apa nama perjanjian yang mengakhiri Perang Dunia I?",
+    pilihan: ["A. Versailles", "B. Potsdam", "C. Yalta", "D. Geneva"],
+    jawaban: "A"
+  },
+  {
+    soal: "Benua yang seluruh wilayahnya berada di belahan bumi selatan adalah?",
+    pilihan: ["A. Afrika", "B. Australia", "C. Amerika Selatan", "D. Antartika"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa gas yang paling banyak di udara?",
+    pilihan: ["A. Oksigen", "B. Karbon dioksida", "C. Nitrogen", "D. Hidrogen"],
+    jawaban: "C"
+  },
+  {
+    soal: "Siapa tokoh penjelajah samudra yang menemukan jalur laut ke India?",
+    pilihan: ["A. Vasco da Gama", "B. Christopher Columbus", "C. Ferdinand Magellan", "D. Marco Polo"],
+    jawaban: "A"
+  },
+  {
+    soal: "Apa nama alat untuk mengukur waktu?",
+    pilihan: ["A. Barometer", "B. Termometer", "C. Stopwatch", "D. Altimeter"],
+    jawaban: "C"
+  },
+  {
+    soal: "Negara dengan jumlah penduduk terbanyak di dunia?",
+    pilihan: ["A. India", "B. Amerika Serikat", "C. Indonesia", "D. China"],
+    jawaban: "A"
+  },
+  {
+    soal: "Apa nama lapisan terluar Bumi?",
+    pilihan: ["A. Inti", "B. Mantel", "C. Kerak", "D. Astenosfer"],
+    jawaban: "C"
+  },
+  {
+    soal: "Siapa penemu hukum gravitasi?",
+    pilihan: ["A. Galileo Galilei", "B. Isaac Newton", "C. Albert Einstein", "D. Nikola Tesla"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa nama sungai terpanjang di dunia?",
+    pilihan: ["A. Amazon", "B. Nil", "C. Yangtze", "D. Mississippi"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa satuan arus listrik?",
+    pilihan: ["A. Volt", "B. Ohm", "C. Watt", "D. Ampere"],
+    jawaban: "D"
+  },
+  {
+    soal: "Siapa tokoh yang dijuluki Bapak Teknologi Indonesia?",
+    pilihan: ["A. Soekarno", "B. BJ Habibie", "C. Hatta", "D. Gus Dur"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa nama sistem pemerintahan Indonesia?",
+    pilihan: ["A. Parlementer", "B. Presidensial", "C. Monarki", "D. Federal"],
+    jawaban: "B"
+  },
+  {
+    soal: "Planet yang memiliki cincin paling jelas adalah?",
+    pilihan: ["A. Jupiter", "B. Uranus", "C. Saturnus", "D. Neptunus"],
+    jawaban: "C"
+  },
+  {
+    soal: "Apa nama alat untuk mengukur tekanan darah?",
+    pilihan: ["A. Barometer", "B. Tensimeter", "C. Termometer", "D. Stetoskop"],
+    jawaban: "B"
+  },
+  {
+    soal: "Apa ibu kota negara Kanada?",
+    pilihan: ["A. Toronto", "B. Vancouver", "C. Montreal", "D. Ottawa"],
+    jawaban: "D"
+  },
+  {
+    soal: "Zat apa yang dibutuhkan tumbuhan untuk fotosintesis?",
+    pilihan: ["A. Oksigen", "B. Nitrogen", "C. Karbon dioksida", "D. Hidrogen"],
+    jawaban: "C"
+  },
+  {
+    soal: "Apa nama organisasi internasional pengganti Liga Bangsa-Bangsa?",
+    pilihan: ["A. NATO", "B. ASEAN", "C. PBB", "D. IMF"],
+    jawaban: "C"
+  },
+  {
+    soal: "Berapa jumlah derajat pada satu putaran penuh?",
+    pilihan: ["A. 90°", "B. 180°", "C. 270°", "D. 360°"],
+    jawaban: "D"
+  },
+  {
+    soal: "Apa nama alat musik tradisional dari Jawa Barat?",
+    pilihan: ["A. Gamelan", "B. Angklung", "C. Sasando", "D. Tifa"],
+    jawaban: "B"
+  },
+  {
+    soal: "Siapa presiden ketiga Indonesia?",
+    pilihan: ["A. BJ Habibie", "B. Abdurrahman Wahid", "C. Megawati", "D. Soeharto"],
+    jawaban: "A"
+  }
+
 ];
 
 const sesiKuis = new Map(); 
@@ -5531,6 +5842,34 @@ if (text.startsWith('.cekkhodam')) {
     });
 }
 
+if (text.startsWith('.cekiq')) {
+    const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+    const sender = msg.key.participant || msg.key.remoteJid;
+    const target = mentioned || sender;
+    const nama = target.split('@')[0];
+
+    // IQ random (biar ga receh banget)
+    const iq = Math.floor(Math.random() * 121) + 40; // 40–160
+
+    const teks = `╭─🧠 *CEK IQ OTAK* 🧠─╮
+│
+│ 👤 @${nama}
+│ 🧪 IQ Kamu: *${iq}*
+│
+│ ${iq < 80 ? '😅 Goblok ini mah' :
+       iq < 100 ? '🙂 yaaa... lumayan deh ' :
+       iq < 120 ? '😎 Di atas rata rata nih' :
+       iq < 140 ? '🤓 Sekelas ilmuan ini mah' :
+       '👑 AMPUN SUHU'}
+│
+╰──────────────────╯`;
+
+    await sock.sendMessage(from, {
+        text: teks,
+        mentions: [target]
+    });
+}
+
 
 if (body === '.truth') {
   const truthText = ambilSoalAcak('truth', truthList);
@@ -7955,6 +8294,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .ganteng → Seberapa ganteng?
 │ .jodoh → Cocoklogi cinta
 │ .cekkhodam → Cek khodam 
+│ .cekiq → Cek kepintaran
 │ .siapa → Target random
 │ .fakereply → Pesan palsu
 │ .polling → Buat polling
