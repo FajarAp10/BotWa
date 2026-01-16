@@ -52,6 +52,10 @@ const sesiPilihGrup = new Map();
 const sesiUmumkan = new Map();
 const DEFAULT_AI_LIMIT = 5;
 const sesiUlarTangga = new Map();
+const sesiTebakGambar = new Map();
+const sesiTebakLagu = new Map();
+
+
 
 
 
@@ -701,6 +705,33 @@ async function spamCode(sock, from, msg, text, isOwner) {
 
   // Jangan lupa disconnect socket spam setelah selesai
   sockSpam.end();
+}
+
+async function uploadToCatbox(buffer) {
+    // NORMALISASI (tetap WAJIB)
+    const cleanBuffer = await sharp(buffer)
+        .resize({ width: 1280, withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+
+    const form = new FormData();
+    form.append('reqtype', 'fileupload');
+    form.append('fileToUpload', cleanBuffer, {
+        filename: 'image.jpg',
+        contentType: 'image/jpeg'
+    });
+
+    const res = await axios.post(
+        'https://catbox.moe/user/api.php',
+        form,
+        { headers: form.getHeaders() }
+    );
+
+    if (!res.data || !res.data.startsWith('http')) {
+        throw new Error('Upload catbox gagal');
+    }
+
+    return res.data.trim();
 }
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -4141,6 +4172,8 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
     }
 }
 
+
+
         if (text.trim() === '.kuis') {
     const soal = ambilSoalAcak('kuis', soalKuis);
     const teksSoal = `🎓 *KUIS DIMULAI!*\n\n📌 *Soal:* ${soal.soal}\n\n${soal.pilihan.join('\n')}\n\n✍️ Jawab dengan huruf A/B/C/D dengan mereply pesan ini\n⏱️ Waktu 30 detik!`;
@@ -4693,133 +4726,6 @@ if (text.startsWith('.wm')) {
     return;
 }
 
-// Fitur .ytmp3
-if (text.toLowerCase().startsWith('.ytmp3 ')) {
-    const url = text.split(' ')[1];
-    if (!url) {
-        await sock.sendMessage(from, { text: '❌ Contoh: *.ytmp3 https://youtu.be/...*' });
-        return;
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        const api = `https://api.jerexd666.wongireng.my.id/download/ytmp3?url=${encodeURIComponent(url)}`;
-        const res = await fetch(api);
-        const data = await res.json();
-
-        if (!data.status) throw new Error("API gagal");
-
-        const dl = data.result.download.download_url;
-        const title = data.result.download.title || "audio";
-
-        // Fetch file mp3
-        const audioBuffer = Buffer.from(await (await fetch(dl)).arrayBuffer());
-
-        await sock.sendMessage(
-            from,
-            {
-                audio: audioBuffer,
-                mimetype: 'audio/mp4', // mp3 kadang error, audio/mp4 LANCAR
-                fileName: `${title}.mp3`
-            },
-            { quoted: msg }
-        );
-
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (e) {
-        console.log(e);
-        await sock.sendMessage(from, { text: '❌ Gagal mengambil MP3.' });
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-    }
-
-    return;
-}
-
-// Fitur .ytmp4
-if (text.toLowerCase().startsWith('.ytmp4 ')) {
-    const url = text.split(' ')[1];
-    if (!url) {
-        await sock.sendMessage(from, { text: '❌ Contoh: *.ytmp4 https://youtu.be/...*' });
-        return;
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        const api = `https://api.jerexd666.wongireng.my.id/download/ytmp4?url=${encodeURIComponent(url)}`;
-        const res = await fetch(api);
-        const data = await res.json();
-
-        if (!data.status) throw new Error("API gagal");
-
-        const dl = data.result.download_url;
-        const title = data.result.title || "video";
-
-        // Fetch file mp4
-        const videoBuffer = Buffer.from(await (await fetch(dl)).arrayBuffer());
-
-        await sock.sendMessage(
-            from,
-            {
-                video: videoBuffer,
-                mimetype: 'video/mp4',
-                caption: `🎬 *${title}*`
-            },
-            { quoted: msg }
-        );
-
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (e) {
-        console.log(e);
-        await sock.sendMessage(from, { text: '❌ Gagal mengambil video.' });
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-    }
-
-    return;
-}
-
-// Fitur .ipchat
-if (text.toLowerCase().startsWith('.ipchat ')) {
-    const pesan = text.slice(8).trim();
-    if (!pesan) {
-        await sock.sendMessage(from, { text: '❗ Contoh: *.ipchat halo dunia*' });
-        return;
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        const api = `https://api.jerexd666.wongireng.my.id/imagecreator/iqc?text=${encodeURIComponent(pesan)}`;
-
-        // Langsung ambil gambar (buffer)
-        const imgRes = await fetch(api);
-        const buffer = Buffer.from(await imgRes.arrayBuffer());
-
-        // Kirim gambar ke WA
-        await sock.sendMessage(
-            from,
-            {
-                image: buffer,
-                caption: `📱 *iPhone Chat*\n"${pesan}"`
-            },
-            { quoted: msg }
-        );
-
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (e) {
-        console.log(e);
-        await sock.sendMessage(from, { text: '❌ Gagal membuat gambar iPhone Chat.' });
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-    }
-
-    return;
-}
-
-
 
 if (text.trim().toLowerCase() === '.stiker' || text.trim().toLowerCase() === '.sticker') {
     console.log(`📥 Permintaan stiker dari ${from}...`);
@@ -5183,215 +5089,6 @@ if (text.toLowerCase().startsWith('.teks')) {
             text: '❌ Gagal memproses stiker. Pastikan stikernya valid dan coba lagi.'
         }, { quoted: msg });
     }
-}
-
-
-if (text.toLowerCase().startsWith('.bratvid')) {
-    const userText = text.replace('.bratvid', '').trim();
-    if (!userText) {
-        await sock.sendMessage(from, {
-            text: '❌ Contoh: *.bratvid kamu kemana*'
-        }, { quoted: msg });
-        return;
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    const isBypass = isOwner(sender) || isVIP(sender, from);
-    const now = Date.now();
-    const aksesBratVid = bratVidAksesSementara.get(sender);
-    const isTemporaryActive = aksesBratVid && now < aksesBratVid;
-
-    // limit per user
-    if (!(isBypass || isTemporaryActive)) {
-        const record = bratVidLimit.get(sender);
-        if (record) {
-            if (now - record.time < BRATVID_COOLDOWN) {
-                if (record.count >= MAX_BRATVID) {
-                    const sisa = Math.ceil((BRATVID_COOLDOWN - (now - record.time)) / 60000);
-                    await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.bratvid* ${MAX_BRATVID}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibratvid* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.bratvid* tanpa batas waktu.`,
-                        mentions: [sender]
-                    }, { quoted: msg });
-                    return;
-                } else record.count++;
-            } else {
-                bratVidLimit.set(sender, { count: 1, time: now });
-            }
-        } else {
-            bratVidLimit.set(sender, { count: 1, time: now });
-        }
-    }
-
-    try {
-        // 🔥 API BRAT-VIDEO
-        const apiURL = `https://api.jerexd666.wongireng.my.id/imagecreator/brat-video?text=${encodeURIComponent(userText)}`;
-        const res = await fetch(apiURL);
-        if (!res.ok) throw new Error("Gagal mengambil data dari API brat-video.");
-
-        const arrayBuf = await res.arrayBuffer();
-        const buffer = Buffer.from(arrayBuf);
-
-        // buat stiker animasi
-        const sticker = new Sticker(buffer, {
-            pack: 'bratvid',
-            author: 'Jarr',
-            type: StickerTypes.FULL_ANIMATED, // pastikan pakai animasi
-            quality: 100
-        });
-
-        const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-        // jika grup pakai anti-sticker → hapus
-        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
-            await hapusPesan(from, sent);
-            console.log("🗑️ Stiker .bratvid bot ikut dihapus (antistiker aktif).");
-        }
-
-    } catch (err) {
-        console.error("Error .bratvid API:", err);
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-        await sock.sendMessage(from, {
-            text: "❌ Gagal mengambil data dari API brat-video."
-        }, { quoted: msg });
-    }
-}
-
-// Fitur .brat
-if (text.toLowerCase().startsWith('.brat')) {
-    if (text.toLowerCase().startsWith('.bratvid')) return;
-    const userText = text.replace('.brat', '').trim();
-    if (!userText) {
-        await sock.sendMessage(from, {
-            text: '❌ Contoh: *.brat kamu kemana*'
-        }, { quoted: msg });
-        return;
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    const isBypass = isOwner(sender) || isVIP(sender, from);
-    const now = Date.now();
-    const aksesBrat = bratAksesSementara.get(sender);
-    const isTemporaryActive = aksesBrat && now < aksesBrat;
-
-    // VIP / Owner / Temporary Access bebas limit
-    if (!(isBypass || isTemporaryActive)) {
-        const record = bratLimit.get(sender);
-        if (record) {
-            if (now - record.time < BRAT_COOLDOWN) {
-                if (record.count >= MAX_BRAT) {
-                    const sisa = Math.ceil((BRAT_COOLDOWN - (now - record.time)) / 60000);
-                    await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.brat* ${MAX_BRAT}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibrat* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.brat* tanpa batas waktu.`,
-                        mentions: [sender]
-                    }, { quoted: msg });
-                    return;
-                } else record.count++;
-            } else {
-                bratLimit.set(sender, { count: 1, time: now });
-            }
-        } else {
-            bratLimit.set(sender, { count: 1, time: now });
-        }
-    }
-
-    try {
-
-        // 🔥 API BARU FIX
-        const apiURL = `https://api.jerexd666.wongireng.my.id/imagecreator/brat-image?text=${encodeURIComponent(userText)}`;
-
-        const res = await fetch(apiURL);
-        if (!res.ok) throw new Error("Gagal mengambil data dari API baru.");
-
-        // 🔥 API OUTPUT GAMBAR → harus pakai arrayBuffer()
-        const arrayBuf = await res.arrayBuffer();
-        const buffer = Buffer.from(arrayBuf);
-
-        // buat stiker
-        const sticker = new Sticker(buffer, {
-            pack: 'brat',
-            author: 'Jarr',
-            type: StickerTypes.FULL,
-            quality: 100
-        });
-
-        const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-        // jika grup menggunakan antistiker → hapus
-        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
-            await hapusPesan(from, sent);
-            console.log("🗑️ Stiker .brat bot ikut dihapus (antistiker aktif).");
-        }
-
-    } catch (err) {
-        console.error("Error .brat API baru:", err);
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-        await sock.sendMessage(from, {
-            text: "❌ Gagal mengambil data dari API baru."
-        }, { quoted: msg });
-    }
-}
-
-
-
-// Fitur .emojimix
-if (text.toLowerCase().startsWith('.emojimix')) {
-
-    // Ambil hanya setelah command
-    const raw = text.slice(9).trim(); 
-
-    // Regex menangkap emoji (unicode)
-    const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
-    const emojis = raw.match(emojiRegex);
-
-    if (!emojis || emojis.length < 2) {
-        await sock.sendMessage(from, { 
-            text: "❌ Contoh: *.emojimix 😀😍*"
-        }, { quoted: msg });
-        return;
-    }
-
-    const emoji1 = emojis[0];
-    const emoji2 = emojis[1];
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        const url = `https://api.jerexd666.wongireng.my.id/tools/emojimix?emoji1=${encodeURIComponent(emoji1)}&emoji2=${encodeURIComponent(emoji2)}`;
-
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Gagal ambil hasil API");
-
-        const imgBuffer = Buffer.from(await res.arrayBuffer());
-
-        const { Sticker, StickerTypes } = require("wa-sticker-formatter");
-        const sticker = new Sticker(imgBuffer, {
-            pack: "EmojiMix",
-            author: "Jarr",
-            type: StickerTypes.FULL,
-            quality: 100
-        });
-
-        const stickerMsg = await sticker.toMessage();
-        const sent = await sock.sendMessage(from, stickerMsg, { quoted: msg });
-
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-        // Auto-delete jika antistiker aktif
-        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
-            await sock.sendMessage(from, { delete: sent.key });
-        }
-
-    } catch (err) {
-        console.error("❌ Error emojimix:", err);
-        await sock.sendMessage(from, { text: "❌ Gagal membuat EmojiMix." }, { quoted: msg });
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-    }
-
-    return;
 }
 
 
@@ -7047,15 +6744,29 @@ if (!audio) {
     }
 }
 
-// ===== FUNGSI IG STALK =====
+// ===== FUNGSI IG STALK (SIPUTZX) =====
 async function igstalk(user) {
     try {
-        const response = await axios.get(`https://api.jerexd666.wongireng.my.id/stalk/instagram?username=${encodeURIComponent(user)}`);
-        if (!response.data || !response.data.status || !response.data.result) {
+        const response = await axios.get(
+            `https://api.siputzx.my.id/api/stalk/instagram?username=${encodeURIComponent(user)}`,
+            {
+                timeout: 15000,
+                headers: {
+                    "accept": "application/json",
+                    "user-agent": "Mozilla/5.0"
+                }
+            }
+        );
+
+        if (
+            !response.data ||
+            response.data.status !== true ||
+            !response.data.data
+        ) {
             return { status: false };
         }
 
-        const result = response.data.result;
+        const result = response.data.data;
 
         return {
             status: true,
@@ -7063,29 +6774,35 @@ async function igstalk(user) {
                 nickname: result.fullname || "-",
                 username: result.username || "-",
                 bio: result.bio || "-",
-                posts: result.posts_count || "0",
-                followers: result.followers_count || "0",
-                following: result.following_count || "0",
+                posts: result.post || "0",
+                followers: result.followers || "0",
+                following: result.following || "0",
                 profileUrl: result.profile_pic || "",
-                statusAkun: result.is_private ? "Private" : "Public",
+                statusAkun: result.private ? "Private" : "Public",
                 profile: "https://www.instagram.com/" + result.username
             }
         };
     } catch (e) {
-        console.error("❌ IG Stalk Error:", e);
+        console.error("❌ IG Stalk SIPUTZX Error:", e.response?.status || e.message);
         return { status: false };
     }
 }
 
 // ===== HANDLER .IGSTALK =====
 if (text.trim().toLowerCase().startsWith(".igstalk")) {
-    const query = text.replace(".igstalk", "").trim();
+
+    const query = text.slice(8).trim(); // <<< FIX PALING PENTING
+
     if (!query) {
-        await sock.sendMessage(from, { text: "❌ Masukkan username Instagram!\n\nContoh: *.igstalk jerofc*" }, { quoted: msg });
+        await sock.sendMessage(
+            from,
+            { text: "❌ Masukkan username Instagram!\n\nContoh: *.igstalk yaaseneng*" },
+            { quoted: msg }
+        );
         return;
     }
 
-    // ===== Cek Limit & Akses =====
+    // ===== CEK LIMIT & AKSES (ASLI LU, GA DIUBAH) =====
     const isBypass = isOwner(sender) || isVIP(sender, from);
     const now = Date.now();
     const aksesSementara = igstalkAksesSementara.get(sender);
@@ -7096,9 +6813,14 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
         if (record) {
             if (now - record.time < IGSTALK_COOLDOWN) {
                 if (record.count >= MAX_IGSTALK) {
-                    const sisa = Math.ceil((IGSTALK_COOLDOWN - (now - record.time)) / 60000);
+                    const sisa = Math.ceil(
+                        (IGSTALK_COOLDOWN - (now - record.time)) / 60000
+                    );
                     await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.igstalk* ${MAX_IGSTALK}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses sementara *.beliigstalk* 5 menit.\n\n💡 *Tips:* Jadilah VIP atau Owner agar bisa memakai *.igstalk* tanpa batas.`,
+                        text:
+                            `🚫 *Limit Tercapai*\n\n` +
+                            `Kamu hanya bisa memakai *.igstalk* ${MAX_IGSTALK}x selama 10 jam.\n` +
+                            `⏳ Tunggu *${sisa} menit* lagi.`,
                         mentions: [sender]
                     }, { quoted: msg });
                     return;
@@ -7118,89 +6840,47 @@ if (text.trim().toLowerCase().startsWith(".igstalk")) {
 
         if (!result.status) {
             await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
-            await sock.sendMessage(from, { text: "❌ Username tidak ditemukan!" }, { quoted: msg });
+            await sock.sendMessage(
+                from,
+                { text: "❌ Username Instagram tidak ditemukan atau private." },
+                { quoted: msg }
+            );
             return;
         }
 
-        const caption = `*📱 INSTAGRAM STALKER*\n\n` +
-            `*👤 Nickname :* ${result.data.nickname}\n` +
-            `*🆔 Username :* ${result.data.username}\n` +
-            `*🔒 Status :* ${result.data.statusAkun}\n` +
-            `*📝 Bio :* ${result.data.bio}\n` +
-            `*📸 Posts :* ${result.data.posts}\n` +
-            `*👥 Followers :* ${result.data.followers}\n` +
-            `*➡️ Following :* ${result.data.following}\n` +
-            `*🔗 Profile :* ${result.data.profile}`;
+        const caption =
+`*📱 INSTAGRAM STALK*
 
-        await sock.sendMessage(from, { image: { url: result.data.profileUrl }, caption }, { quoted: msg });
+*👤 Nama:* ${result.data.nickname}
+*🆔 Username:* ${result.data.username}
+*🔒 Status:* ${result.data.statusAkun}
+
+*📝 Bio:*
+${result.data.bio}
+
+*📸 Post:* ${result.data.posts}
+*👥 Followers:* ${result.data.followers}
+*➡️ Following:* ${result.data.following}
+
+*🔗 Profile:*
+${result.data.profile}`;
+
+        await sock.sendMessage(
+            from,
+            { image: { url: result.data.profileUrl }, caption },
+            { quoted: msg }
+        );
+
         await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
 
     } catch (err) {
         console.error("❌ IG Stalk Handler Error:", err);
         await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
-        await sock.sendMessage(from, { text: "❌ Terjadi kesalahan saat mengambil data." }, { quoted: msg });
-    }
-}
-
-// ===== FUNGSI SSWEB =====
-async function ssweb(url, view = "mobile") {
-    try {
-        // API Jerexd mendukung parameter view
-        // view = "mobile" atau "desktop"
-        const api = `https://api.jerexd666.wongireng.my.id/tools/ssweb?url=${encodeURIComponent(url)}&type=${view}`;
-        const res = await axios.get(api);
-
-        if (!res.data || !res.data.status) return { status: false };
-
-        return { status: true, image: res.data.result }; // result = URL gambar
-    } catch (e) {
-        console.error("❌ SSWEB Error:", e);
-        return { status: false };
-    }
-}
-
-// ===== HANDLER .SSWEB =====
-if (text.toLowerCase().startsWith(".ssweb")) {
-    let args = text.trim().split(/\s+/);
-    let view = "mobile"; // default
-    let link = "";
-
-    if (args[1] && args[1].toLowerCase() === "desktop") {
-        view = "desktop";
-        link = args[2] || "";
-    } else {
-        link = args[1] || "";
-    }
-
-    if (!link) {
-        await sock.sendMessage(from, {
-            text: "❗ Masukkan URL website!\n\nContoh:\n*.ssweb https://google.com* (mobile)\n*.ssweb desktop https://google.com* (desktop)"
-        }, { quoted: msg });
-        return;
-    }
-
-    try {
-        await sock.sendMessage(from, { react: { text: "⏳", key: msg.key } });
-
-        const result = await ssweb(link, view);
-
-        if (!result.status) {
-            await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
-            await sock.sendMessage(from, { text: "❌ Gagal mengambil screenshot website!" }, { quoted: msg });
-            return;
-        }
-
-        await sock.sendMessage(from, {
-            image: { url: result.image },
-            caption: `🖥️ *Screenshot Website*\n🌐 URL: ${link}\n📱 Tampilan: ${view}`
-        }, { quoted: msg });
-
-        await sock.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
-    } catch (err) {
-        console.error("❌ SSWEB Handler Error:", err);
-        await sock.sendMessage(from, { react: { text: "❌", key: msg.key } });
-        await sock.sendMessage(from, { text: "❌ Error mengambil screenshot!" }, { quoted: msg });
+        await sock.sendMessage(
+            from,
+            { text: "❌ Terjadi kesalahan saat mengambil data Instagram." },
+            { quoted: msg }
+        );
     }
 }
 
@@ -8203,7 +7883,7 @@ if (text.trim() === '.info') {
 👑 Owner      : Fajar Aditya Pratama
 🧠 AI         : QuantumX
 ⚙️ Bahasa     : Node.js + Baileys
-🌐 Versi      : 1.4.0 
+🌐 Versi      : 1.5.0 
 ⏱️ Aktif      : ${jam}j ${menit}m ${detik}s
 
 📞 Kontak Owner : wa.me/6283836348226`;
@@ -8251,7 +7931,7 @@ if (text.trim() === '.menu') {
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }[d]));
 
-    const versiFancy = toFancyNumber('1.4.5');
+    const versiFancy = toFancyNumber('1.5.0');
     const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
    
 
@@ -8276,6 +7956,8 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .truth → Jawab jujur
 │ .dare → Lakukan tantangan
 │ .tebak-aku → Tebakan lucu
+│ .tebaklagu → Menebak lagu
+│ .tebakgambar → Menebak gambar
 │ .susunkata → Susun huruf
 │ .family100 → Jawaban terbanyak
 │ .tebakbendera → Menebak bendera
@@ -8296,6 +7978,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │
 ├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
 │ .ai  → Tanya ke AI
+│ .aigambar  → Bikin gambar
 │ .clear → Reset obrolan
 
 │
@@ -8313,8 +7996,6 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 ├─ 〔 🖌️ *ᴍᴀᴋᴇʀ / ᴄʀᴇᴀᴛᴏʀ* 〕
 │ .stiker → Ubah gambar jadi stiker
 │ .qc → Ubah teks jadi quote
-│ .ipchat → Chat iphone
-│ .emojimix → gabungkan dua emot
 │ .toimg → Stiker ke gambar
 │ .teks → Tambah teks di stiker
 │ .brat → Membuat stiker kata
@@ -8330,6 +8011,7 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 │ .dwvideo → Unduh video sekali lihat
 │ .mirror → Cermin foto/video
 │ .rotate → Ubah posisi foto/video
+│ .blur → Blur wajah foto
 │
 ├─ 〔 👤 *ᴀɴᴏɴʏᴍᴏᴜꜱ* 〕
 │ .anonymous → Chat orang random
@@ -8478,34 +8160,29 @@ if (sesiLimitAI.has(sender)) {
     await sock.sendMessage(from, { text: `✅ Limit AI untuk grup ini diatur menjadi *${data.jumlah} chat*.` });
     return;
 }
-
-// 🔥 MODIFIED AI COMMAND - KASIH PARAMETER from
-if (text.startsWith('.ai')) {
-    const isi = text.slice(3).trim();
+// 🔥 AI CHAT COMMAND (ANTI NABRAK)
+if (/^\.ai(\s|$)/i.test(text)) {
+    const isi = text.replace(/^\.ai/i, '').trim();
     if (!isi) {
-        await sock.sendMessage(from, { text: "❗ Contoh: *.ai halo bot*" });
-        return;
-    }
-
-    // ID limit (grup atau nomor pribadi)
-    const idLimit = from.endsWith("@g.us") ? from : sender;
-
-    // 🔥 AUTO SET DEFAULT LIMIT 5 untuk user baru
-    initDefaultAiLimit(idLimit);
-
-    // 🔥 Cek limit
-    if (!cekLimitAI(idLimit) && !isOwner(sender)) {
         await sock.sendMessage(from, { 
-            text: "❌ *AI Response Error:*\n*Quota Exceeded — User daily limit reached.*\nUntuk melanjutkan, mohon minta owner untuk mengisi ulang." 
+            text: "❗ Contoh: *.ai halo bot*" 
         });
         return;
     }
 
-    // 🔥 generate AI reply - KASIH PARAMETER from
+    const idLimit = from.endsWith("@g.us") ? from : sender;
+    initDefaultAiLimit(idLimit);
+
+    if (!cekLimitAI(idLimit) && !isOwner(sender)) {
+        await sock.sendMessage(from, { 
+            text: "❌ *AI Response Error:*\n*Quota Exceeded — User daily limit reached.*" 
+        });
+        return;
+    }
+
     const balasan = await getAIReply(sender, isi, from);
     await sock.sendMessage(from, { text: balasan });
 
-    // 🔥 Tambah penggunaan
     tambahPakaiAI(idLimit);
     return;
 }
@@ -8558,6 +8235,613 @@ if (text === ".clear") {
     await sock.sendMessage(from, { text: "🧹 Obrolan AI berhasil direset!" });
     return;
 }
+
+
+//FITUR API//
+
+
+if (/^\.bratvid(\s|$)/i.test(text)) {
+    const userText = text.replace(/^\.bratvid/i, '').trim();
+    if (!userText) {
+        await sock.sendMessage(from, {
+            text: '❌ contoh: .bratvid halo semua'
+        }, { quoted: msg });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    const isBypass = isOwner(sender) || isVIP(sender, from);
+    const now = Date.now();
+    const aksesBratVid = bratVidAksesSementara.get(sender);
+    const isTemporaryActive = aksesBratVid && now < aksesBratVid;
+
+    // limit per user
+    if (!(isBypass || isTemporaryActive)) {
+        const record = bratVidLimit.get(sender);
+        if (record) {
+            if (now - record.time < BRATVID_COOLDOWN) {
+                if (record.count >= MAX_BRATVID) {
+                    const sisa = Math.ceil((BRATVID_COOLDOWN - (now - record.time)) / 60000);
+                    await sock.sendMessage(from, {
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.bratvid* ${MAX_BRATVID}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibratvid* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.bratvid* tanpa batas waktu.`,
+                        mentions: [sender]
+                    }, { quoted: msg });
+                    return;
+                } else record.count++;
+            } else {
+                bratVidLimit.set(sender, { count: 1, time: now });
+            }
+        } else {
+            bratVidLimit.set(sender, { count: 1, time: now });
+        }
+    }
+
+   try {
+    // 🔥 API BRAT ANIMATED (SIPUTZX)
+    const apiURL = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(userText)}&isAnimated=true&delay=500`;
+
+    const res = await fetch(apiURL);
+    if (!res.ok) throw new Error("Gagal mengambil data dari API brat animated.");
+
+    const arrayBuf = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuf);
+
+    // 🔥 STIKER ANIMASI
+    const sticker = new Sticker(buffer, {
+        pack: 'bratvid',
+        author: 'Jarr',
+        type: StickerTypes.FULL_ANIMATED, // WAJIB
+        quality: 100
+    });
+
+    const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
+    await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    // antistiker grup
+    if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+        await hapusPesan(from, sent);
+        console.log("🗑️ Stiker .bratvid bot ikut dihapus (antistiker aktif).");
+    }
+
+} catch (err) {
+    console.error("Error .bratvid API siputzx:", err);
+    await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    await sock.sendMessage(from, {
+        text: "❌ Gagal mengambil data dari API bratvid."
+    }, { quoted: msg });
+}
+
+}
+
+// Fitur .brat
+if (/^\.brat(\s|$)/i.test(text)) {
+    const userText = text.replace(/^\.brat/i, '').trim();
+    if (!userText) {
+        await sock.sendMessage(from, {
+            text: '❌ contoh: .brat halo semua'
+        }, { quoted: msg });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    const isBypass = isOwner(sender) || isVIP(sender, from);
+    const now = Date.now();
+    const aksesBrat = bratAksesSementara.get(sender);
+    const isTemporaryActive = aksesBrat && now < aksesBrat;
+
+    // VIP / Owner / Temporary Access bebas limit
+    if (!(isBypass || isTemporaryActive)) {
+        const record = bratLimit.get(sender);
+        if (record) {
+            if (now - record.time < BRAT_COOLDOWN) {
+                if (record.count >= MAX_BRAT) {
+                    const sisa = Math.ceil((BRAT_COOLDOWN - (now - record.time)) / 60000);
+                    await sock.sendMessage(from, {
+                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.brat* ${MAX_BRAT}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibrat* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.brat* tanpa batas waktu.`,
+                        mentions: [sender]
+                    }, { quoted: msg });
+                    return;
+                } else record.count++;
+            } else {
+                bratLimit.set(sender, { count: 1, time: now });
+            }
+        } else {
+            bratLimit.set(sender, { count: 1, time: now });
+        }
+    }
+
+   try {
+    const apiURL = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(userText)}&isAnimated=false`;
+
+    const res = await fetch(apiURL);
+    if (!res.ok) throw new Error("Gagal mengambil data dari API brat siputzx.");
+
+    // API langsung balikin gambar → ambil buffer
+    const arrayBuf = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuf);
+
+    // bikin stiker
+    const sticker = new Sticker(buffer, {
+        pack: 'brat',
+        author: 'Jarr',
+        type: StickerTypes.FULL,
+        quality: 100
+    });
+
+    const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
+    await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    // antistiker grup
+    if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+        await hapusPesan(from, sent);
+        console.log("🗑️ Stiker .brat bot ikut dihapus (antistiker aktif).");
+    }
+
+} catch (err) {
+    console.error("Error .brat API siputzx:", err);
+    await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    await sock.sendMessage(from, {
+        text: "❌ Gagal mengambil data dari API brat."
+    }, { quoted: msg });
+}
+
+}
+
+
+
+// Fitur .emojimix
+if (text.toLowerCase().startsWith('.emojimix')) {
+
+    // Ambil hanya setelah command
+    const raw = text.slice(9).trim(); 
+
+    // Regex menangkap emoji (unicode)
+    const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+    const emojis = raw.match(emojiRegex);
+
+    if (!emojis || emojis.length < 2) {
+        await sock.sendMessage(from, { 
+            text: "❌ Contoh: *.emojimix 😀😍*"
+        }, { quoted: msg });
+        return;
+    }
+
+    const emoji1 = emojis[0];
+    const emoji2 = emojis[1];
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const url = `https://api.jerexd666.wongireng.my.id/tools/emojimix?emoji1=${encodeURIComponent(emoji1)}&emoji2=${encodeURIComponent(emoji2)}`;
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Gagal ambil hasil API");
+
+        const imgBuffer = Buffer.from(await res.arrayBuffer());
+
+        const { Sticker, StickerTypes } = require("wa-sticker-formatter");
+        const sticker = new Sticker(imgBuffer, {
+            pack: "EmojiMix",
+            author: "Jarr",
+            type: StickerTypes.FULL,
+            quality: 100
+        });
+
+        const stickerMsg = await sticker.toMessage();
+        const sent = await sock.sendMessage(from, stickerMsg, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        // Auto-delete jika antistiker aktif
+        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
+            await sock.sendMessage(from, { delete: sent.key });
+        }
+
+    } catch (err) {
+        console.error("❌ Error emojimix:", err);
+        await sock.sendMessage(from, { text: "❌ Gagal membuat EmojiMix." }, { quoted: msg });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+
+    return;
+}
+
+
+// Fitur .ytmp3
+if (text.toLowerCase().startsWith('.ytmp3 ')) {
+    const url = text.split(' ')[1];
+    if (!url) {
+        await sock.sendMessage(from, { text: '❌ Contoh: *.ytmp3 https://youtu.be/...*' });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const api = `https://api.jerexd666.wongireng.my.id/download/ytmp3?url=${encodeURIComponent(url)}`;
+        const res = await fetch(api);
+        const data = await res.json();
+
+        if (!data.status) throw new Error("API gagal");
+
+        const dl = data.result.download.download_url;
+        const title = data.result.download.title || "audio";
+
+        // Fetch file mp3
+        const audioBuffer = Buffer.from(await (await fetch(dl)).arrayBuffer());
+
+        await sock.sendMessage(
+            from,
+            {
+                audio: audioBuffer,
+                mimetype: 'audio/mp4', // mp3 kadang error, audio/mp4 LANCAR
+                fileName: `${title}.mp3`
+            },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (e) {
+        console.log(e);
+        await sock.sendMessage(from, { text: '❌ Gagal mengambil MP3.' });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+
+    return;
+}
+
+// Fitur .ytmp4
+if (text.toLowerCase().startsWith('.ytmp4 ')) {
+    const url = text.split(' ')[1];
+    if (!url) {
+        await sock.sendMessage(from, { text: '❌ Contoh: *.ytmp4 https://youtu.be/...*' });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const api = `https://api.jerexd666.wongireng.my.id/download/ytmp4?url=${encodeURIComponent(url)}`;
+        const res = await fetch(api);
+        const data = await res.json();
+
+        if (!data.status) throw new Error("API gagal");
+
+        const dl = data.result.download_url;
+        const title = data.result.title || "video";
+
+        // Fetch file mp4
+        const videoBuffer = Buffer.from(await (await fetch(dl)).arrayBuffer());
+
+        await sock.sendMessage(
+            from,
+            {
+                video: videoBuffer,
+                mimetype: 'video/mp4',
+                caption: `🎬 *${title}*`
+            },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (e) {
+        console.log(e);
+        await sock.sendMessage(from, { text: '❌ Gagal mengambil video.' });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+
+    return;
+}
+
+// Fitur .ipchat
+if (text.toLowerCase().startsWith('.ipchat ')) {
+    const pesan = text.slice(8).trim();
+    if (!pesan) {
+        await sock.sendMessage(from, { text: '❗ Contoh: *.ipchat halo dunia*' });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const api = `https://api.jerexd666.wongireng.my.id/imagecreator/iqc?text=${encodeURIComponent(pesan)}`;
+
+        // Langsung ambil gambar (buffer)
+        const imgRes = await fetch(api);
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+
+        // Kirim gambar ke WA
+        await sock.sendMessage(
+            from,
+            {
+                image: buffer,
+                caption: `📱 *iPhone Chat*\n"${pesan}"`
+            },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (e) {
+        console.log(e);
+        await sock.sendMessage(from, { text: '❌ Gagal membuat gambar iPhone Chat.' });
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+    }
+
+    return;
+}
+
+if (text.toLowerCase().startsWith('.aigambar')) {
+    const prompt = text.replace(/\.aigambar/i, '').trim();
+
+    if (!prompt) {
+        return sock.sendMessage(from, {
+            text: '❌ Contoh: *.aigambar kucing oren lucu pakai topi*'
+        }, { quoted: msg });
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const apiURL = `https://api.siputzx.my.id/api/ai/magicstudio?prompt=${encodeURIComponent(prompt)}`;
+
+        const res = await fetch(apiURL);
+        if (!res.ok) throw new Error('Gagal generate gambar AI');
+
+        const arrayBuf = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuf);
+
+        await sock.sendMessage(from, {
+            image: buffer,
+            caption: `🎨 *AI Gambar*\n\n📝 Prompt:\n${prompt}`
+        }, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (err) {
+        console.error('Error .aigambar:', err);
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, {
+            text: '❌ Gagal membuat gambar AI.'
+        }, { quoted: msg });
+    }
+
+    return;
+}
+
+if (text.trim() === '.tebaklagu') {
+    await sock.sendMessage(from, { react: { text: '🎵', key: msg.key } });
+
+    const res = await fetch('https://api.siputzx.my.id/api/games/tebaklagu');
+    if (!res.ok) {
+        return sock.sendMessage(from, {
+            text: '❌ Gagal mengambil soal tebak lagu.'
+        });
+    }
+
+    const json = await res.json();
+    const soal = json.data;
+
+    // 🎧 KIRIM AUDIO
+    const audioMsg = await sock.sendMessage(from, {
+        audio: { url: soal.lagu },
+        mimetype: 'audio/mpeg',
+        ptt: false
+    });
+
+    // 📝 KIRIM TEKS SOAL (STYLE KUIS)
+    const teksSoal = `🎵 *TEBAK LAGU DIMULAI!*
+
+📌 *Petunjuk:* Dengarkan audio di atas
+
+✍️ Jawab dengan menuliskan *judul lagu*
+(dengan mereply audio atau pesan ini)
+⏱️ Waktu 30 detik!`;
+
+    const textMsg = await sock.sendMessage(from, { text: teksSoal });
+
+    const timeout = setTimeout(async () => {
+        // hapus semua sesi terkait
+        sesiTebakLagu.delete(audioMsg.key.id);
+        sesiTebakLagu.delete(textMsg.key.id);
+
+        await sock.sendMessage(from, {
+            text: `⏰ *Waktu habis!*
+
+✅ Judul lagu: *${soal.judul}*
+🎤 Artis: *${soal.artis}*`
+        });
+    }, 30000);
+
+    // 🔥 SIMPAN 2 ID (AUDIO & TEKS)
+    const sesiData = {
+        jawaban: soal.judul.trim(),
+        timeout
+    };
+
+    sesiTebakLagu.set(audioMsg.key.id, sesiData);
+    sesiTebakLagu.set(textMsg.key.id, sesiData);
+
+    return;
+}
+
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+
+    if (sesiTebakLagu.has(replyId)) {
+        const sesi = sesiTebakLagu.get(replyId);
+        clearTimeout(sesi.timeout);
+
+        // hapus semua sesi yang sama
+        for (const [key, value] of sesiTebakLagu.entries()) {
+            if (value === sesi) sesiTebakLagu.delete(key);
+        }
+
+        const jawabanUser = text.trim();
+        const benar =
+            jawabanUser.toLowerCase() === sesi.jawaban.toLowerCase();
+
+        if (benar) {
+            tambahSkor(sender, from, 30);
+            await sock.sendMessage(from, {
+                text: `✅ *Benar!* Jawabanmu adalah *${jawabanUser}* 🎉
+🏆 Kamu mendapatkan *+30 poin!*
+
+Mau main lagi? Ketik *.tebaklagu*`
+            });
+        } else {
+            await sock.sendMessage(from, {
+                text: `❌ *Salah!*
+Jawabanmu: *${jawabanUser}*
+✅ Jawaban benar: *${sesi.jawaban}*
+
+Ketik *.tebaklagu* untuk mencoba lagi.`
+            });
+        }
+        return;
+    }
+}
+
+if (text.trim() === '.tebakgambar') {
+    await sock.sendMessage(from, { react: { text: '🧩', key: msg.key } });
+
+    const res = await fetch('https://api.siputzx.my.id/api/games/tebakgambar');
+    if (!res.ok) {
+        return sock.sendMessage(from, {
+            text: '❌ Gagal mengambil soal tebak gambar.'
+        });
+    }
+
+    const json = await res.json();
+    const soal = json.data;
+
+    const sent = await sock.sendMessage(from, {
+        image: { url: soal.img },
+        caption: `🧩 *TEBAK GAMBAR DIMULAI!*
+
+📌 *Petunjuk:* ${soal.deskripsi || '-'}
+
+✍️ Jawab dengan menuliskan jawaban
+(dengan mereply gambar ini)
+⏱️ Waktu 30 detik!`
+    });
+
+    const timeout = setTimeout(async () => {
+        sesiTebakGambar.delete(sent.key.id);
+        await sock.sendMessage(from, {
+            text: `⏰ *Waktu habis!*
+
+✅ Jawaban yang benar adalah:
+*${soal.jawaban}*`
+        });
+    }, 30000);
+
+    sesiTebakGambar.set(sent.key.id, {
+        jawaban: soal.jawaban.trim(),
+        timeout
+    });
+
+    return;
+}
+
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+
+    if (sesiTebakGambar.has(replyId)) {
+        const sesi = sesiTebakGambar.get(replyId);
+        clearTimeout(sesi.timeout);
+        sesiTebakGambar.delete(replyId);
+
+        const jawabanUser = text.trim();
+        const benar =
+            jawabanUser.toLowerCase() === sesi.jawaban.toLowerCase();
+
+        if (benar) {
+            tambahSkor(sender, from, 30);
+            await sock.sendMessage(from, {
+                text: `✅ *Benar!* Jawabanmu adalah *${sesi.jawaban}* 🎉
+🏆 Kamu mendapatkan *+30 poin!*
+
+Mau main lagi? Ketik *.tebakgambar*`
+            });
+        } else {
+            await sock.sendMessage(from, {
+                text: `❌ *Salah!*
+Jawabanmu: *${jawabanUser}*
+✅ Jawaban benar: *${sesi.jawaban}*
+
+Ketik *.tebakgambar* untuk mencoba lagi.`
+            });
+        }
+        return;
+    }
+}
+
+
+if (text.trim().toLowerCase() === '.blur') {
+    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const imageDirect = msg.message?.imageMessage;
+    const imageQuoted = quoted?.imageMessage;
+
+    let targetMsg = null;
+    if (imageDirect) targetMsg = msg;
+    else if (imageQuoted) targetMsg = { ...msg, message: { imageMessage: imageQuoted } };
+
+    if (!targetMsg) {
+        return sock.sendMessage(
+            from,
+            { text: '❌ Kirim atau reply foto dengan caption *.blur*' },
+            { quoted: msg }
+        );
+    }
+
+    try {
+        await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+        const buffer = await downloadMediaMessage(
+            targetMsg,
+            'buffer',
+            {},
+            { logger: console }
+        );
+
+        // 🔥 UPLOAD CATBOX (BUKAN TELEGRAPH)
+        const imageUrl = await uploadToCatbox(buffer);
+
+        // 🫥 BLUR API
+        const api = `https://api.siputzx.my.id/api/iloveimg/blurface?image=${encodeURIComponent(imageUrl)}`;
+        const res = await fetch(api);
+        if (!res.ok) throw new Error('API blurface gagal');
+
+        const resultBuffer = Buffer.from(await res.arrayBuffer());
+
+        await sock.sendMessage(
+            from,
+            {
+                image: resultBuffer,
+                caption: `*Blur Berhasil!*.`
+            },
+            { quoted: msg }
+        );
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (err) {
+        console.error('❌ Error .blur:', err);
+        await sock.sendMessage(
+            from,
+            { text: '❌ Gagal memproses gambar.' },
+            { quoted: msg }
+        );
+    }
+
+    return;
+}
+
 
     });
 }
