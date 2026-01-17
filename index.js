@@ -6477,7 +6477,7 @@ if (body.startsWith('.bug2')) {
     }
 
     if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃' });
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝙊𝙒𝙉𝙀𝙍 𝙊𝙉𝙇𝙔' });
         return;
     }
 
@@ -6574,7 +6574,7 @@ if (body.startsWith('.bug')) {
     }
 
     if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃' });
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝙊𝙒𝙉𝙀𝙍 𝙊𝙉𝙇𝙔' });
         return;
     }
 
@@ -8586,214 +8586,225 @@ if (text.trim() === '.info') {
     return;
 }
 
-
+// ==================== FANCY MENU WITH BOLD FONT ====================
 if (text.trim() === '.menu') {
     await sock.sendMessage(from, {
-            react: {
-                text: '⏳',
-                key: msg.key
-            }
-        });
+        react: {
+            text: '⏳',
+            key: msg.key
+        }
+    });
+    
     const waktu = new Date();
-
-    // Ambil nilai numerik
     const tanggal = waktu.getDate().toString().padStart(2, '0');
-    const bulan = (waktu.getMonth() + 1).toString().padStart(2, '0'); // 0-based
+    const bulan = (waktu.getMonth() + 1).toString().padStart(2, '0');
     const tahun = waktu.getFullYear().toString();
-  
-
-    // Font fancy
-    const fancy = (text) =>
-        text
-            .replace(/[a-z]/g, c => ({
-                a: 'ᴀ', b: 'ʙ', c: 'ᴄ', d: 'ᴅ', e: 'ᴇ',
-                f: 'ғ', g: 'ɢ', h: 'ʜ', i: 'ɪ', j: 'ᴊ',
-                k: 'ᴋ', l: 'ʟ', m: 'ᴍ', n: 'ɴ', o: 'ᴏ',
-                p: 'ᴘ', q: 'ǫ', r: 'ʀ', s: 'ꜱ', t: 'ᴛ',
-                u: 'ᴜ', v: 'ᴠ', w: 'ᴡ', x: 'x', y: 'ʏ', z: 'ᴢ'
-            }[c]) || c)
-            .replace(/[A-Z]/g, c => ({
-                A: 'ᴀ', B: 'ʙ', C: 'ᴄ', D: 'ᴅ', E: 'ᴇ',
-                F: 'ғ', G: 'ɢ', H: 'ʜ', I: 'ɪ', J: 'ᴊ',
-                K: 'ᴋ', L: 'ʟ', M: 'ᴍ', N: 'ɴ', O: 'ᴏ',
-                P: 'ᴘ', Q: 'ǫ', R: 'ʀ', S: 'ꜱ', T: 'ᴛ',
-                U: 'ᴜ', V: 'ᴠ', W: 'ᴡ', X: 'x', Y: 'ʏ', Z: 'ᴢ'
-            }[c]) || c);
-
-    const toFancyNumber = (str) => str.replace(/\d/g, d => ({
-        '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒',
-        '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
-    }[d]));
-
-    const versiFancy = toFancyNumber('1.5.0');
-    const tanggalFancy = `${toFancyNumber(tanggal)}-${toFancyNumber(bulan)}-${toFancyNumber(tahun)}`;
-   
-
-    const readmore = String.fromCharCode(8206).repeat(4001); // WA Read More
-
+    
+    // FONT CONVERTER
+    const toBoldFont = (text) => {
+        const boldMap = {
+            'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘',
+            'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜', 'J': '𝗝',
+            'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢',
+            'P': '𝗣', 'Q': '𝗤', 'R': '𝗥', 'S': '𝗦', 'T': '𝗧',
+            'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
+            'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲',
+            'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶', 'j': '𝗷',
+            'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼',
+            'p': '𝗽', 'q': '𝗾', 'r': '𝗿', 's': '𝘀', 't': '𝘁',
+            'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇',
+            '0': '𝟬', '1': '𝟭', '2': '𝟮', '3': '𝟯', '4': '𝟰',
+            '5': '𝟱', '6': '𝟲', '7': '𝟳', '8': '𝟴', '9': '𝟵',
+            ' ': ' ', ':': ':', '-': '-', '/': '/', '.': '.', ',': ',',
+            '!': '!', '?': '?', '@': '@', '#': '#', '$': '$',
+            '(': '(', ')': ')', '[': '[', ']': ']', '{': '{', '}': '}'
+        };
+        
+        return text.split('').map(char => boldMap[char] || char).join('');
+    };
+    
+    const toSmallCaps = (text) => {
+        const smallCapsMap = {
+            'A': 'ᴀ', 'B': 'ʙ', 'C': 'ᴄ', 'D': 'ᴅ', 'E': 'ᴇ',
+            'F': 'ғ', 'G': 'ɢ', 'H': 'ʜ', 'I': 'ɪ', 'J': 'ᴊ',
+            'K': 'ᴋ', 'L': 'ʟ', 'M': 'ᴍ', 'N': 'ɴ', 'O': 'ᴏ',
+            'P': 'ᴘ', 'Q': 'ǫ', 'R': 'ʀ', 'S': 'ꜱ', 'T': 'ᴛ',
+            'U': 'ᴜ', 'V': 'ᴠ', 'W': 'ᴡ', 'X': 'x', 'Y': 'ʏ', 'Z': 'ᴢ',
+            'a': 'ᴀ', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'ᴇ',
+            'f': 'ғ', 'g': 'ɢ', 'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ',
+            'k': 'ᴋ', 'l': 'ʟ', 'm': 'ᴍ', 'n': 'ɴ', 'o': 'ᴏ',
+            'p': 'ᴘ', 'q': 'ǫ', 'r': 'ʀ', 's': 'ꜱ', 't': 'ᴛ',
+            'u': 'ᴜ', 'v': 'ᴠ', 'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ'
+        };
+        
+        return text.split('').map(char => smallCapsMap[char] || char).join('');
+    };
+    
+    // CONVERT TEXTS
+    const boldText = (str) => toBoldFont(str);
+    const smallText = (str) => toSmallCaps(str);
+    
+    const versiBold = boldText("1.5.0");
+    const tanggalBold = boldText(`${tanggal}-${bulan}-${tahun}`);
+    const readmore = String.fromCharCode(8206).repeat(4001);
+    
     await sock.sendMessage(from, {
         image: { url: './logo.png' },
-        caption:
-`ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ
+        caption: boldText(`𝐒𝐄𝐋𝐀𝐌𝐀𝐓 𝐃𝐀𝐓𝐀𝐍𝐆
 
-> ɴᴀᴍᴀ          : ʙᴏᴛ ᴊᴀʀʀ
-> ᴀᴜᴛᴏʀ        : ꜰᴀᴊᴀʀ
-> ᴠᴇʀꜱɪ          : ${versiFancy}
-> ᴛᴀɴɢɢᴀʟ    : ${tanggalFancy}
+> 𝐍𝐀𝐌𝐀          : ${boldText("𝐁𝐎𝐓 𝐉𝐀𝐑𝐑")}
+> 𝐀𝐔𝐓𝐎𝐑        : ${boldText("𝐅𝐀𝐉𝐀𝐑")}
+> 𝐕𝐄𝐑𝐒𝐈          : ${versiBold}
+> 𝐓𝐀𝐍𝐆𝐆𝐀𝐋    : ${tanggalBold}
 
-${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
+${readmore}╭─〔 ${boldText("🤖 𝐁𝐎𝐓 𝐉𝐀𝐑𝐑 𝐌𝐄𝐍𝐔")} 〕─╮
 │
-├─ 〔 🎮 *ɢᴀᴍᴇ* 〕
-│ .kuis → Kuis pilihan ganda
-│ .kuissusah → Kuis versi susah 
-│ .judi → Tebak ganjil / genap
-│ .truth → Jawab jujur
-│ .dare → Lakukan tantangan
-│ .tebak-aku → Tebakan lucu
-│ .tebaklagu → Menebak lagu
-│ .tebakgambar → Menebak gambar
-│ .susunkata → Susun huruf
-│ .family100 → Jawaban terbanyak
-│ .tebakbendera → Menebak bendera
-│ .tictactoe → Bermain X dan O
-│ .ulartangga → Main dengan teman
+├─ 〔 ${boldText("🎮 𝐆𝐀𝐌𝐄")} 〕
+│ ${smallText(".kuis")} → ${boldText("𝐊𝐮𝐢𝐬 𝐩𝐢𝐥𝐢𝐡𝐚𝐧 𝐠𝐚𝐧𝐝𝐚")}
+│ ${smallText(".kuissusah")} → ${boldText("𝐊𝐮𝐢𝐬 𝐯𝐞𝐫𝐬𝐢 𝐬𝐮𝐬𝐚𝐡")}
+│ ${smallText(".judi")} → ${boldText("𝐓𝐞𝐛𝐚𝐤 𝐠𝐚𝐧𝐣𝐢𝐥 / 𝐠𝐞𝐧𝐚𝐩")}
+│ ${smallText(".truth")} → ${boldText("𝐉𝐚𝐰𝐚𝐛 𝐣𝐮𝐣𝐮𝐫")}
+│ ${smallText(".dare")} → ${boldText("𝐋𝐚𝐤𝐮𝐤𝐚𝐧 𝐭𝐚𝐧𝐭𝐚𝐧𝐠𝐚𝐧")}
+│ ${smallText(".tebak-aku")} → ${boldText("𝐓𝐞𝐛𝐚𝐤𝐚𝐧 𝐥𝐮𝐜𝐮")}
+│ ${smallText(".tebaklagu")} → ${boldText("𝐌𝐞𝐧𝐞𝐛𝐚𝐤 𝐥𝐚𝐠𝐮")}
+│ ${smallText(".tebakgambar")} → ${boldText("𝐌𝐞𝐧𝐞𝐛𝐚𝐤 𝐠𝐚𝐦𝐛𝐚𝐫")}
+│ ${smallText(".susunkata")} → ${boldText("𝐒𝐮𝐬𝐮𝐧 𝐡𝐮𝐫𝐮𝐟")}
+│ ${smallText(".family100")} → ${boldText("𝐉𝐚𝐰𝐚𝐛𝐚𝐧 𝐭𝐞𝐫𝐛𝐚𝐧𝐲𝐚𝐤")}
+│ ${smallText(".tebakbendera")} → ${boldText("𝐌𝐞𝐧𝐞𝐛𝐚𝐤 𝐛𝐞𝐧𝐝𝐞𝐫𝐚")}
+│ ${smallText(".tictactoe")} → ${boldText("𝐁𝐞𝐫𝐦𝐚𝐢𝐧 𝐗 𝐝𝐚𝐧 𝐎")}
+│ ${smallText(".ulartangga")} → ${boldText("𝐌𝐚𝐢𝐧 𝐝𝐞𝐧𝐠𝐚𝐧 𝐭𝐞𝐦𝐚𝐧")}
 │
-├─ 〔 🏳️‍🌈 *ꜰɪᴛᴜʀ ʟᴜᴄᴜ* 〕
-│ .gay → Seberapa gay?
-│ .lesbi → Seberapa lesbi?
-│ .cantik → Seberapa cantik?
-│ .ganteng → Seberapa ganteng?
-│ .jodoh → Cocoklogi cinta
-│ .cekkhodam → Cek khodam 
-│ .cekiq → Cek kepintaran
-│ .siapa → Target random
-│ .fakereply → Pesan palsu
-│ .polling → Buat polling
+├─ 〔 ${boldText("🏳️‍🌈 𝐅𝐈𝐓𝐔𝐑 𝐋𝐔𝐂𝐔")} 〕
+│ ${smallText(".gay")} → ${boldText("𝐒𝐞𝐛𝐞𝐫𝐚𝐩𝐚 𝐠𝐚𝐲?")}
+│ ${smallText(".lesbi")} → ${boldText("𝐒𝐞𝐛𝐞𝐫𝐚𝐩𝐚 𝐥𝐞𝐬𝐛𝐢?")}
+│ ${smallText(".cantik")} → ${boldText("𝐒𝐞𝐛𝐞𝐫𝐚𝐩𝐚 𝐜𝐚𝐧𝐭𝐢𝐤?")}
+│ ${smallText(".ganteng")} → ${boldText("𝐒𝐞𝐛𝐞𝐫𝐚𝐩𝐚 𝐠𝐚𝐧𝐭𝐞𝐧𝐠?")}
+│ ${smallText(".jodoh")} → ${boldText("𝐂𝐨𝐜𝐨𝐤𝐥𝐨𝐠𝐢 𝐜𝐢𝐧𝐭𝐚")}
+│ ${smallText(".cekkhodam")} → ${boldText("𝐂𝐞𝐤 𝐤𝐡𝐨𝐝𝐚𝐦")}
+│ ${smallText(".cekiq")} → ${boldText("𝐂𝐞𝐤 𝐤𝐞𝐩𝐢𝐧𝐭𝐚𝐫𝐚𝐧")}
+│ ${smallText(".siapa")} → ${boldText("𝐓𝐚𝐫𝐠𝐞𝐭 𝐫𝐚𝐧𝐝𝐨𝐦")}
+│ ${smallText(".fakereply")} → ${boldText("𝐏𝐞𝐬𝐚𝐧 𝐩𝐚𝐥𝐬𝐮")}
+│ ${smallText(".polling")} → ${boldText("𝐁𝐮𝐚𝐭 𝐩𝐨𝐥𝐥𝐢𝐧𝐠")}
 │
-├─ 〔 🧠 *ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ* 〕
-│ .ai  → Tanya ke AI
-│ .aigambar  → Bikin gambar
-│ .clear → Reset obrolan
+├─ 〔 ${boldText("🧠 𝐀𝐈 𝐀𝐒𝐒𝐈𝐒𝐓𝐀𝐍𝐓")} 〕
+│ ${smallText(".ai")} → ${boldText("𝐓𝐚𝐧𝐲𝐚 𝐤𝐞 𝐀𝐈")}
+│ ${smallText(".aigambar")} → ${boldText("𝐁𝐢𝐤𝐢𝐧 𝐠𝐚𝐦𝐛𝐚𝐫")}
+│ ${smallText(".clear")} → ${boldText("𝐑𝐞𝐬𝐞𝐭 𝐨𝐛𝐫𝐨𝐥𝐚𝐧")}
+│
+├─ 〔 ${boldText("🎵 𝐌𝐔𝐒𝐈𝐂 & 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐄𝐑")} 〕
+│ ${smallText(".spotify")} → ${boldText("𝐂𝐚𝐫𝐢 𝐥𝐚𝐠𝐮 𝐒𝐩𝐨𝐭𝐢𝐟𝐲")}
+│ ${smallText(".sound")} → ${boldText("𝐔𝐛𝐚𝐡 𝐭𝐞𝐤𝐬 𝐣𝐚𝐝𝐢 𝐬𝐮𝐚𝐫𝐚")}
+│ ${smallText(".audiovid")} → ${boldText("𝐕𝐢𝐝𝐞𝐨 𝐣𝐚𝐝𝐢 𝐚𝐮𝐝𝐢𝐨")}
+│ ${smallText(".ubahsuara")} → ${boldText("𝐔𝐛𝐚𝐡 𝐬𝐮𝐚𝐫𝐚 𝐮𝐧𝐢𝐤")}
+│ ${smallText(".wm")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐭𝐚𝐧𝐩𝐚 𝐰𝐚𝐭𝐞𝐫𝐦𝐚𝐫𝐤")}
+│ ${smallText(".ttmp3")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐦𝐩𝟑 𝐓𝐢𝐤𝐓𝐨𝐤")}
+│ ${smallText(".ytmp3")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐦𝐩𝟑 𝐘𝐨𝐮𝐭𝐮𝐛𝐞")}
+│ ${smallText(".ytmp4")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐦𝐩𝟒 𝐘𝐨𝐮𝐭𝐮𝐛𝐞")}
+│
+├─ 〔 ${boldText("🖌️ 𝐌𝐀𝐊𝐄𝐑 / 𝐂𝐑𝐄𝐀𝐓𝐎𝐑")} 〕
+│ ${smallText(".stiker")} → ${boldText("𝐔𝐛𝐚𝐡 𝐠𝐚𝐦𝐛𝐚𝐫 𝐣𝐚𝐝𝐢 𝐬𝐭𝐢𝐤𝐞𝐫")}
+│ ${smallText(".qc")} → ${boldText("𝐔𝐛𝐚𝐡 𝐭𝐞𝐤𝐬 𝐣𝐚𝐝𝐢 𝐪𝐮𝐨𝐭𝐞")}
+│ ${smallText(".toimg")} → ${boldText("𝐒𝐭𝐢𝐤𝐞𝐫 𝐤𝐞 𝐠𝐚𝐦𝐛𝐚𝐫")}
+│ ${smallText(".teks")} → ${boldText("𝐓𝐚𝐦𝐛𝐚𝐡 𝐭𝐞𝐤𝐬 𝐝𝐢 𝐬𝐭𝐢𝐤𝐞𝐫")}
+│ ${smallText(".brat")} → ${boldText("𝐌𝐞𝐦𝐛𝐮𝐚𝐭 𝐬𝐭𝐢𝐤𝐞𝐫 𝐤𝐚𝐭𝐚")}
+│ ${smallText(".bratvid")} → ${boldText("𝐌𝐞𝐦𝐛𝐮𝐚𝐭 𝐬𝐭𝐢𝐤𝐞𝐫 𝐯𝐢𝐝𝐞𝐨")}
+│
+├─ 〔 ${boldText("🖼️ 𝐌𝐄𝐃𝐈𝐀")} 〕
+│ ${smallText(".waifu")} → ${boldText("𝐖𝐚𝐢𝐟𝐮 𝐫𝐚𝐧𝐝𝐨𝐦")}
+│ ${smallText(".qr")} → ${boldText("𝐌𝐞𝐦𝐛𝐮𝐚𝐭 𝐐𝐑")}
+│ ${smallText(".pdf")} → ${boldText("𝐌𝐞𝐧𝐠𝐮𝐛𝐚𝐡 𝐟𝐨𝐭𝐨 𝐣𝐚𝐝𝐢 𝐩𝐝𝐟")}
+│ ${smallText(".igstalk")} → ${boldText("𝐌𝐞𝐧𝐠𝐬𝐭𝐚𝐥𝐤𝐢𝐧𝐠 𝐢𝐠 𝐨𝐫𝐚𝐧𝐠")}
+│ ${smallText(".ambilpp")} → ${boldText("𝐌𝐞𝐧𝐠𝐚𝐦𝐛𝐢𝐥 𝐏𝐏 𝐰𝐚")}
+│ ${smallText(".dwfoto")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐟𝐨𝐭𝐨 𝐬𝐞𝐤𝐚𝐥𝐢 𝐥𝐢𝐡𝐚𝐭")}
+│ ${smallText(".dwvideo")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐯𝐢𝐝𝐞𝐨 𝐬𝐞𝐤𝐚𝐥𝐢 𝐥𝐢𝐡𝐚𝐭")}
+│ ${smallText(".mirror")} → ${boldText("𝐂𝐞𝐫𝐦𝐢𝐧 𝐟𝐨𝐭𝐨/𝐯𝐢𝐝𝐞𝐨")}
+│ ${smallText(".rotate")} → ${boldText("𝐔𝐛𝐚𝐡 𝐩𝐨𝐬𝐢𝐬𝐢 𝐟𝐨𝐭𝐨/𝐯𝐢𝐝𝐞𝐨")}
+│ ${smallText(".blur")} → ${boldText("𝐁𝐥𝐮𝐫 𝐰𝐚𝐣𝐚𝐡 𝐟𝐨𝐭𝐨")}
+│
+├─ 〔 ${boldText("👤 𝐀𝐍𝐎𝐍𝐘𝐌𝐎𝐔𝐒")} 〕
+│ ${smallText(".anonymous")} → ${boldText("𝐂𝐡𝐚𝐭 𝐨𝐫𝐚𝐧𝐠 𝐫𝐚𝐧𝐝𝐨𝐦")}
+│ ${smallText(".anonstatus")} → ${boldText("𝐂𝐞𝐤 𝐬𝐭𝐚𝐭𝐮𝐬 𝐚𝐧𝐭𝐫𝐞𝐚𝐧")}
+│ ${smallText(".stop")} → ${boldText("𝐇𝐞𝐧𝐭𝐢𝐤𝐚𝐧 𝐬𝐞𝐬𝐬𝐢𝐨𝐧 𝐚𝐧𝐨𝐧𝐢𝐦")}
+│
+├─ 〔 ${boldText("👥 𝐅𝐈𝐓𝐔𝐑 𝐆𝐑𝐔𝐏")} 〕
+│ ${smallText(".tagall")} → ${boldText("𝐌𝐞𝐧𝐭𝐢𝐨𝐧 𝐬𝐞𝐦𝐮𝐚 𝐦𝐞𝐦𝐛𝐞𝐫")}
+│ ${smallText(".tag")} → ${boldText("𝐌𝐞𝐧𝐭𝐢𝐨𝐧 𝟏 𝐦𝐞𝐦𝐛𝐞𝐫")}
+│ ${smallText(".setnamagc")} → ${boldText("𝐆𝐚𝐧𝐭𝐢 𝐧𝐚𝐦𝐚 𝐠𝐫𝐮𝐩")}
+│ ${smallText(".setdesgc")} → ${boldText("𝐆𝐚𝐧𝐭𝐢 𝐝𝐞𝐬𝐤𝐫𝐢𝐩𝐬𝐢 𝐠𝐫𝐮𝐩")}
+│ ${smallText(".setppgc")} → ${boldText("𝐆𝐚𝐧𝐭𝐢 𝐟𝐨𝐭𝐨 𝐩𝐫𝐨𝐟𝐢𝐥 𝐠𝐫𝐮𝐩")}
+│ ${smallText(".adminonly")} → ${boldText("𝐒𝐞𝐭𝐭𝐢𝐧𝐠 𝐩𝐞𝐧𝐠𝐚𝐭𝐮𝐫𝐚𝐧 𝐠𝐫𝐮𝐩")}
+│ ${smallText(".linkgc")} → ${boldText("𝐀𝐦𝐛𝐢𝐥 𝐥𝐢𝐧𝐤 𝐠𝐫𝐮𝐩")}
+│ ${smallText(".del")} → ${boldText("𝐌𝐞𝐧𝐠𝐡𝐚𝐩𝐮𝐬 𝐩𝐞𝐬𝐚𝐧 𝐝𝐢𝐠𝐫𝐮𝐩")}
+│
+├─ 〔 ${boldText("📊 𝐒𝐊𝐎𝐑 𝐆𝐀𝐌𝐄")} 〕
+│ ${smallText(".skor")} → ${boldText("𝐋𝐢𝐡𝐚𝐭 𝐬𝐤𝐨𝐫 𝐤𝐚𝐦𝐮")}
+│ ${smallText(".kirimskor")} → ${boldText("𝐊𝐢𝐫𝐢𝐦 𝐬𝐤𝐨𝐫 𝐤𝐞 𝐭𝐞𝐦𝐚𝐧")}
+│
+├─ 〔 ${boldText("📋 𝐈𝐍𝐅𝐎")} 〕
+│ ${smallText(".shop")} → ${boldText("𝐁𝐮𝐤𝐚 𝐦𝐞𝐧𝐮 𝐬𝐡𝐨𝐩")}
+│ ${smallText(".info")} → ${boldText("𝐈𝐧𝐟𝐨 𝐛𝐨𝐭 & 𝐨𝐰𝐧𝐞𝐫")}
+│ ${smallText(".menu")} → ${boldText("𝐓𝐚𝐦𝐩𝐢𝐥𝐤𝐚𝐧 𝐦𝐞𝐧𝐮 𝐢𝐧𝐢")}
+│
+╰── ${boldText("📅")} ${tanggalBold}
 
+╭─〔 ${boldText("🔐 𝐅𝐈𝐓𝐔𝐑 𝐕𝐈𝐏 / 𝐎𝐖𝐍𝐄𝐑")} 〕─╮
 │
-├─ 〔 🎵 *ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ* 〕
-│ .spotify → Cari lagu Spotify
-│ .sound → Ubah teks jadi suara
-│ .audiovid → Video jadi audio
-│ .ubahsuara → Ubah suara unik
-│ .wm → Unduh tanpa watermax
-│ .ttmp3 → Unduh mp3 TikTok
-│ .ytmp3 → Unduh mp3 Youtube
-│ .ytmp4 → Unduh mp4 Youtube
-
+├─ 〔 ${boldText("👥 𝐆𝐑𝐔𝐏 𝐕𝐈𝐏")} 〕
+│ ${smallText(".kick")} → ${boldText("𝐊𝐢𝐜𝐤 𝐮𝐬𝐞𝐫")}
+│ ${smallText(".mute")} → ${boldText("𝐌𝐮𝐭𝐞 𝐮𝐬𝐞𝐫")}
+│ ${smallText(".unmute")} → ${boldText("𝐁𝐮𝐤𝐚 𝐦𝐮𝐭𝐞")}
+│ ${smallText(".ban")} → ${boldText("𝐁𝐚𝐧 𝐮𝐬𝐞𝐫")}
+│ ${smallText(".unban")} → ${boldText("𝐁𝐮𝐤𝐚 𝐛𝐚𝐧")}
+│ ${smallText(".antilink")} → ${boldText("𝐃𝐢𝐥𝐚𝐫𝐚𝐧𝐠 𝐤𝐢𝐫𝐢𝐦 𝐥𝐢𝐧𝐤")}
+│ ${smallText(".antifoto")} → ${boldText("𝐃𝐢𝐥𝐚𝐫𝐚𝐧𝐠 𝐤𝐢𝐫𝐢𝐦 𝐟𝐨𝐭𝐨")}
+│ ${smallText(".antistiker")} → ${boldText("𝐃𝐢𝐥𝐚𝐫𝐚𝐧𝐠 𝐤𝐢𝐫𝐢𝐦 𝐬𝐭𝐢𝐤𝐞𝐫")}
 │
-├─ 〔 🖌️ *ᴍᴀᴋᴇʀ / ᴄʀᴇᴀᴛᴏʀ* 〕
-│ .stiker → Ubah gambar jadi stiker
-│ .qc → Ubah teks jadi quote
-│ .toimg → Stiker ke gambar
-│ .teks → Tambah teks di stiker
-│ .brat → Membuat stiker kata
-│ .bratvid → Membuat stiker video
+├─ 〔 ${boldText("📊 𝐒𝐊𝐎𝐑 𝐊𝐇𝐔𝐒𝐔𝐒")} 〕
+│ ${smallText(".setskor")} → ${boldText("𝐀𝐭𝐮𝐫 𝐬𝐤𝐨𝐫 𝐮𝐬𝐞𝐫")}
+│ ${smallText(".setexp")} → ${boldText("𝐀𝐭𝐮𝐫 𝐞𝐱𝐩 𝐮𝐬𝐞𝐫")}
+│ ${smallText(".setlevel")} → ${boldText("𝐀𝐭𝐮𝐫 𝐥𝐞𝐯𝐞𝐥 𝐮𝐬𝐞𝐫")}
+│ ${smallText(".allskor")} → ${boldText("𝐊𝐢𝐫𝐢𝐦 𝐬𝐤𝐨𝐫 𝐤𝐞 𝐬𝐞𝐦𝐮𝐚")}
+│ ${smallText(".tantangan")} → ${boldText("𝐌𝐞𝐦𝐛𝐞𝐫𝐢 𝐬𝐤𝐨𝐫 𝐤𝐞 𝐠𝐫𝐮𝐩")}
 │
-├─ 〔 🖼️ *ᴍᴇᴅɪᴀ* 〕
-│ .waifu → Waifu random
-│ .qr → Membuat QR
-│ .pdf → Mengubah foto jadi pdf
-│ .igstalk → Mengstalking ig orang
-│ .ambilpp → Mengambil PP wa
-│ .dwfoto → Unduh foto sekali lihat
-│ .dwvideo → Unduh video sekali lihat
-│ .mirror → Cermin foto/video
-│ .rotate → Ubah posisi foto/video
-│ .blur → Blur wajah foto
+├─ 〔 ${boldText("👑 𝐕𝐈𝐏 𝐂𝐎𝐍𝐓𝐑𝐎𝐋")} 〕
+│ ${smallText(".setvip")} → ${boldText("𝐉𝐚𝐝𝐢𝐤𝐚𝐧 𝐕𝐈𝐏")}
+│ ${smallText(".unsetvip")} → ${boldText("𝐂𝐚𝐛𝐮𝐭 𝐕𝐈𝐏")}
+│ ${smallText(".listvip")} → ${boldText("𝐃𝐚𝐟𝐭𝐚𝐫 𝐕𝐈𝐏")}
+│ ${smallText(".listskor")} → ${boldText("𝐃𝐚𝐟𝐭𝐚𝐫 𝐒𝐊𝐎𝐑")}
+│ ${smallText(".umumkan")} → ${boldText("𝐏𝐞𝐧𝐠𝐮𝐦𝐮𝐦𝐚𝐧 𝐝𝐢 𝐆𝐫𝐮𝐩")}
+│ ${smallText(".stikercustom")} → ${boldText("𝐁𝐮𝐚𝐭 𝐬𝐭𝐢𝐤𝐞𝐫 𝐜𝐮𝐬𝐭𝐨𝐦")}
 │
-├─ 〔 👤 *ᴀɴᴏɴʏᴍᴏᴜꜱ* 〕
-│ .anonymous → Chat orang random
-│ .anonstatus → Cek status antrean 
-│ .stop → Hentikan session anonim
+├─ 〔 ${boldText("👑 𝐎𝐖𝐍𝐄𝐑")} 〕
+│ ${smallText(".allvip")} → ${boldText("𝐉𝐚𝐝𝐢𝐤𝐚𝐧 𝐬𝐞𝐦𝐮𝐚 𝐕𝐈𝐏")}
+│ ${smallText(".clearvip")} → ${boldText("𝐇𝐚𝐩𝐮𝐬 𝐬𝐞𝐦𝐮𝐚 𝐕𝐈𝐏")}
+│ ${smallText(".setoff")} → ${boldText("𝐌𝐞𝐧𝐠𝐚𝐭𝐮𝐫 𝐣𝐚𝐝𝐰𝐚𝐥 𝐛𝐨𝐭 𝐦𝐚𝐭𝐢")}
 │
-├─ 〔 👥 *ꜰɪᴛᴜʀ ɢʀᴜᴘ* 〕
-│ .tagall → Mention semua member
-│ .tag → Mention 1 member
-│ .setnamagc → Ganti nama grup
-│ .setdesgc → Ganti deskripsi grup
-│ .setppgc → Ganti foto profil grup
-│ .adminonly → Setting pengaturan grup
-│ .linkgc → Ambil link grup
-│ .del → Menghapus pesan digrup
+├─ 〔 ${boldText("⚙️ 𝐁𝐎𝐓 𝐂𝐎𝐍𝐓𝐑𝐎𝐋")} 〕
+│ ${smallText(".on")} → ${boldText("𝐀𝐤𝐭𝐢𝐟𝐤𝐚𝐧 𝐛𝐨𝐭")}
+│ ${smallText(".off")} → ${boldText("𝐍𝐨𝐧𝐚𝐤𝐭𝐢𝐟𝐤𝐚𝐧 𝐛𝐨𝐭")}
 │
-├─ 〔 📊 *ꜱᴋᴏʀ ɢᴀᴍᴇ* 〕
-│ .skor → Lihat skor kamu
-│ .kirimskor → Kirim skor ke teman
-│
-├─ 〔 📋 *ɪɴꜰᴏ* 〕
-│ .shop → Buka menu shop
-│ .info → Info bot & owner
-│ .menu → Tampilkan menu ini
-│
-╰── 📅 ${tanggalFancy}
-
-╭─〔 *🔐 ꜰɪᴛᴜʀ ᴠɪᴘ / ᴏᴡɴᴇʀ* 〕─╮
-│
-├─ 〔 👥 *ɢʀᴜᴘ ᴠɪᴘ* 〕
-│ .kick → Kick user
-│ .mute → Mute user
-│ .unmute → Buka mute
-│ .ban → Ban user 
-│ .unban → Buka ban
-│ .antilink → Dilarang kirim link
-│ .antifoto → Dilarang kirim foto
-│ .antistiker → Dilarang kirim stiker
-│
-├─ 〔 📊 *ꜱᴋᴏʀ ᴋʜᴜꜱᴜꜱ* 〕
-│ .setskor → Atur skor user
-│ .setexp → Atur exp user
-│ .setlevel → Atur level user
-│ .allskor → Kirim skor ke semua
-│ .tantangan → Memberi skor ke grup
-│
-├─ 〔 👑 *ᴠɪᴘ ᴄᴏɴᴛʀᴏʟ* 〕
-│ .setvip → Jadikan VIP
-│ .unsetvip → Cabut VIP
-│ .listvip → Daftar VIP
-│ .listskor → Daftar SKOR
-│ .umumkan → Pengumuman di Grup
-│ .stikercustom → Buat stiker custom
-│
-├─ 〔 👑 *ᴏᴡɴᴇʀ* 〕
-│ .allvip → Jadikan semua VIP
-│ .clearvip → Hapus semua VIP
-│ .setoff → Mengatur jadwal bot mati
-│
-├─ 〔 ⚙️ *ʙᴏᴛ ᴄᴏɴᴛʀᴏʟ* 〕
-│ .on → Aktifkan bot
-│ .off → Nonaktifkan bot
-│
-╰── 👑 Owner: @${OWNER_NUMBER?.split('@')[0] || '6283836348226'}`,
-  mentions: [OWNER_NUMBER]
-
-  
-});
-return;
-
+╰── ${boldText("👑 𝐎𝐰𝐧𝐞𝐫:")} @${OWNER_NUMBER?.split('@')[0] || '6283836348226'}`),
+        mentions: [OWNER_NUMBER]
+    });
+    return;
 }
 
-// ✨ MENU ILEGAL - ELEGAN MODERN
+// ✨ MENU ILEGAL - BOLD FONT VERSION
 if (body.startsWith('.menuilegal') || body.startsWith('.m')) {
     await sock.sendMessage(from, {
-        text: `┌─*ILLEGAL COMMANDS*─┐
+        text: boldText(`┌─𝐈𝐋𝐋𝐄𝐆𝐀𝐋 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐒─┐
 │
-│  ⚡ .bug 
-│     Payment crash - single target
+│  ⚡ ${smallText(".bug")}
+│     ${boldText("𝐏𝐚𝐲𝐦𝐞𝐧𝐭 𝐜𝐫𝐚𝐬𝐡 - 𝐬𝐢𝐧𝐠𝐥𝐞 𝐭𝐚𝐫𝐠𝐞𝐭")}
 │
-│  💀 .bug2 
-│     Multi-target attack 
+│  💀 ${smallText(".bug2")}
+│     ${boldText("𝐌𝐮𝐥𝐭𝐢-𝐭𝐚𝐫𝐠𝐞𝐭 𝐚𝐭𝐭𝐚𝐜𝐤")}
 │
-│  🔥 .spamcode
-│     OTP verification spam
+│  🔥 ${smallText(".spamcode")}
+│     ${boldText("𝐎𝐓𝐏 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐭𝐢𝐨𝐧 𝐬𝐩𝐚𝐦")}
 │
-└─ 👑 Owner: @${OWNER_NUMBER?.split('@')[0] || '6283836348226'}`,
-  mentions: [OWNER_NUMBER]
+└─ 👑 ${boldText("𝐎𝐰𝐧𝐞𝐫:")} @${OWNER_NUMBER?.split('@')[0] || '6283836348226'}`),
+        mentions: [OWNER_NUMBER]
     });
 }
 
