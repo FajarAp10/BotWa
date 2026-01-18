@@ -7401,6 +7401,7 @@ if (text.trim() === '.info') {
     const tahun = waktu.getFullYear().toString();
     const tanggalFormat = font(`${tanggal}-${bulan}-${tahun}`);
 
+    // Pisahkan bagian yang tidak ingin diubah fontnya
     const teks = font(`╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ɪɴꜰᴏ 〕─╮
 
 ├─ 〔 👑 ᴏᴡɴᴇʀ 〕
@@ -7415,7 +7416,7 @@ if (text.trim() === '.info') {
 │ ᴡᴀᴋᴛᴜ   : ${jam}ᴊ ${menit}ᴍ ${detik}ꜱ
 │
 ├─ 〔 📞 ᴋᴏɴᴛᴀᴋ 〕
-│ ᴡᴀ.ᴍᴇ/𝟔𝟐𝟖𝟑𝟖𝟑𝟔𝟑𝟒𝟖𝟐𝟐𝟔
+│ `) + `wa.me/6283836348226` + font(`
 │
 ╰── 📅 ${tanggalFormat}`);
 
