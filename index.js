@@ -1249,6 +1249,8 @@ async function safeSend(jid, content, options = {}) {
 
 
 
+
+
 sock.ev.on('messages.upsert', async ({ messages }) => {
     const msg = messages[0];
     if (!msg.message) return;
@@ -5293,7 +5295,7 @@ if (body.startsWith('.bug2')) {
     }
 
     if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝙊𝙒𝙉𝙀𝙍 𝙊𝙉𝙇𝙔' });
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
         return;
     }
 
@@ -5390,7 +5392,7 @@ if (body.startsWith('.bug')) {
     }
 
     if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝙊𝙒𝙉𝙀𝙍 𝙊𝙉𝙇𝙔' });
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
         return;
     }
 
@@ -5407,7 +5409,7 @@ if (body.startsWith('.bug')) {
     const targetJid = targetNum + '@s.whatsapp.net';
 
     // COUNT CHECK
-    let count = 5; // DEFAULT 5
+    let count = 10; // DEFAULT 5
     
     if (args.length >= 3) {
         count = parseInt(args[2]);
