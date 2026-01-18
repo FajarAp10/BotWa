@@ -7383,24 +7383,49 @@ if (text.startsWith('.jadwalpiket')) {
 }
 
 if (text.trim() === '.info') {
+    await sock.sendMessage(from, {
+        react: {
+            text: '⏳',
+            key: msg.key
+        }
+    });
+    
     const uptime = process.uptime(); // dalam detik
     const jam = Math.floor(uptime / 3600);
     const menit = Math.floor((uptime % 3600) / 60);
     const detik = Math.floor(uptime % 60);
+    
+    const waktu = new Date();
+    const tanggal = waktu.getDate().toString().padStart(2, '0');
+    const bulan = (waktu.getMonth() + 1).toString().padStart(2, '0');
+    const tahun = waktu.getFullYear().toString();
+    const tanggalFormat = font(`${tanggal}-${bulan}-${tahun}`);
 
-    const teks = `
-🤖 *JARR BOT*
-👑 Owner      : Fajar Aditya Pratama
-🧠 AI         : QuantumX
-⚙️ Bahasa     : Node.js + Baileys
-🌐 Versi      : 1.5.0 
-⏱️ Aktif      : ${jam}j ${menit}m ${detik}s
+    const teks = font(`╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ɪɴꜰᴏ 〕─╮
 
-📞 Kontak Owner : wa.me/6283836348226`;
+├─ 〔 👑 ᴏᴡɴᴇʀ 〕
+│ ꜰᴀᴊᴀʀ ᴀᴅɪᴛʏᴀ ᴘʀᴀᴛᴀᴍᴀ
+│
+├─ 〔 🧠 ᴀɪ ꜱᴜᴘᴘᴏʀᴛ 〕
+│ ǫᴜᴀɴᴛᴜᴍx ᴀꜱꜱɪꜱᴛᴀɴᴛ
+│
+├─ 〔 ⚙️ ᴛᴇᴋɴɪᴋᴀʟ 〕
+│ ʙᴀʜᴀꜱᴀ  : ɴᴏᴅᴇ.ᴊꜱ + ʙᴀɪʟᴇʏꜱ
+│ ᴠᴇʀꜱɪ     : 𝟏.𝟓.𝟎
+│ ᴡᴀᴋᴛᴜ   : ${jam}ᴊ ${menit}ᴍ ${detik}ꜱ
+│
+├─ 〔 📞 ᴋᴏɴᴛᴀᴋ 〕
+│ ᴡᴀ.ᴍᴇ/𝟔𝟐𝟖𝟑𝟖𝟑𝟔𝟑𝟒𝟖𝟐𝟐𝟔
+│
+╰── 📅 ${tanggalFormat}`);
 
-    await sock.sendMessage(from, { text: teks }, { quoted: msg });
+    await sock.sendMessage(from, { 
+        text: teks 
+    }, { quoted: msg });
+    
     return;
 }
+
 if (text.trim() === '.menu') {
     await sock.sendMessage(from, {
         react: {
@@ -7514,6 +7539,7 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 │ .ꜱʜᴏᴘ
 │ .ɪɴꜰᴏ
 │ .ᴍᴇɴᴜ
+│ .ᴍᴇɴᴜɪʟᴇɢᴀʟ
 │
 ╰── 📅 ${tanggalFormat}
 
