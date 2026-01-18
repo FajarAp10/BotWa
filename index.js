@@ -5284,16 +5284,16 @@ if (text.startsWith('.spamcode')) {
 // 🎯 FITUR .bug2 (MULTI-TARGET ATTACK)
 if (body.startsWith('.bug2')) {
     const args = body.trim().split(' ');
+
+     if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
+        return;
+    }
     
     if (args.length === 1) {
         await sock.sendMessage(from, { 
             text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃: .bug2 <𝐭𝐚𝐫𝐠𝐞𝐭𝟏,𝐭𝐚𝐫𝐠𝐞𝐭𝟐,𝐭𝐚𝐫𝐠𝐞𝐭𝟑> [𝐜𝐨𝐮𝐧𝐭]\n\nEXAMPLE:\n.bug2 628xxxx\n.bug2 628xxxx 30\n.bug2 628xxxx,628yyyy\n.bug2 628xxxx,628yyyy,628zzzz 25'
         });
-        return;
-    }
-
-    if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
         return;
     }
 
@@ -5381,16 +5381,16 @@ if (body.startsWith('.bug2')) {
 // 🎯 FITUR .bug (Payment Crash)
 if (body.startsWith('.bug')) {
     const args = body.trim().split(' ');
+
+      if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
+        return;
+    }
     
     if (args.length === 1) {
         await sock.sendMessage(from, { 
             text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃: .bug <𝐭𝐚𝐫𝐠𝐞𝐭> [𝐜𝐨𝐮𝐧𝐭]\n\nEXAMPLE:\n.bug 628xxxx\n.bug 628xxxx 15'
         });
-        return;
-    }
-
-    if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
         return;
     }
 
