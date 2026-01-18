@@ -56,6 +56,7 @@ let anonSessions = new Map();
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+const cooldownSuit = new Set();
 const chatMemory = {};
 const sesiLimitAI = new Map();
 const pdfSessions = new Map(); 
@@ -1231,9 +1232,6 @@ async function startBot() {
   }, 10 * 1000);
 
 
-
-    // Anti spam cooldown
-const cooldownSuit = new Set();
 
 // Helper aman kirim pesan
 async function safeSend(jid, content, options = {}) {
