@@ -5052,6 +5052,115 @@ if (text === '.pdfgo') {
 
     return;
 }
+if (text.toLowerCase().startsWith('.docx')) {
+
+    // Kalau cuma ".docx"
+    if (text.trim().toLowerCase() === '.docx') {
+        await sock.sendMessage(from, {
+            text: '❌ Contoh:\n.docx Isi Teks | Nama File',
+            quoted: msg
+        });
+        return;
+    }
+
+    // ⏳ Reaction proses
+    await sock.sendMessage(from, {
+        react: { text: '⏳', key: msg.key }
+    });
+
+    const content = text.slice(5).trim(); // hapus ".docx"
+    let isiTeks = content;
+    let namaFile = 'Dokumen';
+
+    // Ambil nama file kalau pakai "|"
+    if (content.includes('|')) {
+        const split = content.split('|');
+        isiTeks = split[0].trim();
+        namaFile = split[1].trim() || 'Dokumen';
+    }
+
+    if (!isiTeks) {
+        await sock.sendMessage(from, {
+            text: '❌ Isi dokumen tidak boleh kosong.',
+            quoted: msg
+        });
+        return;
+    }
+
+    // Bersihkan nama file
+    namaFile = namaFile.replace(/[\\/:*?"<>|]/g, '');
+
+    try {
+        // === PARSER BOLD & ITALIC ===
+        const runs = [];
+        const regex = /(\*[^*]+\*|_[^_]+_|[^*_]+)/g;
+        let match;
+
+        while ((match = regex.exec(isiTeks)) !== null) {
+            const textPart = match[0];
+
+            // *bold*
+            if (textPart.startsWith('*') && textPart.endsWith('*')) {
+                runs.push(new TextRun({
+                    text: textPart.slice(1, -1),
+                    bold: true,
+                    font: "Times New Roman",
+                    size: 26
+                }));
+            }
+            // _italic_
+            else if (textPart.startsWith('_') && textPart.endsWith('_')) {
+                runs.push(new TextRun({
+                    text: textPart.slice(1, -1),
+                    italics: true,
+                    font: "Times New Roman",
+                    size: 26
+                }));
+            }
+            // teks biasa
+            else {
+                runs.push(new TextRun({
+                    text: textPart,
+                    font: "Times New Roman",
+                    size: 26
+                }));
+            }
+        }
+
+        const doc = new Document({
+            sections: [{
+                children: [
+                    new Paragraph({
+                        children: runs
+                    })
+                ]
+            }]
+        });
+
+        const buffer = await Packer.toBuffer(doc);
+
+        await sock.sendMessage(from, {
+            document: buffer,
+            mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            fileName: `${namaFile}.docx`
+        }, { quoted: msg });
+
+        // ✅ Reaction sukses
+        await sock.sendMessage(from, {
+            react: { text: '✅', key: msg.key }
+        });
+
+    } catch (err) {
+        console.error('DOCX ERROR:', err);
+        await sock.sendMessage(from, {
+            text: '❌ Gagal membuat file DOCX.',
+            quoted: msg
+        });
+    }
+
+    return;
+}
+
 
 
 // ========== FITUR .WAIFU ==========
@@ -7506,9 +7615,10 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 │ .ʙʀᴀᴛᴠɪᴅ
 │
 ├─ 〔 🖼️ ᴍᴇᴅɪᴀ 〕
-│ .ᴡᴀɪꜱᴜ
+│ .ᴡᴀɪꜰᴜ
 │ .ǫʀ
 │ .ᴘᴅꜰ
+│ .ᴅᴏᴄx
 │ .ɪɢꜱᴛᴀʟᴋ
 │ .ᴀᴍʙɪʟᴘᴘ
 │ .ᴅᴡꜰᴏᴛᴏ
