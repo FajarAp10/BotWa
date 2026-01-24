@@ -5325,7 +5325,7 @@ if (text.startsWith('.cekiq')) {
     const target = mentioned || sender;
     const nama = target.split('@')[0];
 
-    // IQ random (biar ga receh banget)
+    // IQ random (biar ga receh banget
     const iq = Math.floor(Math.random() * 121) + 40; // 40–160
 
     const teks = `╭─🧠 *CEK IQ OTAK* 🧠─╮
