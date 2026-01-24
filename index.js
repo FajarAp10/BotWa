@@ -5350,7 +5350,7 @@ if (text.startsWith('.cekiq')) {
 
 if (body === '.truth') {
   const truthText = ambilSoalAcak('truth', truthList);
-  const imagePath = './truthordare.png';
+  const imagePath = './truthordare.jpg';
   await sock.sendMessage(from, {
     image: { url: imagePath },
     caption: `🎯 *Truth Challenge*\n\n${truthText}`
@@ -5359,7 +5359,7 @@ if (body === '.truth') {
 
 if (body === '.dare') {
   const dareText = ambilSoalAcak('dare', dareList);
-  const imagePath = './truthordare.png';
+  const imagePath = './truthordare.jpg';
   await sock.sendMessage(from, {
     image: { url: imagePath },
     caption: `🔥 *Dare Challenge*\n\n${dareText}`
@@ -8070,7 +8070,7 @@ if (text.trim() === '.menu') {
     const readmore = String.fromCharCode(8206).repeat(4001);
     
     await sock.sendMessage(from, {
-        image: { url: './logo.png' },
+        image: { url: './logo.jpg' },
         caption: font(`ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ
 
 > ɴᴀᴍᴀ          : ʙᴏᴛ ᴊᴀʀʀ
