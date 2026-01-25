@@ -1540,6 +1540,166 @@ async function safeSend(jid, content, options = {}) {
 
 
 
+const commands = [
+  // MENU
+  '.menu',
+  '.menuilegal',
+
+  // GAME
+  '.kuis',
+  '.kuissusah',
+  '.judi',
+  '.truth',
+  '.dare',
+  '.tebak-aku',
+  '.tebaklagu',
+  '.tebakgambar',
+  '.susunkata',
+  '.family100',
+  '.tebakbendera',
+  '.tictactoe',
+  '.ulartangga',
+
+  // FUN
+  '.gay',
+  '.lesbi',
+  '.cantik',
+  '.ganteng',
+  '.jodoh',
+  '.cekkhodam',
+  '.cekiq',
+  '.siapa',
+  '.fakereply',
+  '.polling',
+
+  // AI
+  '.ai',
+  '.aigambar',
+  '.clear',
+
+  // MUSIC & DL
+  '.spotify',
+  '.sound',
+  '.audiovid',
+  '.ubahsuara',
+  '.wm',
+  '.ttmp3',
+  '.ytmp3',
+  '.ytmp4',
+
+  // MAKER
+  '.stiker',
+  '.qc',
+  '.emojimix',
+  '.toimg',
+  '.teks',
+  '.brat',
+  '.bratvid',
+
+  // MEDIA
+  '.waifu',
+  '.qr',
+  '.pdf',
+  '.docx',
+  '.igstalk',
+  '.ambilpp',
+  '.dwfoto',
+  '.dwvideo',
+  '.mirror',
+  '.rotate',
+  '.blur',
+
+  // ANONYMOUS
+  '.anonymous',
+  '.anonstatus',
+  '.stop',
+
+  // GROUP
+  '.tagall',
+  '.tag',
+  '.setnamagc',
+  '.setdesgc',
+  '.setppgc',
+  '.adminonly',
+  '.linkgc',
+  '.del',
+
+  // SCORE
+  '.skor',
+  '.kirimskor',
+
+  // INFO
+  '.shop',
+  '.info',
+
+  // VIP
+  '.kick',
+  '.mute',
+  '.unmute',
+  '.ban',
+  '.unban',
+  '.antilink',
+  '.antifoto',
+  '.antistiker',
+
+  // SCORE KHUSUS
+  '.setskor',
+  '.setexp',
+  '.setlevel',
+  '.allskor',
+  '.tantangan',
+
+  // VIP CONTROL
+  '.setvip',
+  '.unsetvip',
+  '.listvip',
+  '.listskor',
+  '.umumkan',
+  '.stikercustom',
+
+  // OWNER
+  '.allvip',
+  '.clearvip',
+  '.setoff',
+
+  // BOT
+  '.on',
+  '.off'
+]
+
+function similarity(a, b) {
+  const longer = a.length > b.length ? a : b;
+  const shorter = a.length > b.length ? b : a;
+  const longerLength = longer.length;
+  if (longerLength === 0) return 1.0;
+  return (longerLength - editDistance(longer, shorter)) / longerLength;
+}
+
+function editDistance(a, b) {
+  a = a.toLowerCase();
+  b = b.toLowerCase();
+  const costs = [];
+
+  for (let i = 0; i <= a.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= b.length; j++) {
+      if (i === 0) costs[j] = j;
+      else if (j > 0) {
+        let newValue = costs[j - 1];
+        if (a.charAt(i - 1) !== b.charAt(j - 1)) {
+          newValue = Math.min(
+            Math.min(newValue, lastValue),
+            costs[j]
+          ) + 1;
+        }
+        costs[j - 1] = lastValue;
+        lastValue = newValue;
+      }
+    }
+    if (i > 0) costs[b.length] = lastValue;
+  }
+  return costs[b.length];
+}
 
 
 
@@ -1576,6 +1736,8 @@ sock.ev.on('messages.upsert', async ({ messages }) => {
             msg.message?.conversation ||
             msg.message?.extendedTextMessage?.text ||
             msg.message?.imageMessage?.caption || '';
+
+            
 
         const imageContent = (
             msg.message?.imageMessage ||
@@ -7776,278 +7938,8 @@ if (text.startsWith('.jadwalpiket')) {
     await sock.sendMessage(from, { text: hasil });
 }
 
-if (text.trim() === '.info') {
-    await sock.sendMessage(from, {
-        react: {
-            text: '⏳',
-            key: msg.key
-        }
-    });
-    
-    const uptime = process.uptime(); // dalam detik
-    const jam = Math.floor(uptime / 3600);
-    const menit = Math.floor((uptime % 3600) / 60);
-    const detik = Math.floor(uptime % 60);
-    
-    const waktu = new Date();
-    const tanggal = waktu.getDate().toString().padStart(2, '0');
-    const bulan = (waktu.getMonth() + 1).toString().padStart(2, '0');
-    const tahun = waktu.getFullYear().toString();
-    const tanggalFormat = font(`${tanggal}-${bulan}-${tahun}`);
-
-    // Pisahkan bagian yang tidak ingin diubah fontnya
-    const teks = font(`╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ɪɴꜰᴏ 〕─╮
-
-├─ 〔 👑 ᴏᴡɴᴇʀ 〕
-│ ꜰᴀᴊᴀʀ ᴀᴅɪᴛʏᴀ ᴘʀᴀᴛᴀᴍᴀ
-│
-├─ 〔 🧠 ᴀɪ ꜱᴜᴘᴘᴏʀᴛ 〕
-│ ǫᴜᴀɴᴛᴜᴍx ᴀꜱꜱɪꜱᴛᴀɴᴛ
-│
-├─ 〔 ⚙️ ᴛᴇᴋɴɪᴋᴀʟ 〕
-│ ʙᴀʜᴀꜱᴀ  : ɴᴏᴅᴇ.ᴊꜱ + ʙᴀɪʟᴇʏꜱ
-│ ᴠᴇʀꜱɪ     : 𝟏.𝟓.𝟎
-│ ᴡᴀᴋᴛᴜ   : ${jam}ᴊ ${menit}ᴍ ${detik}ꜱ
-│
-├─ 〔 📞 ᴋᴏɴᴛᴀᴋ 〕
-│ `) + `wa.me/6283836348226` + font(`
-│
-╰── 📅 ${tanggalFormat}`);
-
-    await sock.sendMessage(from, { 
-        text: teks 
-    }, { quoted: msg });
-    
-    return;
-}
-if (text.trim() === '.menu') {
-
-    await sock.sendMessage(from, {
-        react: { text: '⏳', key: msg.key }
-    });
-
-    const caption = font(`ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ 👋
-
-🤖 *Bot Jarr*
-👑 Owner : Fajar
-📦 Versi : 1.5.0
-
-Klik tombol di bawah untuk melihat menu 📂
-`);
-
-    await sock.sendMessage(from, {
-        image: { url: './logo.jpg' },
-        caption,
-        buttons: [
-            {
-                buttonId: 'menu_list',
-                buttonText: { displayText: '📂 Buka Menu' },
-                type: 4,
-                nativeFlowInfo: {
-                    name: 'single_select',
-                    paramsJson: JSON.stringify({
-                        title: '📖 Daftar Menu',
-                        sections: [
-                            {
-                                title: '📌 Pilih Menu',
-                                rows: [
-                                    { title: '📜 Menu All', id: '.menuall' },
-                                    { title: '🎮 Menu Game', id: '.menugame' },
-                                    { title: '🎵 Menu Download', id: '.menudownload' },
-                                    { title: '🧠 Menu AI', id: '.menuai' },
-                                    { title: '🖌️ Menu Maker', id: '.menumaker' },
-                                    { title: '👑 Menu Owner', id: '.menuowner' }
-                                ]
-                            }
-                        ]
-                    })
-                }
-            }
-        ],
-        headerType: 1
-    }, { quoted: msg });
-
-    return;
-}
 
 
-
-
-// ==================== MENU ILEGAL ====================
-if (body.startsWith('.menuilegal') || body.startsWith('.m')) {
-    await sock.sendMessage(from, {
-        text: font(`┌─ ɪʟʟᴇɢᴀʟ ᴄᴏᴍᴍᴀɴᴅꜱ ─┐
-│
-│  ⚡ .ʙᴜɢ
-│     ᴘᴀʏᴍᴇɴᴛ ᴄʀᴀꜱʜ - ꜱɪɴɢʟᴇ ᴛᴀʀɢᴇᴛ
-│
-│  💀 .ʙᴜɢ𝟐
-│     ᴍᴜʟᴛɪ-ᴛᴀʀɢᴇᴛ ᴀᴛᴛᴀᴄᴋ
-│
-│  🔥 .ꜱᴘᴀᴍᴄᴏᴅᴇ
-│     ᴏᴛᴘ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ꜱᴘᴀᴍ
-│
-│  💣 .ꜱᴘᴀᴍᴏᴛᴘ
-│     ʀᴇᴀʟ ᴏᴛᴘ ꜱᴘᴀᴍ (𝟺 ꜱᴇʀᴠɪᴄᴇꜱ)
-│
-└─ 👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`),
-    });
-}
-
-if (text.startsWith(".ailimit")) {
-    if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: "❌ Khusus owner." });
-        return;
-    }
-
-    const args = text.split(" ");
-
-    // === MODE 1: set limit nomor (private only) ===
-    if (args.length === 3 && !from.endsWith("@g.us")) {
-        const nomor = args[1];
-        const jumlah = parseInt(args[2]);
-
-        if (isNaN(jumlah)) {
-            await sock.sendMessage(from, { text: "❗ Contoh: .ailimit 628xxxxx 10" });
-            return;
-        }
-
-        const targetId = nomor + "@s.whatsapp.net";
-
-        aiLimit[targetId] = { limit: jumlah, used: 0 };
-        saveAiLimit();
-
-        await sock.sendMessage(from, { text: `✅ Limit AI untuk *${nomor}* diatur menjadi *${jumlah} chat*` });
-        return;
-    }
-
-    // === MODE 2: pilih grup ===
-    if (args.length === 2 && !from.endsWith("@g.us")) {
-        const jumlah = parseInt(args[1]);
-        if (isNaN(jumlah)) {
-            await sock.sendMessage(from, { text: "❗ Contoh: .ailimit 10" });
-            return;
-        }
-
-        // ambil semua grup
-        let daftarGrup = Object.keys(await sock.groupFetchAllParticipating());
-
-        let teks = `📋 *Pilih grup untuk set limit AI (${jumlah} chat)*:\n\n`;
-
-        for (let i = 0; i < daftarGrup.length; i++) {
-            const meta = await sock.groupMetadata(daftarGrup[i]).catch(() => null);
-            if (!meta) continue;
-            teks += `${i + 1}. ${meta.subject}\n`;
-        }
-
-        teks += `\n➡️ Balas dengan angka (misal: *2*)`;
-
-        await sock.sendMessage(from, { text: teks });
-
-        sesiLimitAI.set(sender, { jumlah, daftarGrup });
-        return;
-    }
-
-    await sock.sendMessage(from, { text: "❗ Format salah." });
-    return;
-}
-
-if (sesiLimitAI.has(sender)) {
-    const data = sesiLimitAI.get(sender);
-    const pilih = parseInt(text.trim());
-
-    if (isNaN(pilih) || pilih < 1 || pilih > data.daftarGrup.length) {
-        await sock.sendMessage(from, { text: "❌ Pilihan invalid." });
-        return;
-    }
-
-    const groupId = data.daftarGrup[pilih - 1];
-    sesiLimitAI.delete(sender);
-
-    aiLimit[groupId] = { limit: data.jumlah, used: 0 };
-    saveAiLimit();
-
-    await sock.sendMessage(from, { text: `✅ Limit AI untuk grup ini diatur menjadi *${data.jumlah} chat*.` });
-    return;
-}
-// 🔥 AI CHAT COMMAND (ANTI NABRAK)
-if (/^\.ai(\s|$)/i.test(text)) {
-    const isi = text.replace(/^\.ai/i, '').trim();
-    if (!isi) {
-        await sock.sendMessage(from, { 
-            text: "❗ Contoh: *.ai halo bot*" 
-        });
-        return;
-    }
-
-    const idLimit = from.endsWith("@g.us") ? from : sender;
-    initDefaultAiLimit(idLimit);
-
-    if (!cekLimitAI(idLimit) && !isOwner(sender)) {
-        await sock.sendMessage(from, { 
-            text: "❌ *AI Response Error:*\n*Quota Exceeded — User daily limit reached.*" 
-        });
-        return;
-    }
-
-    const balasan = await getAIReply(sender, isi, from);
-    await sock.sendMessage(from, { text: balasan });
-
-    tambahPakaiAI(idLimit);
-    return;
-}
-
-if (text === '.ceklimit') {
-
-    // ID limit: grup atau private
-    const idLimit = from.endsWith('@g.us') ? from : sender;
-
-    // auto init kalau belum ada
-    initDefaultAiLimit(idLimit);
-
-    const data = aiLimit[idLimit];
-
-    if (!data) {
-        await sock.sendMessage(from, {
-            text: '❌ Data limit AI tidak ditemukan.'
-        });
-        return;
-    }
-
-    const sisa = Math.max(data.limit - data.used, 0);
-
-    let lokasi = from.endsWith('@g.us')
-        ? '👥 *Grup*'
-        : '👤 *Private*';
-
-    let teks =
-`📊 *AI Limit Status*
-${lokasi}
-
-🔢 Total Limit : *${data.limit}*
-📉 Terpakai   : *${data.used}*
-✅ Sisa       : *${sisa}*`;
-
-    // info tambahan kalau habis
-    if (sisa <= 0) {
-        teks += `\n\n⚠️ *Limit AI sudah habis*\nHubungi owner untuk isi ulang.`;
-    }
-
-    await sock.sendMessage(from, { text: teks });
-    return;
-}
-
-
-// 🔥 MODIFIED .clear COMMAND - PAKAI from
-if (text === ".clear") {
-    const memoryId = from.endsWith("@g.us") ? from : sender;
-    resetChatMemory(memoryId);
-    await sock.sendMessage(from, { text: "🧹 Obrolan AI berhasil direset!" });
-    return;
-}
-
-
-//FITUR API//
 
 
 if (/^\.bratvid(\s|$)/i.test(text)) {
@@ -8585,6 +8477,432 @@ if (text.trim().toLowerCase() === '.blur') {
     }
 
     return;
+}
+
+
+
+
+
+
+
+if (text.trim() === '.info') {
+    await sock.sendMessage(from, {
+        react: {
+            text: '⏳',
+            key: msg.key
+        }
+    });
+    
+    const uptime = process.uptime(); // dalam detik
+    const jam = Math.floor(uptime / 3600);
+    const menit = Math.floor((uptime % 3600) / 60);
+    const detik = Math.floor(uptime % 60);
+    
+    const waktu = new Date();
+    const tanggal = waktu.getDate().toString().padStart(2, '0');
+    const bulan = (waktu.getMonth() + 1).toString().padStart(2, '0');
+    const tahun = waktu.getFullYear().toString();
+    const tanggalFormat = font(`${tanggal}-${bulan}-${tahun}`);
+
+    // Pisahkan bagian yang tidak ingin diubah fontnya
+    const teks = font(`╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ɪɴꜰᴏ 〕─╮
+
+├─ 〔 👑 ᴏᴡɴᴇʀ 〕
+│ ꜰᴀᴊᴀʀ ᴀᴅɪᴛʏᴀ ᴘʀᴀᴛᴀᴍᴀ
+│
+├─ 〔 🧠 ᴀɪ ꜱᴜᴘᴘᴏʀᴛ 〕
+│ ǫᴜᴀɴᴛᴜᴍx ᴀꜱꜱɪꜱᴛᴀɴᴛ
+│
+├─ 〔 ⚙️ ᴛᴇᴋɴɪᴋᴀʟ 〕
+│ ʙᴀʜᴀꜱᴀ  : ɴᴏᴅᴇ.ᴊꜱ + ʙᴀɪʟᴇʏꜱ
+│ ᴠᴇʀꜱɪ     : 𝟏.𝟓.𝟎
+│ ᴡᴀᴋᴛᴜ   : ${jam}ᴊ ${menit}ᴍ ${detik}ꜱ
+│
+├─ 〔 📞 ᴋᴏɴᴛᴀᴋ 〕
+│ `) + `wa.me/6283836348226` + font(`
+│
+╰── 📅 ${tanggalFormat}`);
+
+    await sock.sendMessage(from, { 
+        text: teks 
+    }, { quoted: msg });
+    
+    return;
+}
+
+
+
+if (text.trim() === '.menu') {
+    await sock.sendMessage(from, {
+        react: {
+            text: '⏳',
+            key: msg.key
+        }
+    });
+    
+    const waktu = new Date();
+    const tanggal = waktu.getDate().toString().padStart(2, '0');
+    const bulan = (waktu.getMonth() + 1).toString().padStart(2, '0');
+    const tahun = waktu.getFullYear().toString();
+    
+    const versi = font("1.5.0");
+    const tanggalFormat = font(`${tanggal}-${bulan}-${tahun}`);
+    const readmore = String.fromCharCode(8206).repeat(4001);
+    
+    await sock.sendMessage(from, {
+        image: { url: './logo.jpg' },
+        caption: font(`ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ
+
+> ɴᴀᴍᴀ          : ʙᴏᴛ ᴊᴀʀʀ
+> ᴀᴜᴛᴏʀ        : ꜰᴀᴊᴀʀ
+> ᴠᴇʀꜱɪ          : ${versi}
+> ᴛᴀɴɢɢᴀʟ    : ${tanggalFormat}
+
+${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
+│
+├─ 〔 🎮 ɢᴀᴍᴇ 〕
+│ .ᴋᴜɪꜱ
+│ .ᴋᴜɪꜱꜱᴜꜱᴀʜ
+│ .ᴊᴜᴅɪ
+│ .ᴛʀᴜᴛʜ
+│ .ᴅᴀʀᴇ
+│ .ᴛᴇʙᴀᴋ-ᴀᴋᴜ
+│ .ᴛᴇʙᴀᴋʟᴀɢᴜ
+│ .ᴛᴇʙᴀᴋɢᴀᴍʙᴀʀ
+│ .ꜱᴜꜱᴜɴᴋᴀᴛᴀ
+│ .ꜰᴀᴍɪʟʏ𝟏𝟎𝟎
+│ .ᴛᴇʙᴀᴋʙᴇɴᴅᴇʀᴀ
+│ .ᴛɪᴄᴛᴀᴄᴛᴏᴇ
+│ .ᴜʟᴀʀᴛᴀɴɢɢᴀ
+│
+├─ 〔 🏳️‍🌈 ꜰɪᴛᴜʀ ʟᴜᴄᴜ 〕
+│ .ɢᴀʏ
+│ .ʟᴇꜱʙɪ
+│ .ᴄᴀɴᴛɪᴋ
+│ .ɢᴀɴᴛᴇɴɢ
+│ .ᴊᴏᴅᴏʜ
+│ .ᴄᴇᴋᴋʜᴏᴅᴀᴍ
+│ .ᴄᴇᴋɪǫ
+│ .ꜱɪᴀᴘᴀ
+│ .ꜰᴀᴋᴇʀᴇᴘʟʏ
+│ .ᴘᴏʟʟɪɴɢ
+│
+├─ 〔 🧠 ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ 〕
+│ .ᴀɪ
+│ .ᴀɪɢᴀᴍʙᴀʀ
+│ .ᴄʟᴇᴀʀ
+│
+├─ 〔 🎵 ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ 〕
+│ .ꜱᴘᴏᴛɪꜰʏ
+│ .ꜱᴏᴜɴᴅ
+│ .ᴀᴜᴅɪᴏᴠɪᴅ
+│ .ᴜʙᴀʜꜱᴜᴀʀᴀ
+│ .ᴡᴍ
+│ .ᴛᴛᴍᴘ𝟑
+│ .ʏᴛᴍᴘ𝟑
+│ .ʏᴛᴍᴘ𝟒
+│
+├─ 〔 🖌️ ᴍᴀᴋᴇʀ / ᴄʀᴇᴀᴛᴏʀ 〕
+│ .ꜱᴛɪᴋᴇʀ
+│ .ǫᴄ
+│ .ᴇᴍᴏᴊɪᴍɪx
+│ .ᴛᴏɪᴍɢ
+│ .ᴛᴇᴋꜱ
+│ .ʙʀᴀᴛ
+│ .ʙʀᴀᴛᴠɪᴅ
+│
+├─ 〔 🖼️ ᴍᴇᴅɪᴀ 〕
+│ .ᴡᴀɪꜰᴜ
+│ .ǫʀ
+│ .ᴘᴅꜰ
+│ .ᴅᴏᴄx
+│ .ɪɢꜱᴛᴀʟᴋ
+│ .ᴀᴍʙɪʟᴘᴘ
+│ .ᴅᴡꜰᴏᴛᴏ
+│ .ᴅᴡᴠɪᴅᴇᴏ
+│ .ᴍɪʀʀᴏʀ
+│ .ʀᴏᴛᴀᴛᴇ
+│ .ʙʟᴜʀ
+│
+├─ 〔 👤 ᴀɴᴏɴʏᴍᴏᴜꜱ 〕
+│ .ᴀɴᴏɴʏᴍᴏᴜꜱ
+│ .ᴀɴᴏɴꜱᴛᴀᴛᴜꜱ
+│ .ꜱᴛᴏᴘ
+│
+├─ 〔 👥 ꜱᴇᴛɪɴɢ ɢʀᴜᴘ 〕
+│ .ᴛᴀɢᴀʟʟ
+│ .ᴛᴀɢ
+│ .ꜱᴇᴛɴᴀᴍᴀɢᴄ
+│ .ꜱᴇᴛᴅᴇꜱɢᴄ
+│ .ꜱᴇᴛᴘᴘɢᴄ
+│ .ᴀᴅᴍɪɴᴏɴʟʏ
+│ .ʟɪɴᴋɢᴄ
+│ .ᴅᴇʟ
+│
+├─ 〔 📊 ꜱᴋᴏʀ ɢᴀᴍᴇ 〕
+│ .ꜱᴋᴏʀ
+│ .ᴋɪʀɪᴍꜱᴋᴏʀ
+│
+├─ 〔 📋 ɪɴꜰᴏ 〕
+│ .ꜱʜᴏᴘ
+│ .ɪɴꜰᴏ
+│ .ᴍᴇɴᴜ
+│ .ᴍᴇɴᴜɪʟᴇɢᴀʟ
+│
+╰── 📅 ${tanggalFormat}
+
+╭─〔 🔐 ꜰɪᴛᴜʀ ᴠɪᴘ / ᴏᴡɴᴇʀ 〕─╮
+│
+├─ 〔 👥 ɢʀᴜᴘ ᴠɪᴘ 〕
+│ .ᴋɪᴄᴋ
+│ .ᴍᴜᴛᴇ
+│ .ᴜɴᴍᴜᴛᴇ
+│ .ʙᴀɴ
+│ .ᴜɴʙᴀɴ
+│ .ᴀɴᴛɪʟɪɴᴋ
+│ .ᴀɴᴛɪꜰᴏᴛᴏ
+│ .ᴀɴᴛɪꜱᴛɪᴋᴇʀ
+│
+├─ 〔 📊 ꜱᴋᴏʀ ᴋʜᴜꜱᴜꜱ 〕
+│ .ꜱᴇᴛꜱᴋᴏʀ
+│ .ꜱᴇᴛᴇxᴘ
+│ .ꜱᴇᴛʟᴇᴠᴇʟ
+│ .ᴀʟʟꜱᴋᴏʀ
+│ .ᴛᴀɴᴛᴀɴɢᴀɴ
+│
+├─ 〔 👑 ᴠɪᴘ ᴄᴏɴᴛʀᴏʟ 〕
+│ .ꜱᴇᴛᴠɪᴘ
+│ .ᴜɴꜱᴇᴛᴠɪᴘ
+│ .ʟɪꜱᴛᴠɪᴘ
+│ .ʟɪꜱᴛꜱᴋᴏʀ
+│ .ᴜᴍᴜᴍᴋᴀɴ
+│ .ꜱᴛɪᴋᴇʀᴄᴜꜱᴛᴏᴍ
+│
+├─ 〔 👑 ᴏᴡɴᴇʀ 〕
+│ .ᴀʟʟᴠɪᴘ
+│ .ᴄʟᴇᴀʀᴠɪᴘ
+│ .ꜱᴇᴛᴏꜰꜰ
+│
+├─ 〔 ⚙️ ʙᴏᴛ ᴄᴏɴᴛʀᴏʟ 〕
+│ .ᴏɴ
+│ .ᴏꜰꜰ
+│
+╰── 👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`),
+    });
+    return;
+}
+
+
+
+// ==================== MENU ILEGAL ====================
+if (body.startsWith('.menuilegal') || body.startsWith('.menuilegal')) {
+    await sock.sendMessage(from, {
+        text: font(`┌─ ɪʟʟᴇɢᴀʟ ᴄᴏᴍᴍᴀɴᴅꜱ ─┐
+│
+│  ⚡ .ʙᴜɢ
+│     ᴘᴀʏᴍᴇɴᴛ ᴄʀᴀꜱʜ - ꜱɪɴɢʟᴇ ᴛᴀʀɢᴇᴛ
+│
+│  💀 .ʙᴜɢ𝟐
+│     ᴍᴜʟᴛɪ-ᴛᴀʀɢᴇᴛ ᴀᴛᴛᴀᴄᴋ
+│
+│  🔥 .ꜱᴘᴀᴍᴄᴏᴅᴇ
+│     ᴏᴛᴘ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ꜱᴘᴀᴍ
+│
+│  💣 .ꜱᴘᴀᴍᴏᴛᴘ
+│     ʀᴇᴀʟ ᴏᴛᴘ ꜱᴘᴀᴍ (𝟺 ꜱᴇʀᴠɪᴄᴇꜱ)
+│
+└─ 👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`),
+    });
+}
+
+if (text.startsWith(".ailimit")) {
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: "❌ Khusus owner." });
+        return;
+    }
+
+    const args = text.split(" ");
+
+    // === MODE 1: set limit nomor (private only) ===
+    if (args.length === 3 && !from.endsWith("@g.us")) {
+        const nomor = args[1];
+        const jumlah = parseInt(args[2]);
+
+        if (isNaN(jumlah)) {
+            await sock.sendMessage(from, { text: "❗ Contoh: .ailimit 628xxxxx 10" });
+            return;
+        }
+
+        const targetId = nomor + "@s.whatsapp.net";
+
+        aiLimit[targetId] = { limit: jumlah, used: 0 };
+        saveAiLimit();
+
+        await sock.sendMessage(from, { text: `✅ Limit AI untuk *${nomor}* diatur menjadi *${jumlah} chat*` });
+        return;
+    }
+
+    // === MODE 2: pilih grup ===
+    if (args.length === 2 && !from.endsWith("@g.us")) {
+        const jumlah = parseInt(args[1]);
+        if (isNaN(jumlah)) {
+            await sock.sendMessage(from, { text: "❗ Contoh: .ailimit 10" });
+            return;
+        }
+
+        // ambil semua grup
+        let daftarGrup = Object.keys(await sock.groupFetchAllParticipating());
+
+        let teks = `📋 *Pilih grup untuk set limit AI (${jumlah} chat)*:\n\n`;
+
+        for (let i = 0; i < daftarGrup.length; i++) {
+            const meta = await sock.groupMetadata(daftarGrup[i]).catch(() => null);
+            if (!meta) continue;
+            teks += `${i + 1}. ${meta.subject}\n`;
+        }
+
+        teks += `\n➡️ Balas dengan angka (misal: *2*)`;
+
+        await sock.sendMessage(from, { text: teks });
+
+        sesiLimitAI.set(sender, { jumlah, daftarGrup });
+        return;
+    }
+
+    await sock.sendMessage(from, { text: "❗ Format salah." });
+    return;
+}
+
+if (sesiLimitAI.has(sender)) {
+    const data = sesiLimitAI.get(sender);
+    const pilih = parseInt(text.trim());
+
+    if (isNaN(pilih) || pilih < 1 || pilih > data.daftarGrup.length) {
+        await sock.sendMessage(from, { text: "❌ Pilihan invalid." });
+        return;
+    }
+
+    const groupId = data.daftarGrup[pilih - 1];
+    sesiLimitAI.delete(sender);
+
+    aiLimit[groupId] = { limit: data.jumlah, used: 0 };
+    saveAiLimit();
+
+    await sock.sendMessage(from, { text: `✅ Limit AI untuk grup ini diatur menjadi *${data.jumlah} chat*.` });
+    return;
+}
+// 🔥 AI CHAT COMMAND (ANTI NABRAK)
+if (/^\.ai(\s|$)/i.test(text)) {
+    const isi = text.replace(/^\.ai/i, '').trim();
+    if (!isi) {
+        await sock.sendMessage(from, { 
+            text: "❗ Contoh: *.ai halo bot*" 
+        });
+        return;
+    }
+
+    const idLimit = from.endsWith("@g.us") ? from : sender;
+    initDefaultAiLimit(idLimit);
+
+    if (!cekLimitAI(idLimit) && !isOwner(sender)) {
+        await sock.sendMessage(from, { 
+            text: "❌ *AI Response Error:*\n*Quota Exceeded — User daily limit reached.*" 
+        });
+        return;
+    }
+
+    const balasan = await getAIReply(sender, isi, from);
+    await sock.sendMessage(from, { text: balasan });
+
+    tambahPakaiAI(idLimit);
+    return;
+}
+
+if (text === '.ceklimit') {
+
+    // ID limit: grup atau private
+    const idLimit = from.endsWith('@g.us') ? from : sender;
+
+    // auto init kalau belum ada
+    initDefaultAiLimit(idLimit);
+
+    const data = aiLimit[idLimit];
+
+    if (!data) {
+        await sock.sendMessage(from, {
+            text: '❌ Data limit AI tidak ditemukan.'
+        });
+        return;
+    }
+
+    const sisa = Math.max(data.limit - data.used, 0);
+
+    let lokasi = from.endsWith('@g.us')
+        ? '👥 *Grup*'
+        : '👤 *Private*';
+
+    let teks =
+`📊 *AI Limit Status*
+${lokasi}
+
+🔢 Total Limit : *${data.limit}*
+📉 Terpakai   : *${data.used}*
+✅ Sisa       : *${sisa}*`;
+
+    // info tambahan kalau habis
+    if (sisa <= 0) {
+        teks += `\n\n⚠️ *Limit AI sudah habis*\nHubungi owner untuk isi ulang.`;
+    }
+
+    await sock.sendMessage(from, { text: teks });
+    return;
+}
+
+
+// 🔥 MODIFIED .clear COMMAND - PAKAI from
+if (text === ".clear") {
+    const memoryId = from.endsWith("@g.us") ? from : sender;
+    resetChatMemory(memoryId);
+    await sock.sendMessage(from, { text: "🧹 Obrolan AI berhasil direset!" });
+    return;
+}
+
+
+
+
+
+const prefix = '.';
+
+if (body.startsWith(prefix)) {
+  const inputCmd = body.split(' ')[0];
+
+  // kalau command valid → stop
+  if (commands.includes(inputCmd)) return;
+
+  // cari command mirip
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const cmd of commands) {
+    const score = similarity(inputCmd, cmd);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = cmd;
+    }
+  }
+
+  // threshold kemiripan
+  if (bestScore >= 0.6) {
+    await sock.sendMessage(from, {
+      text: `❌ Command *${inputCmd}* tidak ditemukan\n\n❓ Apakah yang kamu maksud:\n➡️ *${bestMatch}*`
+    });
+  } else {
+    await sock.sendMessage(from, {
+      text: `❌ Command *${inputCmd}* tidak dikenal\n\nKetik *.menu* untuk melihat daftar perintah`
+    });
+  }
+
+  return;
 }
 
 
