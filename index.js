@@ -7820,165 +7820,56 @@ if (text.trim() === '.info') {
     
     return;
 }
-
 if (text.trim() === '.menu') {
+
     await sock.sendMessage(from, {
-        react: {
-            text: '⏳',
-            key: msg.key
-        }
+        react: { text: '⏳', key: msg.key }
     });
-    
-    const waktu = new Date();
-    const tanggal = waktu.getDate().toString().padStart(2, '0');
-    const bulan = (waktu.getMonth() + 1).toString().padStart(2, '0');
-    const tahun = waktu.getFullYear().toString();
-    
-    const versi = font("1.5.0");
-    const tanggalFormat = font(`${tanggal}-${bulan}-${tahun}`);
-    const readmore = String.fromCharCode(8206).repeat(4001);
-    
+
+    const caption = font(`ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ 👋
+
+🤖 *Bot Jarr*
+👑 Owner : Fajar
+📦 Versi : 1.5.0
+
+Klik tombol di bawah untuk melihat menu 📂
+`);
+
     await sock.sendMessage(from, {
         image: { url: './logo.jpg' },
-        caption: font(`ꜱᴇʟᴀᴍᴀᴛ ᴅᴀᴛᴀɴɢ
+        caption,
+        buttons: [
+            {
+                buttonId: 'menu_list',
+                buttonText: { displayText: '📂 Buka Menu' },
+                type: 4,
+                nativeFlowInfo: {
+                    name: 'single_select',
+                    paramsJson: JSON.stringify({
+                        title: '📖 Daftar Menu',
+                        sections: [
+                            {
+                                title: '📌 Pilih Menu',
+                                rows: [
+                                    { title: '📜 Menu All', id: '.menuall' },
+                                    { title: '🎮 Menu Game', id: '.menugame' },
+                                    { title: '🎵 Menu Download', id: '.menudownload' },
+                                    { title: '🧠 Menu AI', id: '.menuai' },
+                                    { title: '🖌️ Menu Maker', id: '.menumaker' },
+                                    { title: '👑 Menu Owner', id: '.menuowner' }
+                                ]
+                            }
+                        ]
+                    })
+                }
+            }
+        ],
+        headerType: 1
+    }, { quoted: msg });
 
-> ɴᴀᴍᴀ          : ʙᴏᴛ ᴊᴀʀʀ
-> ᴀᴜᴛᴏʀ        : ꜰᴀᴊᴀʀ
-> ᴠᴇʀꜱɪ          : ${versi}
-> ᴛᴀɴɢɢᴀʟ    : ${tanggalFormat}
-
-${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
-│
-├─ 〔 🎮 ɢᴀᴍᴇ 〕
-│ .ᴋᴜɪꜱ
-│ .ᴋᴜɪꜱꜱᴜꜱᴀʜ
-│ .ᴊᴜᴅɪ
-│ .ᴛʀᴜᴛʜ
-│ .ᴅᴀʀᴇ
-│ .ᴛᴇʙᴀᴋ-ᴀᴋᴜ
-│ .ᴛᴇʙᴀᴋʟᴀɢᴜ
-│ .ᴛᴇʙᴀᴋɢᴀᴍʙᴀʀ
-│ .ꜱᴜꜱᴜɴᴋᴀᴛᴀ
-│ .ꜰᴀᴍɪʟʏ𝟏𝟎𝟎
-│ .ᴛᴇʙᴀᴋʙᴇɴᴅᴇʀᴀ
-│ .ᴛɪᴄᴛᴀᴄᴛᴏᴇ
-│ .ᴜʟᴀʀᴛᴀɴɢɢᴀ
-│
-├─ 〔 🏳️‍🌈 ꜰɪᴛᴜʀ ʟᴜᴄᴜ 〕
-│ .ɢᴀʏ
-│ .ʟᴇꜱʙɪ
-│ .ᴄᴀɴᴛɪᴋ
-│ .ɢᴀɴᴛᴇɴɢ
-│ .ᴊᴏᴅᴏʜ
-│ .ᴄᴇᴋᴋʜᴏᴅᴀᴍ
-│ .ᴄᴇᴋɪǫ
-│ .ꜱɪᴀᴘᴀ
-│ .ꜰᴀᴋᴇʀᴇᴘʟʏ
-│ .ᴘᴏʟʟɪɴɢ
-│
-├─ 〔 🧠 ᴀɪ ᴀꜱꜱɪꜱᴛᴀɴᴛ 〕
-│ .ᴀɪ
-│ .ᴀɪɢᴀᴍʙᴀʀ
-│ .ᴄʟᴇᴀʀ
-│
-├─ 〔 🎵 ᴍᴜꜱɪᴄ & ᴅᴏᴡɴʟᴏᴀᴅᴇʀ 〕
-│ .ꜱᴘᴏᴛɪꜱʏ
-│ .ꜱᴏᴜɴᴅ
-│ .ᴀᴜᴅɪᴏᴠɪᴅ
-│ .ᴜʙᴀʜꜱᴜᴀʀᴀ
-│ .ᴡᴍ
-│ .ᴛᴛᴍᴘ𝟑
-│ .ʏᴛᴍᴘ𝟑
-│ .ʏᴛᴍᴘ𝟒
-│
-├─ 〔 🖌️ ᴍᴀᴋᴇʀ / ᴄʀᴇᴀᴛᴏʀ 〕
-│ .ꜱᴛɪᴋᴇʀ
-│ .ǫᴄ
-│ .ᴛᴏɪᴍɢ
-│ .ᴛᴇᴋꜱ
-│ .ʙʀᴀᴛ
-│ .ʙʀᴀᴛᴠɪᴅ
-│
-├─ 〔 🖼️ ᴍᴇᴅɪᴀ 〕
-│ .ᴡᴀɪꜰᴜ
-│ .ǫʀ
-│ .ᴘᴅꜰ
-│ .ᴅᴏᴄx
-│ .ɪɢꜱᴛᴀʟᴋ
-│ .ᴀᴍʙɪʟᴘᴘ
-│ .ᴅᴡꜰᴏᴛᴏ
-│ .ᴅᴡᴠɪᴅᴇᴏ
-│ .ᴍɪʀʀᴏʀ
-│ .ʀᴏᴛᴀᴛᴇ
-│ .ʙʟᴜʀ
-│
-├─ 〔 👤 ᴀɴᴏɴʏᴍᴏᴜꜱ 〕
-│ .ᴀɴᴏɴʏᴍᴏᴜꜱ
-│ .ᴀɴᴏɴꜱᴛᴀᴛᴜꜱ
-│ .ꜱᴛᴏᴘ
-│
-├─ 〔 👥 ꜱᴇᴛɪɴɢ ɢʀᴜᴘ 〕
-│ .ᴛᴀɢᴀʟʟ
-│ .ᴛᴀɢ
-│ .ꜱᴇᴛɴᴀᴍᴀɢᴄ
-│ .ꜱᴇᴛᴅᴇꜱɢᴄ
-│ .ꜱᴇᴛᴘᴘɢᴄ
-│ .ᴀᴅᴍɪɴᴏɴʟʏ
-│ .ʟɪɴᴋɢᴄ
-│ .ᴅᴇʟ
-│
-├─ 〔 📊 ꜱᴋᴏʀ ɢᴀᴍᴇ 〕
-│ .ꜱᴋᴏʀ
-│ .ᴋɪʀɪᴍꜱᴋᴏʀ
-│
-├─ 〔 📋 ɪɴꜰᴏ 〕
-│ .ꜱʜᴏᴘ
-│ .ɪɴꜰᴏ
-│ .ᴍᴇɴᴜ
-│ .ᴍᴇɴᴜɪʟᴇɢᴀʟ
-│
-╰── 📅 ${tanggalFormat}
-
-╭─〔 🔐 ꜰɪᴛᴜʀ ᴠɪᴘ / ᴏᴡɴᴇʀ 〕─╮
-│
-├─ 〔 👥 ɢʀᴜᴘ ᴠɪᴘ 〕
-│ .ᴋɪᴄᴋ
-│ .ᴍᴜᴛᴇ
-│ .ᴜɴᴍᴜᴛᴇ
-│ .ʙᴀɴ
-│ .ᴜɴʙᴀɴ
-│ .ᴀɴᴛɪʟɪɴᴋ
-│ .ᴀɴᴛɪꜰᴏᴛᴏ
-│ .ᴀɴᴛɪꜱᴛɪᴋᴇʀ
-│
-├─ 〔 📊 ꜱᴋᴏʀ ᴋʜᴜꜱᴜꜱ 〕
-│ .ꜱᴇᴛꜱᴋᴏʀ
-│ .ꜱᴇᴛᴇxᴘ
-│ .ꜱᴇᴛʟᴇᴠᴇʟ
-│ .ᴀʟʟꜱᴋᴏʀ
-│ .ᴛᴀɴᴛᴀɴɢᴀɴ
-│
-├─ 〔 👑 ᴠɪᴘ ᴄᴏɴᴛʀᴏʟ 〕
-│ .ꜱᴇᴛᴠɪᴘ
-│ .ᴜɴꜱᴇᴛᴠɪᴘ
-│ .ʟɪꜱᴛᴠɪᴘ
-│ .ʟɪꜱᴛꜱᴋᴏʀ
-│ .ᴜᴍᴜᴍᴋᴀɴ
-│ .ꜱᴛɪᴋᴇʀᴄᴜꜱᴛᴏᴍ
-│
-├─ 〔 👑 ᴏᴡɴᴇʀ 〕
-│ .ᴀʟʟᴠɪᴘ
-│ .ᴄʟᴇᴀʀᴠɪᴘ
-│ .ꜱᴇᴛᴏꜰꜰ
-│
-├─ 〔 ⚙️ ʙᴏᴛ ᴄᴏɴᴛʀᴏʟ 〕
-│ .ᴏɴ
-│ .ᴏꜰꜰ
-│
-╰── 👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`),
-    });
     return;
 }
+
 
 
 
