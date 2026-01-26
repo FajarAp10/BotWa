@@ -7670,7 +7670,7 @@ if (/^[1-9]$/.test(text)) {
             sesi.board[pos] = simbol;
             pionList.push(pos);
         } else {
-            // rotasi → geser pion paling lama
+            // rotasi → geser pion paling lma
             const oldPos = pionList.shift(); // ambil pion tertua
             sesi.board[oldPos] = '⬜';       // kosongkan
             sesi.board[pos] = simbol;       // taruh pion baru
