@@ -1626,6 +1626,8 @@ const commands = [
   '.setppgc',
   '.getppgc',
   '.react',
+  '.pin',
+  '.unpin',
   '.adminonly',
   '.linkgc',
   '.del',
@@ -6260,61 +6262,190 @@ if (text === '.linkgc') {
     }
 }
 
-// 😆 REACT KE CHAT (REPLY)
+// 😆 REACT KE CHAT (REPLY) – ANIMATED SWAP
 if (text.startsWith('.react')) {
 
-    // harus reply pesan
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const quotedKey = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
-    const quotedParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant;
+    const context = msg.message?.extendedTextMessage?.contextInfo;
+    const quotedKey = context?.stanzaId;
+    const quotedParticipant = context?.participant;
 
-    if (!quoted || !quotedKey || !quotedParticipant) {
+    if (!quotedKey || !quotedParticipant) {
         await sock.sendMessage(from, {
-            text: '❗ Reply chat lalu gunakan:\n.react 😂\n.react 😂 5\n.react 😂🔥😹 3'
+            text: '❗ Reply chat lalu gunakan:\n.react 😂\n.react 😂🔥😹'
         }, { quoted: msg });
         return;
     }
 
-    const args = text.trim().split(/\s+/).slice(1);
-    if (args.length === 0) {
+    const emojiText = text.replace('.react', '').trim();
+    if (!emojiText) {
         await sock.sendMessage(from, {
             text: '❗ Masukkan emoji.\nContoh: .react 😂🔥'
         }, { quoted: msg });
         return;
     }
 
-    // cek angka di akhir
-    let jumlah = 1;
-    if (!isNaN(args[args.length - 1])) {
-        jumlah = parseInt(args.pop());
-    }
+    // pecah emoji
+    const emojis = [...emojiText];
 
-    // batas aman
-    if (jumlah > 10) jumlah = 10;
-
-    const emojiString = args.join('');
-    const emojis = [...emojiString]; // pecah emoji
-
-    // key pesan yang di-react
     const reactKey = {
         remoteJid: from,
         id: quotedKey,
         participant: quotedParticipant
     };
 
-    // kirim react
-    for (let i = 0; i < jumlah; i++) {
-        for (const emoji of emojis) {
+    // animasi ganti-ganti emoji
+    for (let i = 0; i < emojis.length; i++) {
+        await sock.sendMessage(from, {
+            react: {
+                text: emojis[i],
+                key: reactKey
+            }
+        });
+
+        // delay kecil biar keliatan animasi
+        if (i < emojis.length - 1) {
+            await new Promise(res => setTimeout(res, 450));
+        }
+    }
+
+    return;
+}
+// 📌 PIN CHAT GRUP (REPLY) – DEFAULT 24 JAM
+if (text.startsWith('.pin')) {
+
+    // hanya grup
+    if (!from.endsWith('@g.us')) {
+        await sock.sendMessage(from, {
+            text: '❌ Perintah ini hanya bisa digunakan di grup.'
+        }, { quoted: msg });
+        return;
+    }
+
+    const context = msg.message?.extendedTextMessage?.contextInfo;
+    const quotedKey = context?.stanzaId;
+    const quotedParticipant = context?.participant;
+
+    if (!quotedKey || !quotedParticipant) {
+        await sock.sendMessage(from, {
+            text: '❗ Reply chat lalu gunakan:\n.pin\n.pin 7hari\n.pin 3hari'
+        }, { quoted: msg });
+        return;
+    }
+
+    // ======================
+    // DEFAULT 24 JAM
+    // ======================
+    let duration = 86400;
+
+    // ambil argumen durasi
+    const args = text.trim().split(/\s+/);
+    if (args[1]) {
+        const durasi = args[1].toLowerCase();
+
+        if (durasi === '7hari') duration = 604800;
+        else if (durasi === '3hari') duration = 259200;
+        else if (durasi === '1hari' || durasi === '24jam') duration = 86400;
+    }
+
+    try {
+        await sock.sendMessage(from, {
+            pin: {
+                key: {
+                    remoteJid: from,
+                    id: quotedKey,
+                    participant: quotedParticipant
+                },
+                type: 1,          // pin
+                expiration: duration
+            }
+        });
+
+        await sock.sendMessage(from, {
+            react: { text: '📌', key: msg.key }
+        });
+
+        console.log(`📌 Pesan dipin selama ${duration} detik`);
+
+    } catch (err) {
+        console.error('❌ Gagal pin:', err);
+        await sock.sendMessage(from, {
+            text: '❌ Gagal mem-pin pesan.\nPastikan bot adalah admin.'
+        }, { quoted: msg });
+    }
+
+    return;
+}
+
+// 📌 UNPIN CHAT GRUP
+if (text.trim().startsWith('.unpin')) {
+
+    // harus grup
+    if (!from.endsWith('@g.us')) {
+        await sock.sendMessage(from, {
+            text: '❌ Perintah ini hanya bisa digunakan di grup.'
+        }, { quoted: msg });
+        return;
+    }
+
+    const args = text.trim().split(/\s+/);
+
+    try {
+
+        // ======================
+        // MODE 1: UNPIN SEMUA
+        // ======================
+        if (args[1] === 'all') {
+
             await sock.sendMessage(from, {
-                react: {
-                    text: emoji,
-                    key: reactKey
+                pin: {
+                    type: 2 // 2 = unpin all
                 }
             });
 
-            // delay aman
-            await new Promise(res => setTimeout(res, 600));
+            await sock.sendMessage(from, {
+                react: { text: '🧹', key: msg.key }
+            });
+
+            console.log('🧹 Semua pin dihapus');
+            return;
         }
+
+        // ======================
+        // MODE 2: UNPIN REPLY
+        // ======================
+        const context = msg.message?.extendedTextMessage?.contextInfo;
+        const quotedKey = context?.stanzaId;
+        const quotedParticipant = context?.participant;
+
+        if (!quotedKey || !quotedParticipant) {
+            await sock.sendMessage(from, {
+                text: '❗ Reply pesan yang dipin lalu ketik:\n.unpin\n\nAtau:\n.unpin all'
+            }, { quoted: msg });
+            return;
+        }
+
+        await sock.sendMessage(from, {
+            pin: {
+                key: {
+                    remoteJid: from,
+                    id: quotedKey,
+                    participant: quotedParticipant
+                },
+                type: 2 // 2 = unpin
+            }
+        });
+
+        await sock.sendMessage(from, {
+            react: { text: '📍', key: msg.key }
+        });
+
+        console.log('📍 Pin pesan berhasil dilepas');
+
+    } catch (err) {
+        console.error('❌ Gagal unpin:', err);
+        await sock.sendMessage(from, {
+            text: '❌ Gagal melepas pin.\nPastikan bot adalah admin.'
+        }, { quoted: msg });
     }
 
     return;
@@ -8806,6 +8937,8 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 │ .ꜱᴇᴛᴘᴘɢᴄ
 │ .ɢᴇᴛᴘᴘɢᴄ
 │ .ʀᴇᴀᴄᴛ
+│ .ᴘɪɴ
+│ .ᴜɴᴘɪɴ
 │ .ᴀᴅᴍɪɴᴏɴʟʏ
 │ .ʟɪɴᴋɢᴄ
 │ .ᴅᴇʟ
