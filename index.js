@@ -63,6 +63,7 @@ const pdfSessions = new Map();
 const antiLinkGroups = new Map();
 const antiStickerGroups = new Map();
 const antiFotoGroups = new Map();
+const antiToxicGroups = new Map();
 const sesiPolling = new Map();
 const sesiCepat = new Map();
 const sesiTicTacToe = new Map();
@@ -1626,7 +1627,6 @@ const commands = [
   '.setppgc',
   '.getppgc',
   '.react',
-  '.pin',
   '.unpin',
   '.adminonly',
   '.linkgc',
@@ -1649,6 +1649,7 @@ const commands = [
   '.antilink',
   '.antifoto',
   '.antistiker',
+  '.antitoxic',
 
   // SCORE KHUSUS
   '.setskor',
@@ -1710,6 +1711,24 @@ function editDistance(a, b) {
 }
 
 
+const toxicWords = [
+  'anjing', 'babi', 'kontol', 'memek', 'bangsat', 'goblok', 
+  'tolol', 'ngentot', 'tai', 'bajingan', 'kampret', 'jancok', 
+  'cibai', 'puki', 'tetek', 'kimak', 'bego', 'idiot', 'lonte', 
+  'bencong', 'banci', 'cacad', 'brengsek', 'keparat', 'bedebah',
+  'kampungan', 'sampah', 'tolol', 'geblek', 'kirik', 'asu', 
+  'koyok', 'pepek', 'bacot', 'jablay', 'jembut', 'coli', 'itil',
+  'bispak', 'sundal', 'perek', 'pelacur', 'haram', 'kafir', 
+  'meki', 'toket', 'pentil', 'burit', 'jembut', 'bengek', 
+  'budeg', 'tuli', 'buta', 'gila', 'sinting', 'edan', 'setan',
+  'mabuk', 'teler', 'madat', 'putaw', 'ganja', 'sabu', 'ekstasi',
+  'bokep', 'mesum', 'vcs', 'coli', 'masturbasi', 'entot', 
+  'ngewe', 'senggama', 'doggy', 'missionaris', 'anal', 'oral',
+  'blowjob', 'handjob', 'cum', 'sperma', 'vagina', 'penis', 'koplak', 
+  'ahh', 'enak mas', 'yatim', 'anak haram', 'ngewe', 'ewe', 'squirt',
+  'anj', 'kont', 'bngst', 'kntol', 'mmk', 'bbi', 'jnck', 'lnte', 'bugil',
+  'telanjang', 'pentil', 'pantat', 'silit', 'asu', 'koclok'
+];
 
 
 sock.ev.on('messages.upsert', async ({ messages }) => {
@@ -2320,6 +2339,24 @@ if (mtype === 'imageMessage' && from.endsWith('@g.us') && antiFotoGroups.get(fro
     await hapusPesan(from, msg);
     return;
 }
+
+if (
+    from.endsWith('@g.us') &&
+    antiToxicGroups.get(from) &&
+    text
+) {
+    const lowerText = text.toLowerCase();
+
+    const kenaToxic = toxicWords.some(word =>
+        lowerText.includes(word)
+    );
+
+    if (kenaToxic) {
+        await hapusPesan(from, msg);
+        return;
+    }
+}
+
 
 
 //fakereply
@@ -5832,6 +5869,31 @@ if (text.startsWith('.antifoto')) {
     return;
 }
 
+if (text.startsWith('.antitoxic')) {
+    if (!from.endsWith('@g.us')) {
+        await sock.sendMessage(from, { text: '❌ Hanya bisa di grup.' });
+        return;
+    }
+
+    if (!isOwner(sender) && !isVIP(sender, from)) {
+        await sock.sendMessage(from, { text: '🔐 Khusus Owner / VIP.' });
+        return;
+    }
+
+    const arg = text.split(' ')[1];
+    if (arg === 'on') {
+        antiToxicGroups.set(from, true);
+        await sock.sendMessage(from, { text: '✅ AntiToxic diaktifkan.' });
+    } else if (arg === 'off') {
+        antiToxicGroups.delete(from);
+        await sock.sendMessage(from, { text: '❌ AntiToxic dimatikan.' });
+    } else {
+        await sock.sendMessage(from, { text: '⚠️ Gunakan: *.antitoxic on* / *.antitoxic off*' });
+    }
+    return;
+}
+
+
 if (text.startsWith('.siapa')) {
     if (!from.endsWith('@g.us')) {
         await sock.sendMessage(from, { text: '❌ Perintah hanya bisa digunakan di grup.' });
@@ -6310,147 +6372,6 @@ if (text.startsWith('.react')) {
 
     return;
 }
-// 📌 PIN CHAT GRUP (REPLY) – DEFAULT 24 JAM
-if (text.startsWith('.pin')) {
-
-    // hanya grup
-    if (!from.endsWith('@g.us')) {
-        await sock.sendMessage(from, {
-            text: '❌ Perintah ini hanya bisa digunakan di grup.'
-        }, { quoted: msg });
-        return;
-    }
-
-    const context = msg.message?.extendedTextMessage?.contextInfo;
-    const quotedKey = context?.stanzaId;
-    const quotedParticipant = context?.participant;
-
-    if (!quotedKey || !quotedParticipant) {
-        await sock.sendMessage(from, {
-            text: '❗ Reply chat lalu gunakan:\n.pin\n.pin 7hari\n.pin 3hari'
-        }, { quoted: msg });
-        return;
-    }
-
-    // ======================
-    // DEFAULT 24 JAM
-    // ======================
-    let duration = 86400;
-
-    // ambil argumen durasi
-    const args = text.trim().split(/\s+/);
-    if (args[1]) {
-        const durasi = args[1].toLowerCase();
-
-        if (durasi === '7hari') duration = 604800;
-        else if (durasi === '3hari') duration = 259200;
-        else if (durasi === '1hari' || durasi === '24jam') duration = 86400;
-    }
-
-    try {
-        await sock.sendMessage(from, {
-            pin: {
-                key: {
-                    remoteJid: from,
-                    id: quotedKey,
-                    participant: quotedParticipant
-                },
-                type: 1,          // pin
-                expiration: duration
-            }
-        });
-
-        await sock.sendMessage(from, {
-            react: { text: '📌', key: msg.key }
-        });
-
-        console.log(`📌 Pesan dipin selama ${duration} detik`);
-
-    } catch (err) {
-        console.error('❌ Gagal pin:', err);
-        await sock.sendMessage(from, {
-            text: '❌ Gagal mem-pin pesan.\nPastikan bot adalah admin.'
-        }, { quoted: msg });
-    }
-
-    return;
-}
-
-// 📌 UNPIN CHAT GRUP
-if (text.trim().startsWith('.unpin')) {
-
-    // harus grup
-    if (!from.endsWith('@g.us')) {
-        await sock.sendMessage(from, {
-            text: '❌ Perintah ini hanya bisa digunakan di grup.'
-        }, { quoted: msg });
-        return;
-    }
-
-    const args = text.trim().split(/\s+/);
-
-    try {
-
-        // ======================
-        // MODE 1: UNPIN SEMUA
-        // ======================
-        if (args[1] === 'all') {
-
-            await sock.sendMessage(from, {
-                pin: {
-                    type: 2 // 2 = unpin all
-                }
-            });
-
-            await sock.sendMessage(from, {
-                react: { text: '🧹', key: msg.key }
-            });
-
-            console.log('🧹 Semua pin dihapus');
-            return;
-        }
-
-        // ======================
-        // MODE 2: UNPIN REPLY
-        // ======================
-        const context = msg.message?.extendedTextMessage?.contextInfo;
-        const quotedKey = context?.stanzaId;
-        const quotedParticipant = context?.participant;
-
-        if (!quotedKey || !quotedParticipant) {
-            await sock.sendMessage(from, {
-                text: '❗ Reply pesan yang dipin lalu ketik:\n.unpin\n\nAtau:\n.unpin all'
-            }, { quoted: msg });
-            return;
-        }
-
-        await sock.sendMessage(from, {
-            pin: {
-                key: {
-                    remoteJid: from,
-                    id: quotedKey,
-                    participant: quotedParticipant
-                },
-                type: 2 // 2 = unpin
-            }
-        });
-
-        await sock.sendMessage(from, {
-            react: { text: '📍', key: msg.key }
-        });
-
-        console.log('📍 Pin pesan berhasil dilepas');
-
-    } catch (err) {
-        console.error('❌ Gagal unpin:', err);
-        await sock.sendMessage(from, {
-            text: '❌ Gagal melepas pin.\nPastikan bot adalah admin.'
-        }, { quoted: msg });
-    }
-
-    return;
-}
-
 
 if (text.toLowerCase().startsWith('.sound')) {
     const teks = text.replace('.sound', '').trim();
@@ -8937,8 +8858,6 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 │ .ꜱᴇᴛᴘᴘɢᴄ
 │ .ɢᴇᴛᴘᴘɢᴄ
 │ .ʀᴇᴀᴄᴛ
-│ .ᴘɪɴ
-│ .ᴜɴᴘɪɴ
 │ .ᴀᴅᴍɪɴᴏɴʟʏ
 │ .ʟɪɴᴋɢᴄ
 │ .ᴅᴇʟ
@@ -8966,6 +8885,7 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 │ .ᴀɴᴛɪʟɪɴᴋ
 │ .ᴀɴᴛɪꜰᴏᴛᴏ
 │ .ᴀɴᴛɪꜱᴛɪᴋᴇʀ
+│ .ᴀɴᴛɪᴛᴏxɪᴄ 
 │
 ├─ 〔 📊 ꜱᴋᴏʀ ᴋʜᴜꜱᴜꜱ 〕
 │ .ꜱᴇᴛꜱᴋᴏʀ
