@@ -1625,6 +1625,7 @@ const commands = [
   '.setdesgc',
   '.setppgc',
   '.getppgc',
+  '.react',
   '.adminonly',
   '.linkgc',
   '.del',
@@ -6259,6 +6260,66 @@ if (text === '.linkgc') {
     }
 }
 
+// 😆 REACT KE CHAT (REPLY)
+if (text.startsWith('.react')) {
+
+    // harus reply pesan
+    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const quotedKey = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+    const quotedParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant;
+
+    if (!quoted || !quotedKey || !quotedParticipant) {
+        await sock.sendMessage(from, {
+            text: '❗ Reply chat lalu gunakan:\n.react 😂\n.react 😂 5\n.react 😂🔥😹 3'
+        }, { quoted: msg });
+        return;
+    }
+
+    const args = text.trim().split(/\s+/).slice(1);
+    if (args.length === 0) {
+        await sock.sendMessage(from, {
+            text: '❗ Masukkan emoji.\nContoh: .react 😂🔥'
+        }, { quoted: msg });
+        return;
+    }
+
+    // cek angka di akhir
+    let jumlah = 1;
+    if (!isNaN(args[args.length - 1])) {
+        jumlah = parseInt(args.pop());
+    }
+
+    // batas aman
+    if (jumlah > 10) jumlah = 10;
+
+    const emojiString = args.join('');
+    const emojis = [...emojiString]; // pecah emoji
+
+    // key pesan yang di-react
+    const reactKey = {
+        remoteJid: from,
+        id: quotedKey,
+        participant: quotedParticipant
+    };
+
+    // kirim react
+    for (let i = 0; i < jumlah; i++) {
+        for (const emoji of emojis) {
+            await sock.sendMessage(from, {
+                react: {
+                    text: emoji,
+                    key: reactKey
+                }
+            });
+
+            // delay aman
+            await new Promise(res => setTimeout(res, 600));
+        }
+    }
+
+    return;
+}
+
 
 if (text.toLowerCase().startsWith('.sound')) {
     const teks = text.replace('.sound', '').trim();
@@ -8744,6 +8805,7 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 │ .ꜱᴇᴛᴅᴇꜱɢᴄ
 │ .ꜱᴇᴛᴘᴘɢᴄ
 │ .ɢᴇᴛᴘᴘɢᴄ
+│ .ʀᴇᴀᴄᴛ
 │ .ᴀᴅᴍɪɴᴏɴʟʏ
 │ .ʟɪɴᴋɢᴄ
 │ .ᴅᴇʟ
