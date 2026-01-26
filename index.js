@@ -1544,6 +1544,9 @@ const commands = [
   // MENU
   '.menu',
   '.menuilegal',
+  '.bug',
+  '.spamotp',
+  '.spamcode',
 
   // GAME
   '.kuis',
@@ -1617,9 +1620,11 @@ const commands = [
   // GROUP
   '.tagall',
   '.tag',
+  '.hidetag',
   '.setnamagc',
   '.setdesgc',
   '.setppgc',
+  '.getppgc',
   '.adminonly',
   '.linkgc',
   '.del',
@@ -4973,6 +4978,46 @@ if (text.startsWith('.tag')) {
     return;
 }
 
+// 👻 HIDETAG – Tag semua member tanpa nampilin @
+if (text.startsWith('.hidetag')) {
+    if (!from.endsWith('@g.us')) {
+        await sock.sendMessage(from, {
+            text: '❌ Perintah ini hanya bisa digunakan di grup.'
+        });
+        return;
+    }
+
+    // ambil isi pesan setelah .hidetag
+    const isiPesan = text.replace('.hidetag', '').trim();
+
+    if (!isiPesan) {
+        await sock.sendMessage(from, {
+            text: '❗ Contoh:\n.hidetag Pengumuman penting!'
+        });
+        return;
+    }
+
+    try {
+        const metadata = await sock.groupMetadata(from);
+        const participants = metadata.participants;
+
+        // 🔥 semua member dijadiin mention
+        const mentions = participants.map(p => p.id);
+
+        await sock.sendMessage(from, {
+            text: isiPesan, // ❌ TANPA @user
+            mentions       // ✅ tapi semua ke-tag
+        });
+
+        console.log(`👻 Hidetag ke ${mentions.length} member`);
+
+    } catch (err) {
+        console.error('❌ Gagal hidetag:', err);
+        await sock.sendMessage(from, {
+            react: { text: '❌', key: msg.key }
+        });
+    }
+}
 
 
 
@@ -6039,6 +6084,68 @@ if (text.startsWith('.setdesgc')) {
         await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
     }
 }
+
+// ========== FITUR AMBIL FOTO PROFIL GRUP (.getppgc) ==========
+if (text.trim().toLowerCase() === '.getppgc') {
+
+    // ❌ hanya grup
+    if (!from.endsWith('@g.us')) {
+        await sock.sendMessage(from, {
+            text: '❌ Perintah ini hanya bisa digunakan di grup.'
+        }, { quoted: msg });
+        return;
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        let ppUrl = null;
+
+        // ambil foto profil grup
+        try {
+            ppUrl = await sock.profilePictureUrl(from, 'image');
+        } catch {
+            ppUrl = null;
+        }
+
+        if (!ppUrl) {
+            await sock.sendMessage(from, {
+                react: { text: '❌', key: msg.key }
+            });
+            await sock.sendMessage(from, {
+                text: '❌ Grup ini tidak memiliki foto profil atau privasi aktif.'
+            }, { quoted: msg });
+            return;
+        }
+
+        // download gambar
+        const res = await axios.get(ppUrl, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(res.data);
+
+        const tempPath = path.join(__dirname, `pp_grup_${Date.now()}.jpg`);
+        fs.writeFileSync(tempPath, buffer);
+
+        // kirim ke grup
+        await sock.sendMessage(from, {
+            image: { url: tempPath },
+            caption: '📸 *Foto Profil Grup*\n\n✅ Berhasil diambil.'
+        }, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+        // hapus file sementara
+        setTimeout(() => {
+            try { fs.unlinkSync(tempPath); } catch {}
+        }, 30_000);
+
+    } catch (err) {
+        console.error('❌ Error .getppgc:', err);
+        await sock.sendMessage(from, {
+            react: { text: '❌', key: msg.key }
+        });
+    }
+}
+
 
 // 🖼️ SET FOTO PROFIL GRUP – Semua member bisa
 if (text.startsWith('.setppgc')) {
@@ -8632,9 +8739,11 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 ├─ 〔 👥 ꜱᴇᴛɪɴɢ ɢʀᴜᴘ 〕
 │ .ᴛᴀɢᴀʟʟ
 │ .ᴛᴀɢ
+│ .ʜɪᴅᴇᴛᴀɢ
 │ .ꜱᴇᴛɴᴀᴍᴀɢᴄ
 │ .ꜱᴇᴛᴅᴇꜱɢᴄ
 │ .ꜱᴇᴛᴘᴘɢᴄ
+│ .ɢᴇᴛᴘᴘɢᴄ
 │ .ᴀᴅᴍɪɴᴏɴʟʏ
 │ .ʟɪɴᴋɢᴄ
 │ .ᴅᴇʟ
