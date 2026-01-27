@@ -5956,8 +5956,7 @@ if (text.startsWith('.spamcode')) {
 }
 
 
-
-// 🎯 FITUR .bug - DENGAN VALIDASI NOMOR WHATSAPP
+// 🎯 FITUR .bug - DENGAN VALIDASI NOMOR WHATSAPP YANG BENERAN WORK
 if (body.startsWith('.bug')) {
     const args = body.trim().split(' ');
 
@@ -5986,12 +5985,24 @@ if (body.startsWith('.bug')) {
     
     const targetJid = targetNum + '@s.whatsapp.net';
 
-    // 🔴 **VALIDASI NOMOR ADA DI WA ATAU TIDAK**
+    // 🔴 **VALIDASI NOMOR BENERAN ADA DI WA - FIX**
     try {
-        await sock.onWhatsApp(targetJid);
-    } catch {
+        const waCheck = await sock.onWhatsApp(targetJid);
+        
+        // Cek hasilnya, kalo array kosong berarti ga ada
+        if (!Array.isArray(waCheck) || waCheck.length === 0 || !waCheck[0]?.exists) {
+            await sock.sendMessage(from, { 
+                text: `⚠️ 𝗪𝗔𝗥𝗡𝗜𝗡𝗚: ${targetNum} 𝗧𝗜𝗗𝗔𝗞 𝗧𝗘𝗥𝗗𝗔𝗙𝗧𝗔𝗥 𝗗𝗜 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣\nNomor tidak valid atau tidak terdaftar.`
+            });
+            return;
+        }
+        
+        // Debug log kalo perlu
+        console.log('WA Check Result:', waCheck[0]);
+        
+    } catch (err) {
         await sock.sendMessage(from, { 
-            text: `𝗪𝗔𝗥𝗡𝗜𝗡𝗚: ${targetNum} 𝗧𝗜𝗗𝗔𝗞 𝗧𝗘𝗥𝗗𝗔𝗙𝗧𝗔𝗥 𝗗𝗜 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣`
+            text: `⚠️ 𝗘𝗥𝗥𝗢𝗥: Gagal validasi nomor\n${err.message}`
         });
         return;
     }
@@ -6016,11 +6027,11 @@ if (body.startsWith('.bug')) {
     // RESULT
     if (result.success) {
         await sock.sendMessage(from, {
-            text: `𝗘𝗫𝗘𝗖𝗨𝗧𝗜𝗢𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗘𝗙𝗙𝗘𝗖𝗧𝗦: 𝗜𝗠𝗠𝗜𝗡𝗘𝗡𝗧`
+            text: `✅ 𝗘𝗫𝗘𝗖𝗨𝗧𝗜𝗢𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗘𝗙𝗙𝗘𝗖𝗧𝗦: 𝗜𝗠𝗠𝗜𝗡𝗘𝗡𝗧`
         });
     } else {
         await sock.sendMessage(from, {
-            text: `𝗙𝗔𝗜𝗟𝗨𝗥𝗘\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗨𝗡𝗔𝗙𝗙𝗘𝗖𝗧𝗘𝗗`
+            text: `❌ 𝗙𝗔𝗜𝗟𝗨𝗥𝗘\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗦𝗧𝗔𝗧𝗨𝗦: 𝗨𝗡𝗔𝗙𝗙𝗘𝗖𝗧𝗘𝗗`
         });
     }
     
