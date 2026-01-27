@@ -3424,7 +3424,7 @@ if (body.startsWith('.clearvip') && isGroup) {
 if (body.startsWith('.ban')) {
   const args = body.trim().split(/\s+/);
 
-  // 💬 MODE 1: Chat pribadi (Owner saja)
+  // 💬 MODEE 1: Chat pribadi (Owner saja)
   if (!isGroup && isOwner(sender)) {
     if (!args[1]) {
       await sock.sendMessage(from, { text: '❌ Format salah!\nGunakan: *.ban 62xxxx*' }, { quoted: msg });
