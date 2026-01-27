@@ -1360,8 +1360,7 @@ class RealOTPSpammer {
         }
     }
 
-    // 🚀 MAIN SPAM FUNCTION
-  // 🚀 MAIN SPAM FUNCTION
+   // 🚀 MAIN SPAM FUNCTION
 async startSpamOTP(targetPhone, count, chatId) {
     const jobId = Date.now().toString();
     
