@@ -1,6 +1,6 @@
-FROM node:20-slim
+FROM node:22-slim
 
-# Install dependency ringan (untuk build text-to-image, sharp, dsb)
+# Install dependency build ringan
 RUN apt-get update && apt-get install -y \
     libvips-dev build-essential python3 \
     && apt-get clean \
@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Paksa npm mengabaikan peer dependency conflict
-RUN npm install 
+RUN npm install
 
 COPY . .
 

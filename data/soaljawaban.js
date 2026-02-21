@@ -7038,8 +7038,1662 @@ const tebakgambar = [
   }
 ];
 
+const soalMotivasi = [
+  "Kesempatan itu mirip seperti matahari terbit. Kalau kau menunggu terlalu lama, kau bisa melewatkannya",
+  "Kegagalan dibuat hanya oleh mereka yang gagal untuk berani, bukan oleh mereka yang berani gagal",
+  "Disiplin adalah jembatan antara tujuan dan pencapaian",
+  "Lebih baik gagal dalam orisinalitas daripada berhasil meniru",
+  "Disiplin adalah jembatan antara tujuan dan pencapaian",
+  "Sukses tampaknya terkait dengan tindakan. Orang sukses terus bergerak. Mereka membuat kesalahan, tetapi mereka tidak berhenti",
+  "Keberanian adalah penolakan terhadap rasa takut, penguasaan rasa takut, bukan ketiadaan rasa takut",
+  "Sukses tampaknya terkait dengan tindakan. Orang sukses terus bergerak. Mereka membuat kesalahan, tetapi mereka tidak berhenti",
+  "Hidup kita mulai berakhir saat kita menjadi diam tentang hal-hal yang penting",
+  "Kesempatan itu mirip seperti matahari terbit. Kalau kau menunggu terlalu lama, kau bisa melewatkannya",
+  "Kegagalan dibuat hanya oleh mereka yang gagal untuk berani, bukan oleh mereka yang berani gagal",
+  "Lakukan apa yang harus kamu lakukan sampai kamu dapat melakukan apa yang ingin kamu lakukan",
+  "Keberanian adalah penolakan terhadap rasa takut, penguasaan rasa takut, bukan ketiadaan rasa takut",
+  "Kegagalan dibuat hanya oleh mereka yang gagal untuk berani, bukan oleh mereka yang berani gagal",
+  "Penghargaan paling tinggi bagi seorang pekerja keras bukanlah apa yang dia peroleh dari pekerjaan itu, tapi seberapa berkembang ia dengan kerja kerasnya itu",
+  "Jangan tunda pekerjaanmu sampai besok, sementara kau bisa mengerjakannya hari ini",
+  "Saya tidak bisa memberimu rumus untuk sukses, tapi saya bisa memberi rumus untuk gagal, yaitu: cobalah untuk menyenangkan semua orang",
+  "Sukses adalah tempat persiapan dan kesempatan bertemu",
+  "Disiplin adalah jembatan antara tujuan dan pencapaian",
+  "Tetapkan tujuan Anda tinggi-tinggi, dan jangan berhenti sampai Anda mencapainya",
+  "Hidup kita mulai berakhir saat kita menjadi diam tentang hal-hal yang penting",
+  "Tetapkan tujuan Anda tinggi-tinggi, dan jangan berhenti sampai Anda mencapainya",
+  "Daripada mengeluh tentang keadaanmu, sibuklah dan buat beberapa yang baru",
+  "Orang pesimis melihat kesulitan di setiap kesempatan. Orang yang optimis melihat peluang dalam setiap kesulitan",
+  "Sukses tampaknya terkait dengan tindakan. Orang sukses terus bergerak. Mereka membuat kesalahan, tetapi mereka tidak berhenti",
+  "Saya tidak bisa memberimu rumus untuk sukses, tapi saya bisa memberi rumus untuk gagal, yaitu: cobalah untuk menyenangkan semua orang",
+  "Tetapkan tujuan Anda tinggi-tinggi, dan jangan berhenti sampai Anda mencapainya",
+  "Hidup kita mulai berakhir saat kita menjadi diam tentang hal-hal yang penting",
+  "Jika rencananya tidak berhasil, ubah rencananya bukan tujuannya",
+  "Saya tidak bisa memberimu rumus untuk sukses, tapi saya bisa memberi rumus untuk gagal, yaitu: cobalah untuk menyenangkan semua orang",
+  "Daripada mengeluh tentang keadaanmu, sibuklah dan buat beberapa yang baru",
+  "Pengalaman adalah guru yang berat karena dia memberikan tes terlebih dahulu, kemudian pelajarannya",
+  "Cara terbaik untuk memulai adalah dengan berhenti berbicara dan mulai melakukan",
+  "Jenius adalah satu persen inspirasi dan sembilan puluh sembilan persen keringat",
+  "Jangan biarkan kemarin menyita terlalu banyak hari ini",
+  "Penghargaan paling tinggi bagi seorang pekerja keras bukanlah apa yang dia peroleh dari pekerjaan itu, tapi seberapa berkembang ia dengan kerja kerasnya itu",
+  "Tetapkan tujuan Anda tinggi-tinggi, dan jangan berhenti sampai Anda mencapainya",
+  "Jika saya punya waktu enam jam untuk menebang pohon, saya akan menghabiskan empat jam pertama mengasah kapak",
+  "Jangan tunda pekerjaanmu sampai besok, sementara kau bisa mengerjakannya hari ini",
+  "Waktu lebih berharga daripada uang. Kamu bisa mendapatkan lebih banyak uang, tetapi kamu tidak bisa mendapatkan lebih banyak waktu",
+  "Jenius adalah satu persen inspirasi dan sembilan puluh sembilan persen keringat",
+  "Lakukan apa yang harus kamu lakukan sampai kamu dapat melakukan apa yang ingin kamu lakukan",
+  "Kegagalan tidak akan pernah menyusul jika tekad untuk sukses cukup kuat",
+  "Optimistis adalah salah satu kualitas yang lebih terkait dengan kesuksesan dan kebahagiaan daripada yang lain",
+  "Tidak ada kata terlambat untuk menjadi dirimu yang seharusnya",
+  "Kesempatan itu mirip seperti matahari terbit. Kalau kau menunggu terlalu lama, kau bisa melewatkannya",
+  "Daripada mengeluh tentang keadaanmu, sibuklah dan buat beberapa yang baru",
+  "Pengalaman adalah guru yang berat karena dia memberikan tes terlebih dahulu, kemudian pelajarannya",
+  "Orang pesimis melihat kesulitan di setiap kesempatan. Orang yang optimis melihat peluang dalam setiap kesulitan",
+  "Berani bermimpi, tapi yang lebih penting, berani melakukan tindakan di balik impianmu",
+  "Jika rencananya tidak berhasil, ubah rencananya bukan tujuannya",
+  "Ketekunan gagal 19 kali dan berhasil pada kesempatam yang ke-20",
+  "Waktu lebih berharga daripada uang. Kamu bisa mendapatkan lebih banyak uang, tetapi kamu tidak bisa mendapatkan lebih banyak waktu",
+  "Cara terbaik untuk memulai adalah dengan berhenti berbicara dan mulai melakukan",
+  "Jangan tunda pekerjaanmu sampai besok, sementara kau bisa mengerjakannya hari ini",
+  "Tetapkan tujuan Anda tinggi-tinggi, dan jangan berhenti sampai Anda mencapainya",
+  "Lakukan lebih banyak untuk dunia daripada untuk dirimu"
 
+]
 
+const soalQuotes = [
+    {
+      "author": "A. France",
+      "quotes": "Lebih baik mengerti sedikit daripada salah mengerti."
+    },
+    {
+      "author": "Abraham Lincoln",
+      "quotes": "Hampir semua pria memang mampu bertahan menghadapi kesulitan. Namun, jika Anda ingin menguji karakter sejati pria, beri dia kekuasaan."
+    },
+    {
+      "author": "Aeschylus",
+      "quotes": "Bila tekad seseorang kuat dan teguh, Tuhan akan bergabung dalam usahanya."
+    },
+    {
+      "author": "Aesop",
+      "quotes": "Penderitaan adalah pelajaran."
+    },
+    {
+      "author": "Albert Einstein",
+      "quotes": "Ilmu pengetahuan tanpa agama adalah pincang."
+    },
+    {
+      "author": "Albert Einstein",
+      "quotes": "Hidup itu seperti sebuah sepeda, agar tetap seimbang kita harus tetap bergerak."
+    },
+    {
+      "author": "Albert Einstein",
+      "quotes": "Perbedaan masa lalu, sekarang, dan masa depan tak lebih dari ilusi yang keras kepala."
+    },
+    {
+      "author": "Albert Einstein",
+      "quotes": "Sebuah meja, sebuah kursi, semangkuk buah, dan sebuah biola; apa lagi yang dibutuhkan agar seseorang bisa merasa bahagia?."
+    },
+    {
+      "author": "Albert Enstein",
+      "quotes": "Belas kasihanlah terhadap sesama, bersikap keraslah terhadap diri sendiri."
+    },
+    {
+      "author": "Alex Osborn",
+      "quotes": "Cara paling baik untuk menggerakkan diri Anda ialah memberi tugas kepada diri sendiri."
+    },
+    {
+      "author": "Alexander A. Bogomoletz",
+      "quotes": "Kita tidak boleh kehilangan semangat. Semangat adalah stimulan terkuat untuk mencintai, berkreasi dan berkeinginan untuk hidup lebih lama."
+    },
+    {
+      "author": "Alexander Solzhenitsyn",
+      "quotes": "Manusia akan bahagia selama ia memilih untuk bahagia."
+    },
+    {
+      "author": "Ali Javan",
+      "quotes": "Saya tidak berharap menjadi segalanya bagi setiap orang. Saya hanya ingin menjadi sesuatu untuk seseorang."
+    },
+    {
+      "author": "Ali bin Abi Thalib",
+      "quotes": "Apabila sempurna akal seseorang, maka sedikit perkataannya."
+    },
+    {
+      "author": "Ali bin Abi Thalib",
+      "quotes": "Bahagialah orang yang dapat menjadi tuan untuk dirinya, menjadi kusir untuk nafsunya dan menjadi kapten untuk bahtera hidupnya."
+    },
+    {
+      "author": "Ali bin Abi Thalib",
+      "quotes": "Sahabat yang jujur lebih besar harganya daripada harta benda yang diwarisi dari nenek moyang."
+    },
+    {
+      "author": "Anne M. Lindbergh",
+      "quotes": "Yang palin melelahkan dalam hidup adalah menjadi orang yang tidak tulus."
+    },
+    {
+      "author": "Anonim",
+      "quotes": "Terbuka untuk Anda, begitulah Tuhan memberi kita jalan untuk berusaha. Jangan pernah berfikir jalan sudah tertutup."
+    },
+    {
+      "author": "Anonim",
+      "quotes": "Penundaan adalah kuburan dimana peluang dikuburkan."
+    },
+    {
+      "author": "Antonie De Saint",
+      "quotes": "Cinta bukan saling menatap mata, namun melihat ke arah yang sama bersama-sama."
+    },
+    {
+      "author": "Aristoteles",
+      "quotes": "Kita adalah apa yang kita kerjakan berulang kali. Dengan demikian, kecemerlangan bukan tindakan, tetapi kebiasaan."
+    },
+    {
+      "author": "Arnold Glasow",
+      "quotes": "Jangan pernah mencoba menjadikan putra atau putri Anda menjadi seperti Anda. Diri Anda hanya cukup satu saja."
+    },
+    {
+      "author": "Art Buchwald",
+      "quotes": "Jika Anda bisa membuat orang lain tertawa, maka Anda akan mendapatkan semua cinta yang Anda inginkan."
+    },
+    {
+      "author": "Artemus Ward",
+      "quotes": "Masalah akan datang cepat atau lambat. Jika masalah datang, sambut dengan sebaik mungkin. Semakin ramah Anda menyapanya, semakin cepat ia pergi."
+    },
+    {
+      "author": "Ashleigh Brilliant",
+      "quotes": "Kita tak bisa melakukan apapun untuk mengubah masa lalu. Tapi apapun yang kita lakukan bisa mengubah masa depan."
+    },
+    {
+      "author": "Augustine",
+      "quotes": "Kesabaran adalah teman dari kebijaksanaan."
+    },
+    {
+      "author": "Ayn Rand",
+      "quotes": "Orang-orang kreatif termotivasi oleh keinginan untuk maju, bukan oleh keinginan untuk mengalahkan orang lain."
+    },
+    {
+      "author": "B. J. Habibie",
+      "quotes": "Dimanapun engkau berada selalulah menjadi yang terbaik dan berikan yang terbaik dari yang bisa kita berikan."
+    },
+    {
+      "author": "Balzac",
+      "quotes": "Kebencian seperti halnya cinta, berkobar karena hal-hal kecil."
+    },
+    {
+      "author": "Barbara Sher",
+      "quotes": "Anda tidak perlu harus berhasil pada kali pertama."
+    },
+    {
+      "author": "Beecher",
+      "quotes": "Satu jam yang intensif, jauh lebih baik dan menguntungkan daripada bertahun-tahun bermimpi dan merenung-renung."
+    },
+    {
+      "author": "Benjamin Disraeli",
+      "quotes": "Hal terbaik yang bisa Anda lakukan untuk orang lain bukanlah membagikan kekayaan Anda, tetapi membantu dia untuk memiliki kekayaannya sendiri."
+    },
+    {
+      "author": "Bill Clinton",
+      "quotes": "Tidak ada jaminan keberhasilan, tetapi tidak berusaha adalah jaminan kegagalan."
+    },
+    {
+      "author": "Bill Cosby",
+      "quotes": "Aku tidak tahu kunci sukses itu apa, tapi kunci menuju kegagalan adalah mencoba membuat semua orang senang."
+    },
+    {
+      "author": "Bill Gates",
+      "quotes": "Konsumen yang paling tidak puas adalah sumber berharga untuk belajar."
+    },
+    {
+      "author": "Bill Mccartney",
+      "quotes": "Kita ada disini bukan untuk saling bersaing. Kita ada disini untuk saling melengkapi."
+    },
+    {
+      "author": "Brian Koslow",
+      "quotes": "Semakin kita bersedia bertanggung jawab atas perbuatan-perbuatan kita, semakin banyak kredibilitas yang kita miliki."
+    },
+    {
+      "author": "Browning",
+      "quotes": "Selalu baik untuk memaafkan, tapi yang paling baik adalah melupakan sebuah kesalahan."
+    },
+    {
+      "author": "Bruce Lee",
+      "quotes": "Jangan menjadi pohon kaku yang mudah patah. Jadilah bambu yang mampu bertahan melengkung melawan terpaan angin."
+    },
+    {
+      "author": "Budha Gautama",
+      "quotes": "Jangan menangis karena kegagalan cinta, sebab manusia akan meninggalkan semua yang dicintainya."
+    },
+    {
+      "author": "Bunda Teresa",
+      "quotes": "Jika Anda mengadili orang lain, Anda tak punya waktu untuk mencintai mereka."
+    },
+    {
+      "author": "Bunda Teresa",
+      "quotes": "Jika tidak ada perdamaian, hal itu disebabkan kita telah lupa bahwa kita saling membutuhkan."
+    },
+    {
+      "author": "Bung Hatta",
+      "quotes": "Kurang cerdas dapat diperbaiki dengan belajar, kurang cekatan dapat diperbaiki dengan pengalaman, kurang jujur sulit memperbaikinya."
+    },
+    {
+      "author": "Burn",
+      "quotes": "Banyak orang sukses berkat banyaknya kesulitan dan kesukaran yang mesti dihadapi."
+    },
+    {
+      "author": "Carol Burnet",
+      "quotes": "Hanya aku yang bisa merubah hidupku, tak ada seorang pun yang dapat melakukannya untukku."
+    },
+    {
+      "author": "Charles Darwin",
+      "quotes": "Yang bisa bertahan hidup bukan spesies yang paling kuat. Bukan juga spesies yang paling cerdas. Tapi spesies yang paling responsif terhadap perubahan."
+    },
+    {
+      "author": "Charles R. Swindoll",
+      "quotes": "Hidup adalah 10 persen yang terjadi kepada Anda, 90 persen bagaimana cara Anda menyikapinya."
+    },
+    {
+      "author": "Ching Hai",
+      "quotes": "Memperbaiki diri kita adalah memperbaiki dunia."
+    },
+    {
+      "author": "Ching Hai",
+      "quotes": "Jangan membeda-bedakan pekerjaan mana yang baik dan mana yang buruk. Masalah muncul jika kita membeda-bedakan dan memihak sesuatu."
+    },
+    {
+      "author": "Ching Hai",
+      "quotes": "Kita bekerja harus tanpa pamrih. Itu berlaku untuk segala pekerjaan. Pengabdian tanpa syarat adalah yang terbaik."
+    },
+    {
+      "author": "Ching Hai",
+      "quotes": "Kita harus menemukan kekuatan cinta dalam diri kita terlebih dahulu, barulah kita dapat benar-benar mencintai orang lain."
+    },
+    {
+      "author": "Ching Hai",
+      "quotes": "Carilah uang secukupnya saja untuk membiayai kehidupan, agar dapat menyisihkan waktu dan tenaga untuk melatih spiritual."
+    },
+    {
+      "author": "Christopher Colombus",
+      "quotes": "Harta benda tak membuat seseorang menjadi kaya raya, mereka hanya membuatnya lebih sibuk."
+    },
+    {
+      "author": "Cicero",
+      "quotes": "Hati yang penuh syukur, bukan saja merupakan kebajikan terbesar, melainkan induk dari segala kebajikan yang lain."
+    },
+    {
+      "author": "Cicero",
+      "quotes": "Hati yang penuh syukur, bukan saja merupakan kebajikan terbesar, melainkan juga induk dari segala kebajikan yang lain."
+    },
+    {
+      "author": "Clarence Darrow",
+      "quotes": "Kebebasan itu berasal dari manusia, tidak dari undang-undang atau institusi."
+    },
+    {
+      "author": "Confucius",
+      "quotes": "Hidup ini benar-benar sederhana, tapi kita malah bersikeras membuatnya menjadi rumit."
+    },
+    {
+      "author": "Confucius",
+      "quotes": "Kemana pun Anda pergi, pergilah dengan sepenuh hati."
+    },
+    {
+      "author": "Confucius",
+      "quotes": "Orang yang melakukan kesalahan dan tidak memperbaiki kesalahannya, melalakukan kesalahan yang lainnya."
+    },
+    {
+      "author": "Confucius",
+      "quotes": "Kebanggaan kita yang terbesar bukan karena tidak pernah gagal, tetapi bangkit kembali setiap kita jatuh."
+    },
+    {
+      "author": "Cowper",
+      "quotes": "Bunga yang tidak akan pernah layu dibumi adalah kebajikan."
+    },
+    {
+      "author": "Cynthia Ozick",
+      "quotes": "Untuk membayangkan hal yang tak dapat dibayangkan, dibutuhkan imajinasi yang luar biasa."
+    },
+    {
+      "author": "D. J. Schwartz",
+      "quotes": "Kesulitan apapun tidak tahan terhadap keuletan dan ketekunan. Tanpa keuletan, orang yang paling pintar dan paling berbakat sering gagal dalam hidupnya."
+    },
+    {
+      "author": "Dale Carnegie",
+      "quotes": "Satu-satunya cara agar kita memperoleh kasih sayang, adalah jangan menuntut agar kita dicintai, tetapi mulailah memberi kasih sayang kepada orang lain tanpa mengharapkan balasan."
+    },
+    {
+      "author": "Dale Carnegie",
+      "quotes": "Bila orang yang kuatir akan kekurangannya mau mensyukuri kekayaan yang mereka miliki, mereka akan berhenti kuatir."
+    },
+    {
+      "author": "Dale Carnegie",
+      "quotes": "Usahakan membentuk suatu hubungan \"kawat\" antara otak dan hati Anda."
+    },
+    {
+      "author": "Dale Carnegie",
+      "quotes": "Senyuman akan membuat kaya jiwa seseorang yang menerimanya, tanpa membuat miskin seseorang yang memberikannya."
+    },
+    {
+      "author": "Dale Carnegie",
+      "quotes": "Orang jarang sukses kecuali jika mereka senang dengan apa yang dikerjakannya."
+    },
+    {
+      "author": "David Livingston",
+      "quotes": "Saya akan pergi kemanapun selama itu arahnya ke depan."
+    },
+    {
+      "author": "David V. Ambrose",
+      "quotes": "Jika Anda punya kemauan untuk menang, Anda sudah mencapai separuh sukses. Jika Anda tidak punya kemauan untuk menang, Anda sudah mencapai separuh kegagalan."
+    },
+    {
+      "author": "David Weinbaum",
+      "quotes": "Rahasia menuju hidup kaya adalah mempunyai lebih banyak awal ketimbang akhir."
+    },
+    {
+      "author": "Desbarolles",
+      "quotes": "Kebenaran yang tidak dimengerti akan menjadi kesalahan."
+    },
+    {
+      "author": "Descrates",
+      "quotes": "Saya berpikir, karena itu saya ada."
+    },
+    {
+      "author": "Djamaludin Abassy",
+      "quotes": "Mental yang lemah lebih parah dari fisik yang lemah."
+    },
+    {
+      "author": "Donald Kendall",
+      "quotes": "Satu-satunya sukses yang diraih sebelum bekerja hanyalah ada di kamus saja."
+    },
+    {
+      "author": "Dr. Frank Crane",
+      "quotes": "Sahabat terbaik dan musuh terburuk kita adalah pikiran-pikiran kita. Pikiran dapat lebih baik dari seorang dokter atau seorang bankir atau seorang teman kepercayaan. Juga dapat lebih berbahaya dadi penjahat."
+    },
+    {
+      "author": "Dr. Ronald Niednagel",
+      "quotes": "Pergilah sejauh Anda bisa memandang, dan ketika Anda tiba disana, Anda akan memandang lebih jauh."
+    },
+    {
+      "author": "Dr.\u00a0Johnnetta Cole",
+      "quotes": "Jika kamu ingin pergi cepat, pergilah sendiri. Jika kamu ingin pergi jauh, pergilah bersama-sama."
+    },
+    {
+      "author": "Dwigt D. Esenhower",
+      "quotes": "Seorang intelektual tidak akan pernah mengatakan lebih daripada apa yang diketahuinya."
+    },
+    {
+      "author": "Earl Campbell",
+      "quotes": "Persoalan-persoalan adalah harga yang Anda bayar untuk kemajuan."
+    },
+    {
+      "author": "Earl Campbell",
+      "quotes": "Persoalan-persoalan adalah harga yang harus Anda bayar untuk kemajuan."
+    },
+    {
+      "author": "Edgar Alnsel",
+      "quotes": "Hidup manusia penuh dengan bahaya, tetapi disitulah letak daya tariknya."
+    },
+    {
+      "author": "Edmund Burke",
+      "quotes": "Anda tidak dapat merencanakan masa yang akan datang berdasarkan masa lalu."
+    },
+    {
+      "author": "Edward L. Curtis",
+      "quotes": "Optimisme yang tidak disertai dengan usaha hanya merupakan pemikiran semata yang tidak menghasilkan buah."
+    },
+    {
+      "author": "Edward de Bono",
+      "quotes": "Jika Anda termasuk orang yang senang menunggu datangnya peluang, Anda adalah bagian dari manusia pada umumnya."
+    },
+    {
+      "author": "Edy Murphy",
+      "quotes": "Aku menghabiskan usia 30-an untuk memperbaiki segala kesalahanku di usia 20-an."
+    },
+    {
+      "author": "Einstein",
+      "quotes": "Berusaha untuk tidak menjadi manusia yang berhasil tapi berusahalah menjadi manusia yang berguna."
+    },
+    {
+      "author": "Eisenhower",
+      "quotes": "Mulai sekarang kita tidak usah membuang-buang waktu barang semenit pun untuk memikirkan orang-orang yang tidak kita sukai."
+    },
+    {
+      "author": "Elanor Roosevelt",
+      "quotes": "Ketika kita berhenti membuat kontribusi, kita mulai mati."
+    },
+    {
+      "author": "Elbert Hubbad",
+      "quotes": "Kesalahan terbesar yang dibuat manusia dalam kehidupannya adalah terus-menerus merasa takut bahwa mereka akan melakukan kesalahan."
+    },
+    {
+      "author": "Elizabeth Browning",
+      "quotes": "Janganlah menyebut orang tidak bahagia sebelum dia mati. Jangan menilai pekerjaan seseorang sebelum pekerjaannya berakhir."
+    },
+    {
+      "author": "Emerson",
+      "quotes": "Percaya pada diri sendiri adalah rahasia utama mencapai sukses."
+    },
+    {
+      "author": "Engelbert Huperdinck",
+      "quotes": "Anda harus waspada dengan kesenangan. Pastikan bahwa Anda menikmatinya dan bukan dikendalikannya."
+    },
+    {
+      "author": "Erich Watson",
+      "quotes": "Kehilangan kekayaan masih dapat dicari kembali, kehilangan kepercayaan sulit didapatkan kembali."
+    },
+    {
+      "author": "Francois De La Roche",
+      "quotes": "Bila tidak mampu menemukan kedamaian dalam diri sendiri, tak ada gunanya mencari di tempat lain."
+    },
+    {
+      "author": "Francois De La Roche",
+      "quotes": "Kita terbiasa menyembunyikan diri dari orang lain, sampai akhirnya kita sendiri tersembunyi dari diri kita."
+    },
+    {
+      "author": "Francois Roche",
+      "quotes": "Kita lebih sibuk menyakinkan orang lain bahwa kita bahagia ketimbang benar-benar merasakan bahagia itu sendiri."
+    },
+    {
+      "author": "Frank Crane",
+      "quotes": "Anda mungkin ditipu jika terlalu mempercayai, tetapi hidup Anda akan tersiksa jika tidak cukup mempercayai."
+    },
+    {
+      "author": "Frank Giblin",
+      "quotes": "Jadilah diri Anda sendiri. Siapa lagi yang bisa melakukannya lebih baik ketimbang diri Anda sendiri?."
+    },
+    {
+      "author": "Franklin",
+      "quotes": "Bila Anda ingin dicintai, cintailah dan bersikaplah sebagai orang yang patut dicintai."
+    },
+    {
+      "author": "Fuller",
+      "quotes": "Contoh yang baik adalah nasihat terbaik."
+    },
+    {
+      "author": "Galileo Galilei",
+      "quotes": "Rumput yang paling kuat tumbuhnya terdapat di atas tanah yang paling keras."
+    },
+    {
+      "author": "Galileo Galilei",
+      "quotes": "Kamu tidak dapat mengajari seseorang apa pun, kamu hanya bisa membantunyanya menemukan apa yang ada dalam dirinya sendiri."
+    },
+    {
+      "author": "Gandhi",
+      "quotes": "Mereka yang berjiwa lemah tak akan mampu memberi seuntai maaf tulus. Pemaaf sejati hanya melekat bagi mereka yang berjiwa tangguh."
+    },
+    {
+      "author": "Gandhi",
+      "quotes": "Kebahagiaan tergantung pada apa yang dapat Anda berikan, bukan pada apa yang Anda peroleh."
+    },
+    {
+      "author": "Gen Collin Powel",
+      "quotes": "Tak ada rahasia untuk menggapai sukses. Sukses itu dapat terjadi karena persiapan, kerja keras dan mau belajar dari kegagalan."
+    },
+    {
+      "author": "George B. Shaw",
+      "quotes": "Hidup bukanlah tentang menemukan dirimu sendiri. Hidup adalah tentang menciptakan dirimu sendiri."
+    },
+    {
+      "author": "George III",
+      "quotes": "Saya lebih baik kehilangan mahkota daripada melakukan tindakan yang menurut saya memalukan."
+    },
+    {
+      "author": "George Santayana",
+      "quotes": "Tidak ada obat untuk kelahiran dan kematian, kecuali menikmati yang ada di antara keduanya."
+    },
+    {
+      "author": "George W.",
+      "quotes": "Harapan tak pernah meninggalkan kita, kita yang meninggalkan harapan."
+    },
+    {
+      "author": "Gilbert Chesterton",
+      "quotes": "Agar bisa menjadi cukup cerdas untuk meraih semua uang yang diinginkan, kita harus cukup bodoh untuk menginginkannya."
+    },
+    {
+      "author": "Gothe",
+      "quotes": "Semua pengetahuan yang kumiliki bisa orang lain peroleh, tapi hatiku hanyalah untuk diriku sendiri."
+    },
+    {
+      "author": "H. N. Spieghel",
+      "quotes": "Betapapun tingginya burung terbang, toh dia harus mencari dan mendapatkan makanannya di bumi juga."
+    },
+    {
+      "author": "H.L Hunt",
+      "quotes": "Tetapkan apa yang Anda inginkan. Putuskan Anda ingin menukarnya dengan apa. Tentukan prioritas dan laksanakan."
+    },
+    {
+      "author": "Hal Borland",
+      "quotes": "Melihat pohon, saya jadi mengerti tentang kesabaran. Memandang rumput, saya jadi menghargai ketekunan."
+    },
+    {
+      "author": "Hamka",
+      "quotes": "Kecantikan yang abadi terletak pada keelokan adab dan ketinggian ilmu seseorang, bukan terletak pada wajah dan pakaiannya."
+    },
+    {
+      "author": "Hamka",
+      "quotes": "Kita harus yakin bahwa apa yang ditentukan oleh Tuhan untuk kita, itulah yang terbaik."
+    },
+    {
+      "author": "Hamka",
+      "quotes": "Berani menegakkan keadilan, walaupun mengenai diri sendiri, adalah puncak segala keberanian."
+    },
+    {
+      "author": "Hamka",
+      "quotes": "Hawa nafsu membawa kesesatan dan tidak berpedoman. Sementara akal menjadi pedoman menuju keutamaan. Hawa nafsu menyuruhmu berangan-angan, tetapi akal menyuruhmu menimbang."
+    },
+    {
+      "author": "Harriet Braiker",
+      "quotes": "Berusaha berhasil untuk memotivasi dirimu, tapi berusaha untuk selalu sempurna akan membuat tertekan."
+    },
+    {
+      "author": "Helen Keller",
+      "quotes": "Kita tidak akan belajar berani dan sabar jika di dunia ini hanya ada kegembiraan."
+    },
+    {
+      "author": "Henri Ford",
+      "quotes": "Kegagalan hanyalah kesempatan untuk memulai lagi dengan lebih pandai."
+    },
+    {
+      "author": "Henry David Thoreau",
+      "quotes": "Kebaikan adalah satu-satunya investasi yang tidak akan merugikan."
+    },
+    {
+      "author": "Henry Ford",
+      "quotes": "Idealis adalah orang yang membantu orang lain untuk makmur."
+    },
+    {
+      "author": "Henry Ford",
+      "quotes": "Berpikir itu adalah pekerjaan yang berat di antara segala jenis pekerjaan. Itulah sebabnya sedikit sekali orang yang senang melakukannya."
+    },
+    {
+      "author": "Henry Ford",
+      "quotes": "Persaingan yang tujuannya hanya untuk bersaing, untuk mengalahkan orang lain, tak pernah mendatangkan banyak manfaat."
+    },
+    {
+      "author": "Henry Longfellow",
+      "quotes": "Kehidupan orang-orang besar mengingatkan kita bahwa kita bisa membuat kehidupan kita luhur."
+    },
+    {
+      "author": "Henry Thoreau",
+      "quotes": "Hidupku menjadi hiburanku dan tak hentinya memberikan kejutan. Hidupku bagaikan drama dengan begitu banyak babak tanpa adegan penutup."
+    },
+    {
+      "author": "Hubert Humprey",
+      "quotes": "Apa yang Anda lihat adalah apa yang Anda capai."
+    },
+    {
+      "author": "Imam Al-Ghazali",
+      "quotes": "Kebahagiaan terletak pada kemenangan memerangi hawa nafsu dan menahan keinginan yang berlebih-lebihan."
+    },
+    {
+      "author": "Imam Ghazali",
+      "quotes": "Caci maki dari seorang penjahat merupakan kehormatan bagi seorang yang jujur."
+    },
+    {
+      "author": "J.C.F von Schiller",
+      "quotes": "Orang yang terlalu banyak merenung akan meraih sedikit."
+    },
+    {
+      "author": "Jack Hyles",
+      "quotes": "Jangan gunakan orang-orang untuk membangun pekerjaan besar, gunakan pekerjaan Anda untuk membangun orang-orang besar."
+    },
+    {
+      "author": "Jackson Brown",
+      "quotes": "Kesalahaan terbesar yang mungkin Anda buat adalah mempercayai bahwa Anda bekerja untuk orang lain."
+    },
+    {
+      "author": "Jacques Audiberti",
+      "quotes": "Kepengecutan yang paling besar adalah ketika kita membuktikan kekuatan kita kepada kelemanan orang lain."
+    },
+    {
+      "author": "James Thurber",
+      "quotes": "Jangan lihat masa lalu dengan penyesalan, jangan pula lihat masa depan dengan ketakutan, tapi lihatlah sekitar Anda dengan penuh kesadaran."
+    },
+    {
+      "author": "Janet Erskine",
+      "quotes": "Jangan menunggu keadaan yang ideal. Jangan juga menunggu peluang-peluang terbaik. Keduanya tak akan pernah datang."
+    },
+    {
+      "author": "Jeff Goins",
+      "quotes": "Kebanyakan orang sukses yang saya kenal bukan orang yang sibuk, mereka orang yang focus."
+    },
+    {
+      "author": "Jerry West",
+      "quotes": "Anda tidak dapat melakukan banyak hal di hidup Anda, jika Anda hanya bekerja di hari-hari yang Anda rasakan baik."
+    },
+    {
+      "author": "Jim Rohn",
+      "quotes": "Tembok yang kita bangun untuk menghambat kesedihan, juga membuat kita tertutup dari kebahagiaan."
+    },
+    {
+      "author": "Jim Rohn",
+      "quotes": "Jika Anda tidak merancang hidup Anda sendiri, kemungkinan Anda akan menjalani rencana orang lain. Apa yang mereka rencanakan untuk Anda? Tidak banyak."
+    },
+    {
+      "author": "Jim Ryan",
+      "quotes": "Motivasi adalah sesuatu yang membuat Anda memulai. Kebiasaan adalah sesuatu yang membuat Anda melanjutkan."
+    },
+    {
+      "author": "Jimi Hendrix",
+      "quotes": "Ketika kekuatan akan cinta melebihi kecintaan akan kekuasaan, maka dunia pun menemukan kedamaian."
+    },
+    {
+      "author": "Jimmy Dean",
+      "quotes": "Aku tak bisa merubah arah angin, tapi aku bisa menyesuaikan layarku untuk tetap bisa mencapai tujuanku."
+    },
+    {
+      "author": "Joan Baez",
+      "quotes": "Kita tak bisa memilih bagaimana kita meninggal atau kapan. Kita hanya bisa memutuskan bagaimana kita hidup. Sekarang."
+    },
+    {
+      "author": "John B. Gough",
+      "quotes": "Jika Anda ingin sukses, Anda harus menciptakan peluang untuk diri sendiri."
+    },
+    {
+      "author": "John C. Maxwell",
+      "quotes": "Bekerja keras sekarang, merasakan hasilnya nanti; bermalas-malasan sekarang, merasakan akibatnya nanti."
+    },
+    {
+      "author": "John C. Maxwell",
+      "quotes": "Untuk menangani diri Anda sendiri, gunakan kepala Anda. Untuk menangani orang lain, gunakan hati Anda."
+    },
+    {
+      "author": "John C. Maxwell",
+      "quotes": "Bekerja keras sekarang, merasakannya nanti. Bermalas-malas sekarang, merasakan akibatnya nanti."
+    },
+    {
+      "author": "John Craig",
+      "quotes": "Tidak peduli seberapa banyak yang dapat Anda lakukan, tidak peduli seberapa menarik hati kepribadian Anda, Anda tidak dapat melangkah jauh jika Anda tidak dapat bekerja bersama orang lain."
+    },
+    {
+      "author": "John D. Rockefeller",
+      "quotes": "Orang termiskin adalah orang yang tidak mempunyai apa-apa kecuali uang."
+    },
+    {
+      "author": "John Gardne",
+      "quotes": "Jika kita melayani, maka hidup akan lebih berarti."
+    },
+    {
+      "author": "John Gray",
+      "quotes": "Sebenarnya semua kesulitan merupakan kesempatan bagi jiwa yang tumbuh."
+    },
+    {
+      "author": "John Manson",
+      "quotes": "Anda dilahirkan orisinal, jadi tidak perlu setengah mati meniru orang lain."
+    },
+    {
+      "author": "John Maxwell",
+      "quotes": "Seberapa jauh Anda gagal, tidak masalah, tetapi yang penting seberapa sering Anda bangkit kembali."
+    },
+    {
+      "author": "John Q. Adams",
+      "quotes": "Jika tindakan-tindakan Anda mengilhami orang lain untuk bermimpi lebih, belajar lebih, bekerja lebih, dan menjadi lebih baik, Anda adalah seorang pemimpin."
+    },
+    {
+      "author": "John Ruskin",
+      "quotes": "Saya yakin, ujian pertama bagi orang besar ialah kerendahan hati."
+    },
+    {
+      "author": "John Ruskin",
+      "quotes": "Penghargaan tertinggi untuk kerja keras seseorang bukanlah apa yang ia hasilkan, tapi bagaimana ia berkembang karenanya."
+    },
+    {
+      "author": "John Ruskin",
+      "quotes": "Penghargaan tertinggi untuk kerja keras seseorang bukanlah apa yang ia hasilkan, tetapi bagaimana ia berkembang karenanya."
+    },
+    {
+      "author": "John Wolfgang",
+      "quotes": "Perbuatan-perbuatan salah adalah biasa bagi manusia, tetapi perbuatan pura-pura itulah sebenarnya yang menimbulkan permusuhan dan pengkhianatan."
+    },
+    {
+      "author": "Joseph Addison",
+      "quotes": "Rahmat sering datang kepada kita dalam bentuk kesakitan, kehilangan dan kekecewaan; tetapi kalau kita sabar, kita segera akan melihat bentuk aslinya."
+    },
+    {
+      "author": "Julia Roberts",
+      "quotes": "Cinta sejati tidak datang kepadamu, tetapi harus datang dari dalam dirimu."
+    },
+    {
+      "author": "Junius",
+      "quotes": "Integritas seseorang diukur dengan tingkah lakunya bukan profesinya."
+    },
+    {
+      "author": "Kahlil Gibran",
+      "quotes": "Kita berdoa kalau kesusahan dan membutuhkan sesuatu, mestinya kita juga berdoa dalam kegembiraan besar dan saat rezeki melimpah."
+    },
+    {
+      "author": "Kahlil Gibran",
+      "quotes": "Untuk memahami hati dan pikiran seseorang, jangan lihat apa yang sudah dia capai, tapi lihat apa yang dia cita-citakan."
+    },
+    {
+      "author": "Keri Russel",
+      "quotes": "Kadang kala, justru keputusan kecil yang akan mampu merubah hidup kita selamanya."
+    },
+    {
+      "author": "Knute Rockne",
+      "quotes": "Apabila perjalanan menjadi sulit, orang ulet akan berjalan terus."
+    },
+    {
+      "author": "Kong Hu Cu",
+      "quotes": "Orang yang berbudi tinggi selalu berpedoman pada keadilan dan selalu berusaha menjalankan kewajiban."
+    },
+    {
+      "author": "Konrad Adenauer",
+      "quotes": "Kita semua hidup di bawah langit yang sama, tetapi tidak semua orang punya cakrawala yang sama."
+    },
+    {
+      "author": "Kung Fu-Tze",
+      "quotes": "Ia yang bijak akan merasa malu, jika kata-katanya lebih baik daripada tindakannya."
+    },
+    {
+      "author": "Lao Tzu",
+      "quotes": "Saat sadar bahwa kau tidak kekurangan suatu apa pun, seisi dunia menjadi milikku."
+    },
+    {
+      "author": "Lao Tzu",
+      "quotes": "Saat sadar bahwa kau tidak kekurangan suatu apa pun, seisi dunia menjadi milikmu."
+    },
+    {
+      "author": "Les Brown",
+      "quotes": "Terima tanggung jawab untuk diri Anda sendiri. Sadari bahwa hanya Anda sendiri, bukan orang lain, yang bisa membuat Anda pergi ke tempat yang Anda inginkan."
+    },
+    {
+      "author": "Louis Gittner",
+      "quotes": "Meski yang kita hadapi adalah jalan buntu, namun cinta akan membangun jalan layang di atasnya."
+    },
+    {
+      "author": "Louis Pasteur",
+      "quotes": "Tahukah Anda rahasia sukses saya dalam mencapai tujuan? Cuma keuletan, tak lebih dan tak kurang."
+    },
+    {
+      "author": "Mahatma Gandhi",
+      "quotes": "Kepuasan terletak pada usaha, bukan pada hasil. Berusaha dengan keras adalah kemenangan yang hakiki."
+    },
+    {
+      "author": "Marcel Ayme",
+      "quotes": "Kerendahan hati merupakan ruang tunggu bagi kesempurnaan."
+    },
+    {
+      "author": "Maria Sharapova",
+      "quotes": "Saya belajar banyak dari kekalahan. Dan kekalahan-kekalahan itu, membuat saya semakin tabah."
+    },
+    {
+      "author": "Mark Cuban",
+      "quotes": "Buatlah usaha Anda berhasil dengan satu-satunya cara: kerja keras!."
+    },
+    {
+      "author": "Mark Twain",
+      "quotes": "Kebaikan adalah bahasa yang dapat didengar si tuli dan bisa dilihat si buta."
+    },
+    {
+      "author": "Marsha Sinetar",
+      "quotes": "Lakukan apa yang Anda senangi, uang akan mengikuti."
+    },
+    {
+      "author": "Martin Luther King",
+      "quotes": "Tak ada waktu yang tidak tepat untuk melakukan sesuatu yang benar."
+    },
+    {
+      "author": "Mary McCarthy",
+      "quotes": "Kendatipun Anda berada di jalur yang tepat, Anda akan tetap terkejar jika hanya duduk-duduk saja disana."
+    },
+    {
+      "author": "Maxim Gorky",
+      "quotes": "Kebahagiaan selalu tampak kecil saat berada dalam genggaman. Tapi coba lepaskan dan Anda akan langsung tahu, betapa besar dan berhargannya kebahagiaan."
+    },
+    {
+      "author": "Mery Hemingway",
+      "quotes": "Latih diri Anda untuk tidak khawatir. Kekhawatiran tak pernah memperbaiki apa-apa."
+    },
+    {
+      "author": "Michael Drury",
+      "quotes": "Kematangan bukanlah suatu keadaan yang dicapai dengan usia. Dia merupakan perkembangan dari cinta, belajar, membaca dan berpikir hingga menghasilkan kemampuan."
+    },
+    {
+      "author": "Michael Pritchard",
+      "quotes": "Anda berhenti tertawa bukan karena bertambah tua. Sebaliknya Anda bertambah tua justru karena berhenti tertawa."
+    },
+    {
+      "author": "Miguel de Cervantes",
+      "quotes": "Pepatah adalah kalimat singkat berdasarkan pengalaman panjang."
+    },
+    {
+      "author": "Miguel de Unamuno",
+      "quotes": "Tidak dicintai orang lain memang menyedihkan, tapi lebih menyedihkan lagi kalau tidak bisa mencintai orang lain."
+    },
+    {
+      "author": "N. H. Casson",
+      "quotes": "Kemiskinan jiwa lebih mengerikan daripada kemiskinan jasmani atau materi."
+    },
+    {
+      "author": "Natalie Portman",
+      "quotes": "Anda belum bisa dibilang kaya sampai Anda memiliki sesuatu yang tidak dapat dibeli uang."
+    },
+    {
+      "author": "Nelson Mandela",
+      "quotes": "Pendidikan adalah senjata paling ampuh dimana kau dapat menggunakannya untuk merubah dunia."
+    },
+    {
+      "author": "Norman Peale",
+      "quotes": "Campakanlah jauh-jauh pikiran murung dan kesal itu, lalu bangkitkanlah."
+    },
+    {
+      "author": "Nunse",
+      "quotes": "Bukanlah yang kuat, tetapi yang uletlah yang menjadikan mereka manusia yang besar."
+    },
+    {
+      "author": "O. S. Marden",
+      "quotes": "Kemajuan adalah hasil dari memusatkan seluruh kekuatan jiwa dan pikiran pada cita-cita yang dituju."
+    },
+    {
+      "author": "Oliver W. Holmes",
+      "quotes": "Semakin lama kita hidup, semakin kita menemukan bahwa kita mirip dengan orang lain."
+    },
+    {
+      "author": "Oprah Winfrey",
+      "quotes": "Melakukan yang terbaik pada saat ini akan menempatkan Anda ke tempat terbaik pada saat berikutnya."
+    },
+    {
+      "author": "Oscar Wilde",
+      "quotes": "Jika seseorang menyatakan kebenaran, dia yakin; cepat atau lambat; akan mendapatkannya."
+    },
+    {
+      "author": "Pablo Picasso",
+      "quotes": "Bila semangat Anda menurun, lakukanlah sesuatu. Kalau Anda telah melakukan sesuatu keadaan tidak berubah, lakukanlah sesuatu yang berbeda."
+    },
+    {
+      "author": "Paul Galvin",
+      "quotes": "Jangan takut dengan kesalahan. Kebijaksanaan biasanya lahir dari kesalahan."
+    },
+    {
+      "author": "Paul Harvey",
+      "quotes": "Saya tidak pernah melihat suatu monumen didirikan bagi orang pesimis."
+    },
+    {
+      "author": "Pepatah Cina",
+      "quotes": "Beranilah menyadari kesalahan dan mulai lagi."
+    },
+    {
+      "author": "Pepatah Cina",
+      "quotes": "Benar jadi berani."
+    },
+    {
+      "author": "Pepatah Cina",
+      "quotes": "Orang yang bertanya, bodoh dalam 5 menit. Dan orang yang tidak bertanya akan tetap bodoh untuk selamanya."
+    },
+    {
+      "author": "Pepatah Cina",
+      "quotes": "Bila saya mendengar, saya akan lupa. Setelah melihat saya bisa mengerti. Dan setelah mengerjakan, barulah saya bisa memahami."
+    },
+    {
+      "author": "Pepatah Cina",
+      "quotes": "Orang yang tersenyum selalu lebih kuat dari orang yang marah."
+    },
+    {
+      "author": "Pepatah Cina",
+      "quotes": "Orang yang memindahkan gunung memulai dengan memindahkan batu-batu kecil."
+    },
+    {
+      "author": "Pepatah Inggris",
+      "quotes": "Orang yang mencari masalah akan selalu mendapatkannya."
+    },
+    {
+      "author": "Pepatah Inggriss",
+      "quotes": "Keterampilan dan keyakinan merupakan pasukan bersenjata yang tidak dapat dikalahkan."
+    },
+    {
+      "author": "Pepatah Jepang",
+      "quotes": "Sebatang anak panah mudah dipatahkan, tetapi tidak demikian dengan sepuluh anak panah yang disatukan."
+    },
+    {
+      "author": "Pepatah Jepang",
+      "quotes": "Visi tanpa aksi adalah mimpi di siang bolong. Aksi tanpa visi adalah mimpi buruk."
+    },
+    {
+      "author": "Pepatah Jerman",
+      "quotes": "Orang yang tak pernah mencicipi pahit tak akan tahu apa itu manis."
+    },
+    {
+      "author": "Pepatah Latin",
+      "quotes": "Dengan belajar Anda bisa mengajar. Dengan mengajar, Anda belajar."
+    },
+    {
+      "author": "Pepatah Persia",
+      "quotes": "Saya menangis karena tak punya sepatu, sampai saya melihat orang tak punya kaki."
+    },
+    {
+      "author": "Pepatah Roma",
+      "quotes": "Kesengsaraan menghasilkan ketekunan. Ketekunan menghasilkan watak, dan watak menghasilkan harapan."
+    },
+    {
+      "author": "Pepatah Skotlandia",
+      "quotes": "Bila kemauan siap, kaki menjadi ringan."
+    },
+    {
+      "author": "Pepatah Spanyol",
+      "quotes": "Mengenal diri sendiri adalah awal dari perbaikan diri."
+    },
+    {
+      "author": "Pepatah Tibet",
+      "quotes": "Jangan meremehkan raja yang picik, seperti halnya jangan meremehkan sungai yang kecil."
+    },
+    {
+      "author": "Pepatah Tibet",
+      "quotes": "Apabila seseorang mengajarkan sesuatu, dia sendiri harus melaksanakan ajaran itu."
+    },
+    {
+      "author": "Peter Sinclair",
+      "quotes": "Kehidupan yang hebat adalah kulminasi dari pemikiran-pemikiran hebat disertai dengan tindakan-tindakan hebat."
+    },
+    {
+      "author": "Phyllis Bottome",
+      "quotes": "Ada dua cara mengatasi kesulitan, Anda mengubah kesulitan-kesulitan atau Anda mengubah diri sendiri untuk mengatasinya."
+    },
+    {
+      "author": "Plato",
+      "quotes": "Orang bijak berbicara karena mereka mempunyai sesuatu untuk dikatakan, orang bodoh berbicara karena mereka ingin mengatakan sesuatu."
+    },
+    {
+      "author": "Plato",
+      "quotes": "Orang bijak berbicara karena ia memiliki sesuatu untuk dikatakan. Orang bodoh berbicara karena ia atau dia harus mengatakan sesuatu."
+    },
+    {
+      "author": "Plato",
+      "quotes": "Berbuat tidak adil lebih memalukan daripada menderita ketidakadilan."
+    },
+    {
+      "author": "Plato",
+      "quotes": "Siapa yang tidak bisa memimpin dirinya sendiri, tidak akan bisa memimpin orang."
+    },
+    {
+      "author": "Plautus",
+      "quotes": "Kesabaran adalah obat terbaik untuk semua masalah."
+    },
+    {
+      "author": "Plautus",
+      "quotes": "Jauh lebih mudah memulai secara baik daripada mengakhiri secara baik."
+    },
+    {
+      "author": "Pliny The Elder",
+      "quotes": "Harapan adalah tiang yang menyangga dunia."
+    },
+    {
+      "author": "R. A. Kartini",
+      "quotes": "Kemenangan gemilang tidak diperoleh dari medan pertempuran saja, tetapi sering diperoleh dari hati."
+    },
+    {
+      "author": "R. Browning",
+      "quotes": "kita jatuh untuk bangun, berhenti untuk berjalan, dan tidur untuk bangun."
+    },
+    {
+      "author": "R. W. Shephred",
+      "quotes": "Kamu harus menghadapi depresi, sama seperti kamu menghadapi seekor harimau."
+    },
+    {
+      "author": "R.H. Grant",
+      "quotes": "Jika Anda mempekerjakan orang-orang yang lebih pintar dari Anda, Anda membuktikan Anda lebih pintar dari mereka."
+    },
+    {
+      "author": "Rabbi Schachtel",
+      "quotes": "Kebahagiaan bukanlah memiliki apa yang kita inginkan, melainkan menginginkan apa yang kita miliki."
+    },
+    {
+      "author": "Ralph W. Emerson",
+      "quotes": "Satu ons aksi jauh lebih berharga daripada satu ton teori."
+    },
+    {
+      "author": "Ralph W. Emerson",
+      "quotes": "Seseorang itu sukses besar jika dia sadar, kegagalan-kegagalannya adalah persiapan untuk kemenangan-kemenangannya."
+    },
+    {
+      "author": "Ralph Waldo Emerson",
+      "quotes": "Kedamaian tidak terdapat di dunia luar, melainkan terdapat dalam jiwa manusia itu sendiri."
+    },
+    {
+      "author": "Ralph Waldo Emerson",
+      "quotes": "Percayalah kepada orang lain, dan mereka akan tulus kepada Anda. Perlakukan mereka seperti orang besar dan mereka akan memperlihatkan dirinya sebagai orang besar."
+    },
+    {
+      "author": "Rene Descartes",
+      "quotes": "Tidak cukup hanya punya otak yang baik. Yang penting adalah menggunakannya secara baik."
+    },
+    {
+      "author": "Richard Bach",
+      "quotes": "Tanyakan pada diri sendiri rahasia sukses. Dengarkan jawaban Anda, dan lakukan."
+    },
+    {
+      "author": "Richard C. Miller",
+      "quotes": "Jika rumput tetangga lebih hijau, bersyukurlah Anda masih bisa berpijak di tanah untuk melihatnya."
+    },
+    {
+      "author": "Robert Collier",
+      "quotes": "Kesempatan Anda untuk sukses di setiap kondisi selalu dapat diukur oleh seberapa besar kepercayaan Anda pada diri sendiri."
+    },
+    {
+      "author": "Robert F. Kennedy",
+      "quotes": "Kemajuan merupakan kata-kata merdu, tetapi perubahanlah penggerakknya dan perubahan mempunyai banyak musuh."
+    },
+    {
+      "author": "Robert Frost",
+      "quotes": "Dua jalan dipisahkan pohon, dan saya mengambil jalan yang jarang ditempuh orang. Dan itulah yang membuat perubahan."
+    },
+    {
+      "author": "Robert Frost",
+      "quotes": "Alasan mengapa kecemasan membunuh lebih banyak orang dibanding kerja adalah, lebih banyak orang cemas dibanding bekerja."
+    },
+    {
+      "author": "Robert G. Ingersoll",
+      "quotes": "Sedikit orang kaya yang memiliki harta. Kebanyakan harta yang memiliki mereka."
+    },
+    {
+      "author": "Robert Half",
+      "quotes": "Ketekunan bisa membuat yang tidak mungkin jadi mungkin, membuat kemungkinan jadi kemungkinan besar, dan kemungkinan besar menjadi pasti."
+    },
+    {
+      "author": "Robert S. Lynd",
+      "quotes": "Hanya ikan yang bodoh yang bisa dua kali kena pancing dengan umpan yang sama."
+    },
+    {
+      "author": "Robert Von Hartman",
+      "quotes": "Ambisi seperti air laut, semakin banyak orang meminumnya semakin orang menjadi haus."
+    },
+    {
+      "author": "Robinsori",
+      "quotes": "Cemas dan ketakutan adalah akibat kebodohan dan keraguan."
+    },
+    {
+      "author": "Romand Rolland",
+      "quotes": "Pahlawan adalah seseorang yang melakukan apa yang mampu dia lakukan."
+    },
+    {
+      "author": "Roosevelt",
+      "quotes": "Jika Anda ingin menjadi orang besar, janganlah suka beromong besar, kerjakanlah hal-hal yang kecil dahulu."
+    },
+    {
+      "author": "Ross Cooper",
+      "quotes": "Satu-satunya cara untuk mengubah hidup kita adalah dengan mengubah pikiran kita."
+    },
+    {
+      "author": "Ruth P. Freedman",
+      "quotes": "Perubahan terjadi ketika seseorang menjadi dirinya sendiri, bukan ketika ia mencoba menjadi orang lain."
+    },
+    {
+      "author": "Salanter Lipkin",
+      "quotes": "Perbaiki diri Anda, tetapi jangan jatuhkan orang lain."
+    },
+    {
+      "author": "Samuel Smiles",
+      "quotes": "Cara tercepat untuk menuntaskan banyak hal adalah dengan menyelesaikannya satu demi satu."
+    },
+    {
+      "author": "Satya Sai Baba",
+      "quotes": "Dua hal yang harus dilupakan, kebaikan yang telah kita lakukan kepada orang lain dan kesalahan orang lain kepada kita."
+    },
+    {
+      "author": "Scott Fitzgerald",
+      "quotes": "Ingatlah, jika Anda menutup mulut sebenarnya Anda telah melakukan pilihan."
+    },
+    {
+      "author": "Seneca",
+      "quotes": "Hati manusia tidak akan pernah tenteram sebelum berdamai dengan diri sendiri."
+    },
+    {
+      "author": "Seneca",
+      "quotes": "Hidup berarti berjuang. Hidup nikmat tanpa badai topan adalah laksana laut yang mati."
+    },
+    {
+      "author": "Shackespeare",
+      "quotes": "Kesedihan hanya bisa ditanggulangi oleh orang yang mengalaminya sendiri."
+    },
+    {
+      "author": "Shirley Briggs",
+      "quotes": "Beranikan diri untuk menjadi dirimu sendiri, karena kita bisa melakukan hal itu lebih baik daripada orang lain."
+    },
+    {
+      "author": "Soe Hok Gie",
+      "quotes": "Lebih baik diasingkan daripada menyerah kepada kemunafikan."
+    },
+    {
+      "author": "Soemantri Metodipuro",
+      "quotes": "Langkah pertama untuk memilih keyakinan pada diri sendiri adalah mengenal diri kita sendiri."
+    },
+    {
+      "author": "Sophocles",
+      "quotes": "Bila seseorang kehilangan segala sumber kebahagiaan, dia tidak lagi hidup, tapi mayat yang bernafas."
+    },
+    {
+      "author": "St. Jerome",
+      "quotes": "Baik, lebih baik, terbaik. Jangan pernah berhenti sampai baik menjadi lebih baik, dan lebih baik menjadi terbaik."
+    },
+    {
+      "author": "Stephen R. Covey",
+      "quotes": "Motivasi adalah api dari dalam. Jika orang lain mencoba menyalakannya untuk Anda, kemungkinan apinya hanya menyala sebentar."
+    },
+    {
+      "author": "Steve Jobs",
+      "quotes": "Saya bangga, baik pada hal yang tidak kami lakukan maupun pada hal yang kami lakukan."
+    },
+    {
+      "author": "Sujiwo Tejo",
+      "quotes": "Cinta tak perlu pengorbanan. Pada saat kau merasa berkorban, pada saat itu cintamu mulai pudar."
+    },
+    {
+      "author": "Sydney Harris",
+      "quotes": "Ancaman nyata sebenarnya bukan pada saat komputer mulai bisa berpikir seperti manusia, tetapi ketika manusia mulai berpikir seperti komputer."
+    },
+    {
+      "author": "Theodore Rosevelt",
+      "quotes": "Lakukan apa yang dapat Anda lakukan dengan apa yang Anda miliki dan tempat Anda berada."
+    },
+    {
+      "author": "Thomas Alva Edison",
+      "quotes": "Banyak kegagalan dalam ini dikarenakan orang-orang tidak menyadari betapa dekatnya mereka dengan keberhasilan saat mereka menyerah."
+    },
+    {
+      "author": "Thomas Carlyle",
+      "quotes": "Pergilah sejauh mungkin yang bisa Anda lihat dan Anda akan bisa melihat lebih jauh."
+    },
+    {
+      "author": "Thomas Fuller",
+      "quotes": "Orang yang tidak bisa memaafkan orang lain sama saja dengan orang yang memutuskan jembatan yang harus dilaluinya, karena semua orang perlu dimaafkan."
+    },
+    {
+      "author": "Thomas Fuller",
+      "quotes": "Menyaksikan adalah mempercayai, tapi merasakan adalah kebenaran."
+    },
+    {
+      "author": "Thomas Jefferson",
+      "quotes": "Dalam hal prinsip, usahakan kukuh seperti batu karang. Dalam hal selera, coba berenang mengikuti arus."
+    },
+    {
+      "author": "Tung Desem Waringin",
+      "quotes": "Setiap badai pasti berlalu dan saya akan tumbuh semakin kuat."
+    },
+    {
+      "author": "Tyler Durden",
+      "quotes": "Setelah kehilangan segalanya, barulah kita bebas melakukan apa saja."
+    },
+    {
+      "author": "Umar bin Khattab",
+      "quotes": "Raihlah ilmu dan untuk meraih ilmu belajarlah untuk tenang dan sabar."
+    },
+    {
+      "author": "Vicosta Efran",
+      "quotes": "Hiduplah seperti lilin yang menerangi orang lain. Jangan hidup seperti duri yang mencucuk diri dan menyakiti orang lain."
+    },
+    {
+      "author": "Victor Hugo",
+      "quotes": "Kesedihan adalah buah. Tuhan tak pernah membiarkannya tumbuh dicabang yang terlalu lemah untuk menanggungnya."
+    },
+    {
+      "author": "Victor Hugo",
+      "quotes": "Kebahagian tertinggi dalam kehidupan adalah kepastian bahwa Anda dicintai apa adanya, atau lebih tepatnya dicintai walaupun Anda seperti diri Anda adanya."
+    },
+    {
+      "author": "Victor Hugo",
+      "quotes": "Masalahnya bukan kurangnya tenaga, tetapi kurangnya daya kemauan."
+    },
+    {
+      "author": "Vince Lambardi",
+      "quotes": "Kemenangan bukanlah segala-galanya, tetapi perjuangan untuk menang adalah segala-galanya."
+    },
+    {
+      "author": "Virginia Wolf",
+      "quotes": "Jika Anda tak bisa mengatakan hal yang benar dari diri Anda, maka Anda pun tak bisa mengatakan hal yang benar dari orang lain."
+    },
+    {
+      "author": "W. Camden",
+      "quotes": "Burung yang terbang pagi akan memperoleh cacing paling banyak."
+    },
+    {
+      "author": "Walt Disney",
+      "quotes": "Cara untuk memulai adalah berhenti berbicara dan mulai lakukan sesuatu."
+    },
+    {
+      "author": "Walter Cronkite",
+      "quotes": "Sukses akan lebih permanen jika Anda meraihnya tanpa menghancurkan prinsip-prinsip Anda."
+    },
+    {
+      "author": "Warren Buffett",
+      "quotes": "Dari dulu saya selalu yakin saya akan kaya. Saya kira saya tak pernah meragukannya, satu menit pun."
+    },
+    {
+      "author": "Whitney Young",
+      "quotes": "Lebih baik menyiapkan diri untuk sebuah peluang dan tidak mendapatkannya daripada punya peluang dan tidak menyiapkan diri."
+    },
+    {
+      "author": "William A. W.",
+      "quotes": "Satu-satunya yang bisa menghalangi kita adalah keyakinan yang salah dan sikap yang negatif."
+    },
+    {
+      "author": "William Allen White",
+      "quotes": "Saya tidak takut pada hari esok karena saya sudah melihat hari kemarin dan saya mencintai hari ini."
+    },
+    {
+      "author": "William Arthur",
+      "quotes": "Guru yang biasa-biasa, berbicara. Guru yang bagus, menerangkan. Guru yang hebat, mendemonstrasikan. Guru yang agung, memberi inspirasi."
+    },
+    {
+      "author": "William F. Halsey",
+      "quotes": "Semua masalah menjadi lebih kecil jika Anda tidak mengelaknya, tapi menghadapinya."
+    },
+    {
+      "author": "William J. Johnston",
+      "quotes": "Perubahan yang paling bermakna dalam hidup adalah perubahan sikap. Sikap yang benar akan menghasilkan tindakan yang benar."
+    },
+    {
+      "author": "William James",
+      "quotes": "Jika Anda harus membuat pilihan dan Anda tidak melakukannya, itu saja sudah pilihan."
+    },
+    {
+      "author": "William James",
+      "quotes": "Percaya bahwa hidup itu berharga, dan kepercayaan Anda akan membantu menciptakan hidup yang berharga."
+    },
+    {
+      "author": "William Ralph Inge",
+      "quotes": "Kuatir sama seperti membayar bunga untuk uang yang mungkin tak pernah Anda pinjam."
+    },
+    {
+      "author": "William Shakespeare",
+      "quotes": "Jangan sering menyalakan api kebencian terhadap musuhmu, karena nanti akan membakar dirimu sendiri."
+    },
+    {
+      "author": "William Shakespeare",
+      "quotes": "Bila kamu jujur kepada dirimu sendiri, bagai siang pasti berganti malam, kamu takkan pernah berdusta kepada orang lain."
+    },
+    {
+      "author": "William Shakespeare",
+      "quotes": "Kutu yang berani adalah kutu yang bisa berani mendapatkan sarapannya pada bibir seekor singa."
+    },
+    {
+      "author": "Winston Churchill",
+      "quotes": "Kita menyambung hidup dengan apa yang kita peroleh, tapi kita menghadirkan kehidupkan dengan apa yang kita berikan."
+    },
+    {
+      "author": "Wolfgang von Gothe",
+      "quotes": "Pengetahuan tidaklah cukup, kita harus mengamalkannya. Niat tidak cukup, kita harus melakukannya."
+    },
+    {
+      "author": "Zachary Scott",
+      "quotes": "Ketika Anda bertambah tua, Anda akan menemukan satu-satunya hal yang Anda sesali adalah hal-hal yang tidak Anda lakukan."
+    },
+    {
+      "author": "Zig Zaglar",
+      "quotes": "Batu fondasi untuk sukses yang seimbang adalah kejujuran, watak, integritas, iman, cinta dan kesetiaan."
+    },
+    {
+      "author": "Zig Zaglar",
+      "quotes": "Kebanyakan orang gagal meraih cita-citanya bukan karena mereka tidak mampu, tetapi karena tidak berkomitmen."
+    },
+    {
+      "author": "Zig Zaglar",
+      "quotes": "Kita tidak harus hebat saat memulai, tapi kita harus memulai untuk menjadi hebat."
+    }
+  ]
+
+  const soalBucin = [   
+  "Orang bilang jadi penyair itu susah Nggak Mereka belum jatuh cinta aja",
+  "Kalau misal aku lahir seribu tahun yang lalu, aku pasti akan tetap menunggumu",
+  "Kamu tau gak, kenapa kalo belajar menghafal aku selalu melihat ke atas? Soalnya kalo merem langsung kebayang wajah kamu",
+  "Aneh rasanya bagaimana dengan hanya mendengar namamu saja, hatiku bisa tersayat teriris ngilu seperti luka basah yang tersiram cuka?",
+  "Kalau jadi ksatria itu gampang Yang susah itu jadi pahlawan hati kamu",
+  "Kalau pahlawan punya baju besi, aku nggak Soalnya aku rela tertusuk cinta kamu",
+  "Ketika kamu telah membuatnya bahagia dan dia masih memilih orang lain, yakinlah Mungkin kamu belum kaya!",
+  "Kamu seperti pensil warna deh, bisa mewarnai hari-hariku",
+  "Kalo kamu bidadari, akan kupatahkan semua sayapmu karena aku gak rela kamu kembali ke surga",
+  "Pahlawan itu kan mereka yang berjuang buat negara, berarti aku juga pahlawan dong, soalnya merjuangin masa depan kita",
+  "Kamu itu kayak pahlawan ya, hebat meruntuhkan pertahanan hatiku",
+  "Kalau pahlawan dikenang, kamu nggak bakalan jadi kenangan",
+  "Makan apa pun aku suka asal sama kamu, termasuk makan ati",
+  "Kalau kamu jadi senar gitar, aku nggak mau jadi gitaris Aku nggak mau ada risiko mutusin kamu",
+  "Aku itu kayak kipas angin Meski tengok kanan tengok kiri, tetap ada di tempat yang sama Tetep sama kamu, tetep mencintai kamu",
+  "Kalau aku jadi wakil rakyat, pasti aku gagal Soalnya aku selalu mikirin kamu, bukan rakyat",
+  "Kalau aku jadi gubernur, aku pasti langsung dimarahi rakyat Soalnya, aku nggak bisa ngomong lancar kalau kamu nggak di sampingku",
+  "Aku adalah murid teladan karena setiap hari aku selalu belajar, belajar mencintaimu sepenuh hati",
+  "Lihat kebunku, penuh dengan bunga Lihat matamu, hatiku berbunga-bunga",
+  "Beda operator nggak apa-apa deh, asal nanti nama kamu sama aku di Kartu Keluarga yang sama",
+  "Aku rela menunggu, meski kamu tak memberiku kabar, bahkan aku sadar jika ingin kamu tinggalkan",
+  "Aku tidak bisa berjanji untuk menjadi yang baik, tapi aku berjanji akan selalu mendampingi kamu",
+  "Sampai detik ini kamu masih menjadi alasan kenapa hatiku belum mau menerima siapapun",
+  "Jika aku bisa menjadi segalanya, aku ingin menjadi air mata kamu Lalu aku bisa lahir di matamu, hidup di pipimu, dan mati di bibirmu",
+  "Kalau aku jadi wakil rakyat aku pasti gagal, gimana mau mikirin rakyat kalau yang selalu ada dipikiran aku hanyalah dirimu",
+  "Entah mengapa tiap melihat kamu, aku keingat akan ujian Susah sih, tetapi tetap saja harus diperjuangkan demi mendapatkanmu",
+  "Semua orang bisa bilang cinta, akan tetapi tak semua orang bisa setia",
+  "Aku mencintaimu lebih dari arti kata-kata, mengungkapkan perasaan, dan memikirkan pikiran",
+  "Cinta aku tuh kaya kamera, kalau udah fokus ke satu orang yang lain pasti ngeblur",
+  "Aku lebih suka apel daripada anggur, soalnya aku lebih suka ngapelin kamu daripada nganggurin kamu",
+  "Hidup tidak selalu mudah, tapi jauh lebih mudah dengan kamu di sisiku",
+  "Hanya dengan hitungan jam kita akan bertemu lagi, tapi rasanya sangat lama bagaikan satu dekade Tak terbayang seberapa girangnya hati ini berada dalam pelukanmu",
+  "Saat aku sedang bersamamu rasanya 1 jam hanya 1 detik, tetapi jika aku jauh darimu rasanya 1 hari menjadi 1 tahun",
+  "Kolak pisang tahu sumedang, walau jarak membentang cintaku takkan pernah hilang",
+  "Aku ingin menjadi satu-satunya, bukan salah satunya",
+  "Lihat kebunku, penuh dengan bunga Lihat matamu, hatiku berbunga-bunga",
+  "Berjanjilah untuk terus bersamaku sekarang, esok, dan selamanya",
+  "Semenjak aku berhenti berharap pada dirimu, aku jadi tidak semangat dalam segala hal",
+  "Mungkin kebahagiaan bersamamu hanya seperti mimpi, tapi biarlah mimpi itu terus menemani di setiap tidurku",
+  "Semakin aku tahu bagaimana sikapmu, semakin aku lelah untuk mempertahankan hubungan ini",
+  "Rindu tidak hanya muncul karena jarak yang terpisah, tapi juga karena keinginan yang tidak terwujud",
+  "Kamu tidak akan pernah jauh dariku, kemanapun aku pergi kamu selalu ada, karena kamu selalu di hatiku, yang jauh hanya raga kita bukan hati kita",
+  "Aku tahu dalam setiap tatapanku, kita terhalang oleh jarak dan waktu, tapi aku yakin kalau nanti kita pasti bisa bersatu",
+  "Merindukanmu tanpa pernah bertemu sama halnya dengan menciptakan lagu yang tak pernah ternyayikan",
+  "Ada kalanya jarak selalu menjadi penghalang antara aku sama kamu, tapi tetap saja di hatiku kita selalu dekat",
+  "Jika hati ini tak mampu membendung segala kerinduan, apa daya tak ada yang bisa aku lakukan selain mendoakanmu",
+  "Mungkin di saat ini aku hanya bisa menahan kerinduan ini Sampai tiba saatnya nanti aku bisa bertemu dan melepaskan kerinduan ini bersamamu",
+  "Melalui rasa rindu yang bergejolak dalam hati, di situ terkadang aku sangat membutuhkan dekap peluk kasih sayangmu",
+  "Dalam dinginnya malam, tak kuingat lagi; Berapa sering aku memikirkanmu juga merindukanmu",
+  "Merindukanmu itu seperti hujan yang datang tiba-tiba dan bertahan lama Dan bahkan setelah hujan reda, rinduku masih terasa",
+  "Kalau jelangkungnya kaya kamu, dateng aku jemput, pulang aku anter, deh",
+  "Makan apapun aku suka asal sama kamu, termasuk makan hati",
+  "Cinta itu kaya hukuman mati Kalau nggak ditembak, ya digantung",
+  "Mencintaimu itu kayak narkoba: sekali coba jadi candu, gak dicoba bikin penasaran, ditinggalin bikin sakau",
+  "Gue paling suka ngemil karena ngemil itu enak Apalagi ngemilikin kamu sepenuhnya",
+  "Dunia ini cuma milik kita berdua Yang lainnya cuma ngontrak",
+  "Bagi aku, semua hari itu adalah hari Selasa Selasa di Surga bila dekat denganmu",
+  "Bagaimana kalau kita berdua jadi komplotan penjahat? Aku curi hatimu dan kamu curi hatiku",
+  "Kamu itu seperti kopi yang aku seruput pagi ini Pahit, tapi bikin nagih",
+  "Aku sering cemburu sama lipstikmu Dia bisa nyium kamu tiap hari, dari pagi sampai malam",
+  "Di jiwa yang santuy terdapat jiwa kebucinan yang mendarah daging Kwkwk",
+  "Bingung pengen marah-marah Tapi bingung pengen marah ke siapa? Terkadang diam memang jalan terbaik buat masyarakat santuy",
+  "Awalnya sih diperlakukan dengan istimewa Tapi akhir-akhirnya meninggalkan rasa kecewa sadd bngst 🙁",
+  "Gak butuh orang yang sayangnya cuma sementara",
+  "Pengen punya temen yang bisa di tabokin",
+  "Melalui rasa rindu yang bergejolak dalam hati, di situ terkadang aku sangat membutuhkan dekap peluk kasih sayangmu",
+  "Hanya mendengar namamu saja sudah bisa membuatku tersenyum seperti orang bodoh",
+  "Aku tau teman wanitamu bukan hanya satu dan menyukaimu pun bukan hanya aku",
+  "Semenjak aku berhenti berharap pada dirimu, aku jadi tidak semangat dalam segala hal",
+  "Terkadang aku iri sama layangan Talinya putus saja masih dikejar kejar dan gak rela direbut orang lain",
+  "Aku tidak tahu apa itu cinta, sampai akhirnya aku bertemu denganmu Namun, saat itu juga aku tahu rasanya patah hati",
+  "Mengejar itu capek, tapi lebih capek lagi menunggu Menunggu kamu menyadari keberadaanku",
+  "Denganmu, jatuh cinta adalah patah hati paling sengaja",
+  "Sangat sulit merasakan kebahagiaan hidup tanpa kehadiran kamu disisiku",
+  "Sendainya kamu tahu, sampai saat ini aku masih mencintaimu",
+  "Kamu sudah menjadi bagian dari rencana masa depanku, kamu pergi, aku takut masa depanku tak lagi sempurna tanpamu",
+  "Ketika Tuhan memberikan satu kebahagiaan untukku, maka aku memilih memberikan kebahagiaan itu untukmu",
+  "Cinta tapi tak dianggap itu seperti sakit tapi tak berdarah",
+  "Aku tidak tahu apakah tempatku benar-benar di sini Aku tidak punya seorangpun untuk diajak bicara",
+  "Kamu benar-benar mencintai seseorang ketika kamu tidak bisa membencinya meskipun ia telah menyakitimu",
+  "Tidak peduli seberapa ingin kamu kembali ke masa lalu, di sana tetap tidak akan ada hal baru yang bisa kamu lihat",
+  "Aku mencintaimu dengan segenap hatiku, tapi kau malah membagi perasaanmu dengan orang lain",
+  "Aku bingung, apakah aku harus kecewa atu tidak? Jika aku kecewa, emang siapa diriku baginya? Kalau aku tidak kecewa, tapi aku menunggu ucapannya",
+  "Melihatmu bahagia adalah kebahagiaanku, walaupun bahagiamu tanpa bersamaku",
+  "Rinduku seperti ranting yang tetap berdiriMeski tak satupun lagi dedaunan yang menemani, sampai akhirnya mengering, patah, dan mati",
+  "Kurasa kita sekarang hanya dua orang asing yang memiliki kenangan yang sama",
+  "Buatlah aku bisa membencimu walau hanya beberapa menit agar tidak terlalu berat untuk melupakanmu",
+  "Aku terkadang iri dengan sebuah benda Tidak memiliki rasa namun selalu dibutuhkan Berbeda dengan aku yang memiliki rasa, namun ditinggalkan dan diabaikan",
+  "Demi cinta kita menipu diri sendiri Berusaha kuat nyatanya jatuh secara tak terhormat",
+  "Mencintaimu mungkin menghancurkanku, tapi entah bagaimana meninggalkanmu tidak memperbaikiku",
+  "Kamu adalah yang utama dan pertama dalam hidupku, tapi aku adalah yang kedua bagimu",
+  "Jangan berhenti mencinta hanya karena pernah terluka Karena tak ada pelangi tanpa hujan, tak ada cinta sejati tanpa tangisan",
+  "Aku punya sejuta alasan untuk melupakanmu, tapi tak ada yang bisa memaksaku untuk berhenti mencintaimu",
+  "Terkadang seseorang terasa sangat bodoh hanya untuk mencintai seseorang",
+  "Bukannya tak pantas ditunggu, hanya saja sering memberi harapan palsu",
+  "Sebagian diriku merasa sakit, mengingat dirinya yang sangat dekat, tapi tak tersentuh",
+  "Hal yang terbaik dalam mencintai seseorang adalah dengan diam-diam mendoakannya",
+  "Kuharap aku bisa menghilangkan perasaan ini secepat aku kehilanganmu",
+  "Anggaplah aku rumahmu, jika kamu pergi kamu mengerti kemana arah pulang Menetaplah bila kamu mau dan pergilah jika kamu bosan",
+  "Kamu adalah patah hati terbaik yang gak pernah aku sesali",
+  "Jika mencintaimu itu seperti bersekolah, tanggal merah pun aku akan hadir Karena mencintaimu tak ada kata libur bagiku",
+  "Balon kalau diisi angin semakin lama semakin ringan Hatiku kalau diisi kamu semakin lama semakin ingin ke pelaminan",
+  "Menahan lapar aku bisa, menahan rindu padamu aku tak mampu",
+  "Cintaku ke kamu tuh kayak utang, awalnya kecil, didiemin, tau-tau gede sendiri",
+  "Kamu punya spidol item ga? Buat apa? Mau warnain kalender, biar ga ada kata libur dalam mencintaimu",
+  "Kalau aku jadi wakil rakyat aku pasti gagal deh Gimana mau mikirin rakyat, kalau yang selalu ada di pikiranku hanyalah kamu",
+  "Aku sukanya sih apel dibandingkan anggur, makanya aku suka ngapelin kamu ketimbang nganggurin kamu",
+  "Saat di sampingmu, aku seperti mentega di atas wajan panas Langsung meleleh",
+  "Daripada aku daftar jadi boyband, mending aku daftar jadi boyfriend kamu aja dech",
+  "Untung rinduku padamu itu tidak bayar Kalau bayar, aku sudah jadi gembel",
+  "Kamu duduk di sampingku dan kurasa aku lupa bagaimana bernafas",
+  "Sungguh menakjubkan bagaimana satu percakapan kecil dapat mengubah segalanya selamanya",
+  "Kamu harus membiarkan aku mencintaimu, biarkan aku menjadi orang yang memberimu semua yang kamu inginkan dan butuhkan",
+  "Aku membutuhkanmu karena kamu membuatku tersenyum bahkan ketika kamu tidak di sisiku",
+  "Aku mengagumi pikiranmu Aku jatuh cinta pada kepribadianmu Penampilanmu hanya bonus",
+  "Mencintaimu dan dicintai olehmu adalah hadiah paling berharga yang pernah aku terima",
+  "Aku tidak ingin menjadi favoritmu atau yang terbaik untukmu Aku ingin menjadi satu-satunya dalam hatimu dan melupakan sisanya",
+  "Sulit bagiku untuk berpura-pura bahwa aku tidak menyukaimu padahal pada kenyataannya aku tergila-gila padamu",
+  "Ketika aku memikirkanmu, aku akhirnya memiliki seringai bodoh di wajahku",
+  "Biarkan aku membuatmu bahagia selamanya Kamu hanya perlu melakukan satu hal: jatuh cinta denganku",
+  "Kolak pisang tahu Sumedang, walau jarak membentang cintaku takkan hilang",
+  "Bagiku, semua hari itu Selasa Selasa indah bila di dekatmu",
+  "Aku tanpamu bagaikan ambulans tanpa wiuw wiuw wiuw",
+  "Sayang, kita putus saja, ya? Kita sudah nggak cocok buat pacaran, kita cocoknya itu menikah",
+  "Kamu sebaiknya selalu pakai wifi agar hati kita selalu terkoneksi",
+  "Ngemil apa yang paling enak? Ngemilikin kamu sepenuhnya",
+  "Kamu adalah alasanku tetap bertahan di tanggal tua",
+  "Aku rela dibilang bucin, yang penting kamu nggak ngilang",
+  "Saat bertemu denganmu, jantung hatiku terasa berhenti berdetak Tapi, kenapa nggak mati-mati, ya?",
+  "Aku nggak rela kalau kamu demam, tapi aku rela kalau aku demam rindu sama kamu",
+  "Nggak apa-apa kok kamu gendutan, hatiku masih muat tuh buat kamu",
+  "Beda operator nggak apa-apa deh, asal nanti nama kamu sama aku di Kartu Keluarga yang sama",
+  "Laut kan kusebrangi, gunung pun akan kudaki hanya untukmu",
+  "Tatapanmu memanglah sederhana, namun dapat mengalihkan dunia",
+  "Aku nggak suka kalau kehujanan, tapi aku selalu suka kalau kehujanan cinta kamu",
+  "Kamu tahu nggak, aku seperti mentega, kamu seperti wajan panas Soalnya aku meleleh tiap lihat kamu",
+  "Kalau aku jadi wakil rakyat, pasti aku gagal Soalnya aku selalu mikirin kamu, bukan rakyat",
+  "Aku divonis menjadi terdakwa karena telah mengambil hatimu Dan hukumannya mencintaimu seumur hidupku",
+  "Lampu itu pasti cemburu sama kamu, soalnya mata kamu terang banget buat menerangi masa depanku",
+  "Kalau pahlawan punya baju besi, aku nggak Soalnya aku rela tertusuk cinta kamu",
+  "Lihat kebunku, penuh dengan bunga Lihat matamu, hatiku berbunga-bunga",
+  "Jika rindu ibarat uang, mungkin aku sudah menjadi orang terkaya di dunia karena telah menanggung rindu padamu",
+  "Kamu itu kayak pahlawan ya, hebat meruntuhkan pertahanan hatiku",
+  "Kalau aku jadi gubernur, aku pasti langsung dimarahi rakyat Soalnya, aku nggak bisa ngomong lancar kalau kamu nggak di sampingku",
+  "Tiap kali kamu senyum, seluruh dunia juga sedang tersenyum",
+  "Tatapanmu memanglah sederhana, namun dapat mengalihkan dunia",
+  "Berjanjilah untuk terus bersamaku sekarang, esok, dan selamanya",
+  "Bila mencintaimu adalah ilusi, maka izinkan aku berimajinasi selamanya",
+  "Aku nggak percaya sama pandangan pertama Aku percayanya sama takdir kalau kamu bakalan jadi jodohku",
+  "Aku nggak rela kalau harus jadi penikmat senja, aku maunya jadi penikmat senyummu",
+  "Kamu tahu kalau sungai Danube itu terpanjang di Eropa? Sepanjang itulah cintaku sama kamu",
+  "Mata kamu itu sama persis energinya sama matahari kalau digabungin sama bulan Nggak tertandingi",
+  "Jika kamu adalah bunga, maka aku adalah sang lebah yang senantiasa membuatmu indah",
+  "Di bumi, gerak jatuh namanya gravitasi, di hati namanya cinta selalu bersemi",
+  "Aku mencintaimu seperti anak kecil yang suka es krim",
+  "Cinta laksana pembodohan Hanya karena namamu saja sudah membuatku gila",
+  "Aku memang pendiam, diam-diam jatuh cinta sama kamu",
+  "Aku selalu mendung tiap kali kamu pergi jauh",
+  "Aku tak butuh hartamu, yang aku butuhkan hanyalah senyum bahagia dan canda tawamu saja",
+  "Ketemu sama kamu itu kayak mau melihat meteor Susah, tapi indah",
+  "Aku bersedia menjadi badutmu setiap hari dengan bertingkah lucu untuk membuatmu selalu tertawa dan melupakan air mata",
+  "Kamu itu kayak kopi Bukan pahit, tapi candu",
+  "Kamu itu kayak pelangi, ya Ada sehabis mendung di hatiku",
+  "Cintaku seperti jam pasir Semakin hati kian terpenuhi, maka otak akan kian tak terisi",
+  "Kalau kamu jadi senar gitar, aku nggak mau jadi gitaris Aku nggak mau ada risiko mutusin kamu",
+  "Jangan rindu, berat, kamu nggak akan kuat Biar aku saja yang merindukanmu",
+  "Kalau sabar adalah barang yang diperjualbelikan, maka penantianku akan kehadiran dirimu ini sudah membuatku menjadi gelandangan",
+  "Hujan pergi ninggalin pelangi, kalau kamu pergi ninggalin air mataku",
+  "Tuku lilin, entuk bonus fanta Meskipun kowe nyebelin, nanging aku tetap cinta(Beli lilin, dapat bonus fanta Msekipun kamu nyebelin, aku tetap cinta)",
+  "Ora penting mikir malam mingguan, seng penting malam lamaran(Nggak penting mikir malam minggu, yang penting malam lamaran)",
+  "Kacang iku gurih, tapi nek dikacangin iku perih(Kacang itu gurih, tapi kalau dikacangin itu perih)",
+  "Saat dewe podo–podo adoh, siji sing kudu koe ngerti, bakal tak jogo tresno iki sampe matek(Saat jarak memisahkan kita, satu hal yang harus kamu tahu, aku akan menjaga cinta ini sampai mati)",
+  "Sing wis lunga lalekno, sing durung teko entenono, sing wis ono syukurono(Yang sudah pergi lupakanlah, yang belum datang tunggulah, dan yang sudah ada syukurilah)",
+  "Koe kuwi koyo bintang, sing indah didelok tapi susah untuk digapai”(Kamu itu seperti bintang, yang indah dilihat tapi susah untuk digapai)",
+  "Wajahmu jan koyo wong susah Iyo, susah dilalekne(Wajahmu seperti orang susah Iya, susah untuk dilupakan)",
+  "Akeh manungsa ngrasakaken tresna, tapi lalai lan ora kenal opo kui hakekate atresna(Banyak manusia merasakan cinta, namun mereka lupa tidak mengenal hakikat cinta sebenarnya)",
+  "Mergo seng gaene ngekek’i cokelat bakal kalah karo seng ngewehi seperangkat alat sholat karo nyanyi lagu akad(Karena yang sering memberi cokelat akan kalah dengan yang memberi seperangkat alat solat dan nyanyi lagu akad)",
+  "Rasa nyaman sing sempurna yo iku lek kowe gelem meluk aku(Rasa nyaman yang sempurna ya itu kalau kamu mau meluk aku)",
+  "Iso ae aku ngelalikne koe tapi kenangane kui seng susah dilaleke(Bisa saja aku melupakan kamu tapi kenangannya itu yang susah dilupakan)",
+  "Uwong duwe pacar iku kudu sabar ambek pasangane Opo meneh sing gak duwe(Orang yang punya pacar itu haruslah bersabar dengan pasangan yang dimilikinya Apalagi yang gak punya)",
+  "Aku ra njaluk luweh, aku nggur njalok ojo lungo nek ati(Aku nggak minta banyak, aku hanya minta jangan pergi dari hati)",
+  "Jelas aku butuh atimu, butuh awakmu, butuh perhatianmu, ora butuh duwitmu(Jelas aku butuh hatimu, butuh kamu, butuh perhatianmu, tidak butuh uangmu)",
+  "Aku ora butuh GPS, nek karo kowe aku wis yakin kudu ning ngendi(Aku tidak butuh GPS, kalau sama kamu, aku sudah yakin mau ke mana)",
+  "Kawula mung saderma, mobah-mosik kersaning hyang sukmo(Lakukan yang kita bisa, setelahnya serahkan kepada Tuhan)",
+  "Dalan lurus akeh jeglongan, menggok sithik nemu tikungan Yen wis cinta kudu bertahan, ben gak ngrasakke kelangan(Jalan lurus banyak berlubang, belok sedikit ada tikungan Kalau sudah cinta harus bertahan, agar tak merasakan kehilangan)",
+  "Konco dadi cinta Sampek kegowo turu, ngimpi ngusap pipimu Tansah nyoto keroso konco dadi tresno(Teman jadi cinta sampai terbawa tidur, mimpi mengusap pipimu Seperti kenyataan terasa seperti teman jadi cinta)",
+  "Gusti iku cedhak tanpa senggolan, adoh tanpa wangenan(Tuhan itu dekat meski tubuh kita tidak dapat menyentuhnya, jauh tiada batasan)",
+  "Aku pancen lelah, tapi aku janji ora bakal nyerah nggo nyanding sliramu(Aku memang lelah, tapi aku janji tidak akan menyerah untuk bersanding denganmu)",
+  "Move on kuwi dudu berusaha nglalekke ya, tapi ngikhlaske lan berusaha ngentukke sing luwih apik luwih seko sing mbiyen-mbiyen(Move on itu bukan berusaha melupakan ya, tapi mengikhlaskan dan berusaha mendapatkan yang lebih baik dari sebelum-sebelumnya)",
+  "Natas, nitis, netes(Dari Tuhan kita ada, bersama Tuhan kita hidup, dan bersatu dengan Tuhan kita kembali)",
+  "Cintaku nang awakmu iku koyok kamera, fokus nang awakmu tok liyane ngeblur(Cintaku padamu seperti kamera, fokus pada dirimu, yang lain ngeblur)",
+  "Aku duduk cah romantis sing iso berkata kata manis, nanging aku mung bocah humoris sing iso berkata manis(Aku bukan anak romantis yang bisa berkata manis, tapi aku anak humoris yang bisa berkata manis)",
+  "Kowe gelem ngajari aku ora? Ngajari ben pantes nggo kowe(Kamu mau tidak mengajari aku? Ajari aku agar pantas untukmu)",
+  "Witing tresno jalaran seko sering dijak dolan rono-rono(Cinta tumbuh dari sering diajak jalan ke sana kemari)",
+  "Ojo lungo, aku jek tresno(Jangan pergi, aku masih cinta)",
+  "Nyenderlah neng pundak ku, Sampek koe ngrasak ke nyaman, Mergo wes kudune koyo ngunu aku nggawe nyaman atimu(Bersandarlah di pundakku sampai kau merasakan nyaman, karena sudah seharusnnya aku memang aku membuatmu nyaman)",
+  "Rino wengi aku tansah kelingan sliramu(Siang malam aku selalu teringat dirimu)",
+  "Seng paling tak wedeni orep neng dunio udu kelangan koe, tapi wedi nek koe kelangan kebahagiaan ne sampean(Yang paling ku takutkan dalam dunia ini bukanlah kehilanganmu, tapi aku takut kamu kehilangan kebahagiaanmu)",
+  "Mak deg, mak tratap Makmu makku besanan(Bikin deg-degan, bikin tratapan Ibumu, ibuku jadi besan)",
+  "Kerjo tak lakoni, duwet tak tabungi, insyaallah tahun ngarep, sholatmu tak imami(Kerja aku lakukan, uang aku tabung, Insya Allah tahun depan, salatmu aku imami)",
+  "Aku tanpamu bagaikan sego kucing ilang karete Ambyar(Aku tanpamu bagai nasi kucing hilang karetnya, hancur)",
+  "Gusti yen arek iku jodohku tulung dicidakaken, yen mboten joduhku tulung dijodohaken(Tuhan jika dia adalah jodohku tolong didekatkan, dan jika bukan tolong dijodohkan)",
+  "Kaosku suwek kecantol lawang Gayane cuek, asline sayang(Kaosku robek tergores pintu Bergaya cuek, aslinya sayang)",
+  "Rino wengi aku tansah kelingan, pengenku kowe tak sayang(Siang malam aku selalu teringat, inginku kau kucintai)",
+  "Prinsipku saiki mung maju tak gentar, mundur tak ganjel, sisane serahke Gusti Allah(Prinsipku sekarang maju tak gentar, mundur diganjel, sisanya pasrahkan ke Allah)",
+  "Kowe wis tak wanti wanti ojo nganti ninggal janji, ojo nganti medot taline asmoro, welasno aku sing nunggu awakmu nganti awak ku tinggal balung karo kulit(Kamu sudah aku ingatkan jangan melupakan janji, jangan sampai memutuskan ikatan cinta ini, ingatlah diriku yang menunggu dirimu sampai badanku hanya tersisa tulang dan kulit)",
+  "Gusti Allah paring pitedah bisa lewat bungah, bisa lewat susah(Allah memberikan petunjuk bisa melalui bahagia, bisa melalui derita)",
+  "Tresno iku kadang koyo criping telo Iso ajur nek ora ngati-ati le nggowo(Cinta terkadang seperti keripik singkong, bisa hancur jika tidak hati-hati dibawa)",
+  "Mergo nyawang fotomu, dadi nyungsep neng lendutan(Gara-gara melihat fotomu, jadi nyungsep di lumpur)",
+  "Aku ora pernah ngerti opo kui tresno, kajaba sak bare ketemu karo sliramu(Aku tidak pernah tahu cinta itu apa, kecuali setelah bertemu denganmu)",
+  "Cinta dudu perkoro sepiro kerepe kowe ngucapke, tapi sepiro akehe seng mbok buktike(Cinta bukan perkara seberapa sering kamu mengucapkannya, tapi seberapa banyak kamu membuktikannya)",
+  "Suket teles kudanan sore, atiku ngenes mikirna kowe(Rumput basah kehujanan di sore hari, hatiku sakit karena memikirkan kamu terus)",
+  "Pengenku, aku iso muter wektu Supoyo aku iso nemokne kowe lewih gasik Ben lewih dowo wektuku kanggo urip bareng sliramu(Aku berharap, aku bisa memutar waktu kembali Di mana aku bisa lebih awal menemukan dan mencintaimu lebih lama)",
+  "Mbangun kromo ingkang satuhu, boten cekap bilih ngagem sepisan roso katresnan Hananging butuh pirang pirang katresnan lumeber ning pasangan uripmu siji kui(Pernikahan yang sukses tidak membutuhkan sekali jatuh cinta, tetapi berkali kali jatuh cinta pada orang yang sama)",
+  "Kowe ngeluh etuk wong seng salah terus, coba kowe luwih peka sitik pas dicedakke karo uwong seng bener yo(Kamu terus mengeluh dapat orang yang salah terus, coba kamu lebih peka sedikit ketika bersama orang yang benar)",
+  "Witing tresno jalaran soko kulino Witing mulyo jalaran wani rekoso(Bahwa cinta itu tumbuh lantaran ada kebiasaan, kemakmuran itu timbul karena berani bersusah dahulu)",
+  "Sek penting kowe bahagia, tapi mung karo aku Ora karo wong liya(Yang penting kamu bahagia, tapi cuma sama aku Bukan sama orang lain)",
+  "Kadang mripat iso salah ndelok, kuping iso salah krungu, lambe iso salah ngomong, tapi ati ora bakal iso diapusi(Terkadang mata bisa salah melihat, telinga bisa salah mendengar, mulut bisa salah mengucap, tapi hati tak bisa dibohongi dan membohongi)",
+  "Semoga jodohku adalah orang yang selalu aku sebut dalam doaku tiap hari",
+  "Cinta memang aneh, bahkan kau tak bisa memilih dengan siapa kau akan jatuh cinta",
+  "Aku tetap mencintai kamu, meski mungkin jiwa ini tak akan pernah saling memiliki",
+  "Aku memilih untuk sendiri, bukan karena menunggu yang sempurna, tetapi butuh yang tak pernah menyerah",
+  "Seorang yang single diciptakan bersama pasangan yang belum ditemukannya",
+  "Jomblo Mungkin itu cara Tuhan untuk mengatakan 'Istirahatlah dari cinta yang salah'",
+  "Jomblo adalah anak muda yang mendahulukan pengembangan pribadinya untuk cinta yang lebih berkelas nantinya",
+  "Aku bukan mencari seseorang yang sempurna, tapi aku mencari orang yang menjadi sempurna berkat kelebihanku",
+  "Pacar orang adalah jodoh kita yang tertunda",
+  "Jomlo pasti berlalu Semua ada saatnya, saat semua kesendirian menjadi sebuah kebersamaan dengannya kekasih halal Bersabarlah",
+  "Romeo rela mati untuk Juliet, Jack mati karena menyelamatkan Rose Intinya, kalau tetap mau hidup, jadilah single",
+  "Aku mencari orang bukan dari kelebihannya, tapi aku mencari orang dari ketulusan hatinya",
+  "Jodoh bukan sendal jepit, yang kerap tertukar Jadi teruslah berada dalam perjuangan yang semestinya",
+  "Jika kamu penikmat kopi dan senja, maka izinkan aku mencintaimu tanpa henti dan jeda",
+  "Tuhan baik banget ya, aku minta bahagia, dikasihnya kamu",
+  "Kalau mawar itu warna merah, kalau hadirmu itu warna-warni dalam hidupku",
+  "Kalau kamu jadi senar gitar, aku nggak mau jadi gitarisnya Karena aku nggak mau mutusin kamu",
+  "Bila mencintaimu adalah ilusi, maka izinkan aku berimajinasi selamanya",
+  "Sayang tugas aku hanya mencintaimu, bukan melawan takdir",
+  "Saat aku sedang bersamamu rasanya 1 jam hanya 1 detik, tetapi jika aku jauh darimu rasanya 1 hari menjadi 1 tahun",
+  "Kolak pisang tahu sumedang, walau jarak membentang cintaku takkan pernah hilang",
+  "Aku ingin menjadi satu-satunya, bukan salah satunya",
+  "Aku tidak bisa berjanji untuk menjadi yang baik, tapi aku berjanji akan selalu mendampingi kamu",
+  "Kalau aku jadi wakil rakyat aku pasti gagal, gimana mau mikirin rakyat kalau yang selalu ada dipikiran aku hanyalah dirimu",
+  "Lihat kebunku, penuh dengan bunga Lihat matamu, hatiku berbunga-bunga",
+  "Berjanjilah untuk terus bersamaku sekarang, esok, dan selamanya",
+  "Kangen kamu itu sudah jadi hobi aku",
+  "Kamu salah satu alasanku untuk beli paket internet, kangen terus soalnya",
+  "Rindu tak akan pernah jemu, membuat candu, membuat malam semakin biru, kamu",
+  "Rindu tidak hanya muncul karena jarak yang terpisah, tapi juga karena keinginan yang tidak terwujud",
+  "Kamu tidak akan pernah jauh dariku, kemanapun aku pergi kamu selalu ada, karena kamu selalu di hatiku, yang jauh hanya raga kita bukan hati kita",
+  "Aku tahu dalam setiap tatapanku, kita terhalang oleh jarak dan waktu, tapi aku yakin kalau nanti kita pasti bisa bersatu",
+  "Merindukanmu tanpa pernah bertemu sama halnya dengan menciptakan lagu yang tak pernah ternyayikan",
+  "Ada kalanya jarak selalu menjadi penghalang antara aku sama kamu, tapi tetap saja di hatiku kita selalu dekat",
+  "Jika hati ini tak mampu membendung segala kerinduan, apa daya tak ada yang bisa aku lakukan selain mendoakanmu",
+  "Mungkin di saat ini aku hanya bisa menahan kerinduan ini Sampai tiba saatnya nanti aku bisa bertemu dan melepaskan kerinduan ini bersamamu",
+  "Melalui rasa rindu yang bergejolak dalam hati, di situ terkadang aku sangat membutuhkan dekap peluk kasih sayangmu",
+  "Dalam dinginnya malam, tak kuingat lagi; Berapa sering aku memikirkanmu juga merindukanmu",
+  "Merindukanmu itu seperti hujan yang datang tiba-tiba dan bertahan lama Dan bahkan setelah hujan reda, rinduku masih terasa",
+  "Mau tanggal merah sekalipun, aku nggak akan libur untuk mikirin kamu",
+  "Teringat kisah cinta di masa SMA yang begitu indah dan menyenangkan bersamamu",
+  "Bolehkah aku belajar mencintaimu mengalahkan Matematika dan Fisika?",
+  "Tahu gak perbedaan pensil sama wajah kamu? Kalau pensil tulisannya bisa dihapus, tapi kalau wajah kamu gak akan ada yang bisa hapus dari pikiran aku",
+  "Bukan Ujian Nasional besok yang harus aku khawatirkan, tapi ujian hidup yang aku lalui setelah kamu meninggalkanku",
+  "Satu hal kebahagiaan di sekolah yang terus membuatku semangat adalah bisa melihat senyumanmu setiap hari",
+  "Kamu tahu gak perbedaanya kalau ke sekolah sama ke rumah kamu? Kalo ke sekolah pasti yang di bawa itu buku dan pulpen, tapi kalo ke rumah kamu, aku cukup membawa hati dan cinta",
+  "Aku gak sedih kok kalo besok hari Senin, aku sedihnya kalau gak ketemu kamu",
+  "Momen cintaku tegak lurus dengan momen cintamu Menjadikan cinta kita sebagai titik ekuilibrium yang sempurna",
+  "Aku rela ikut lomba lari keliling dunia, asalkan engkau yang menjadi garis finish-nya",
+  "PR-ku adalah merindukanmu Lebih kuat dari Matematika, lebih luas dari Fisika, lebih kerasa dari Biologi",
+  "Cintaku kepadamu itu bagaikan metabolisme, yang gak akan berhenti sampai mati",
+  "Aku tanpamu bagaikan ambulans tanpa wiuw wiuw wiuw",
+  "Kamu nggak capek? Tiap kali aku memejamkan mata muncul kamu terus",
+  "Kamu tahu nggak apa persamaannya kamu sama AC? Sama-sama bikin aku sejuk",
+  "Kalau jelangkungnya kaya kamu, dateng aku jemput, pulang aku anter, deh",
+  "Makan apapun aku suka asal sama kamu, termasuk makan hati",
+  "Cinta itu kaya hukuman mati Kalau nggak ditembak, ya digantung",
+  "Mencintaimu itu kayak narkoba: sekali coba jadi candu, gak dicoba bikin penasaran, ditinggalin bikin sakau",
+  "Gue paling suka ngemil karena ngemil itu enak Apalagi ngemilikin kamu sepenuhnya",
+  "Dunia ini cuma milik kita berdua Yang lainnya cuma ngontrak",
+  "Bagi aku, semua hari itu adalah hari Selasa Selasa di Surga bila dekat denganmu",
+  "Bagaimana kalau kita berdua jadi komplotan penjahat? Aku curi hatimu dan kamu curi hatiku",
+  "Kamu itu seperti kopi yang aku seruput pagi ini Pahit, tapi bikin nagih",
+  "Aku sering cemburu sama lipstikmu Dia bisa nyium kamu tiap hari, dari pagi sampai malam",
+  "Hanya mendengar namamu saja sudah bisa membuatku tersenyum seperti orang bodoh",
+  "Aku tau teman wanitamu bukan hanya satu dan menyukaimu pun bukan hanya aku",
+  "Semenjak aku berhenti berharap pada dirimu, aku jadi tidak semangat dalam segala hal",
+  "Denganmu, jatuh cinta adalah patah hati paling sengaja",
+  "Sangat sulit merasakan kebahagiaan hidup tanpa kehadiran kamu disisiku",
+  "Melalui rasa rindu yang bergejolak dalam hati, di situ terkadang aku sangat membutuhkan dekap peluk kasih sayangmu",
+  "Sendainya kamu tahu, sampai saat ini aku masih mencintaimu",
+  "Terkadang aku iri sama layangan Talinya putus saja masih dikejar kejar dan gak rela direbut orang lain",
+  "Aku tidak tahu apa itu cinta, sampai akhirnya aku bertemu denganmu Namun, saat itu juga aku tahu rasanya patah hati",
+  "Mengejar itu capek, tapi lebih capek lagi menunggu Menunggu kamu menyadari keberadaanku",
+  "Jangan berhenti mencinta hanya karena pernah terluka Karena tak ada pelangi tanpa hujan, tak ada cinta sejati tanpa tangisan",
+  "Aku punya sejuta alasan untuk melupakanmu, tapi tak ada yang bisa memaksaku untuk berhenti mencintaimu",
+  "Terkadang seseorang terasa sangat bodoh hanya untuk mencintai seseorang",
+  "Kamu adalah patah hati terbaik yang gak pernah aku sesali",
+  "Bukannya tak pantas ditunggu, hanya saja sering memberi harapan palsu",
+  "Sebagian diriku merasa sakit, mengingat dirinya yang sangat dekat, tapi tak tersentuh",
+  "Hal yang terbaik dalam mencintai seseorang adalah dengan diam-diam mendoakannya",
+  "Kuharap aku bisa menghilangkan perasaan ini secepat aku kehilanganmu",
+  "Demi cinta kita menipu diri sendiri Berusaha kuat nyatanya jatuh secara tak terhormat",
+  "Anggaplah aku rumahmu, jika kamu pergi kamu mengerti kemana arah pulang Menetaplah bila kamu mau dan pergilah jika kamu bosan",
+  "Aku bingung, apakah aku harus kecewa atu tidak? Jika aku kecewa, emang siapa diriku baginya? Kalau aku tidak kecewa, tapi aku menunggu ucapannya",
+  "Rinduku seperti ranting yang tetap berdiri Meski tak satupun lagi dedaunan yang menemani, sampai akhirnya mengering, patah, dan mati",
+  "Kurasa kita sekarang hanya dua orang asing yang memiliki kenangan yang sama",
+  "Buatlah aku bisa membencimu walau hanya beberapa menit agar tidak terlalu berat untuk melupakanmu",
+  "Aku mencintaimu dengan segenap hatiku, tapi kau malah membagi perasaanmu dengan orang lain",
+  "Mencintaimu mungkin menghancurkanku, tapi entah bagaimana meninggalkanmu tidak memperbaikiku",
+  "Kamu adalah yang utama dan pertama dalam hidupku, tapi aku adalah yang kedua bagimu",
+  "Jika kita hanya bisa dipertemukan dalam mimpi, aku ingin tidur selamanya",
+  "Melihatmu bahagia adalah kebahagiaanku, walaupun bahagiamu tanpa bersamaku",
+  "Aku terkadang iri dengan sebuah benda Tidak memiliki rasa namun selalu dibutuhkan Berbeda dengan aku yang memiliki rasa, namun ditinggalkan dan diabaikan",
+  "To the person I stayed up with until 3 am I should've slept",
+  "Love is being stupid together",
+  "I love you more today than yesterday, and I will continue to fall in love with you, over and over again, until the day I die",
+  "I want someone who will look at me the same way I look at chocolate cake",
+  "I love you with every beat of my heart",
+  "You taught me how to love, but not how to stop",
+  "Loving you was my favorite mistake",
+  "You broke my heart But I still love you with all the pieces",
+  "In past, you are like an oxygen for me and I always need you to stay alive But now, you are like a carbon dioxide, go out from me",
+  "My life used to be in dull grey Thank you, now it is in brighter colors",
+  "Roses are red Violets are blue I know that it's often said But I really love you",
+  "If dreaming is the only way to be with you, then i'il never open my eyes",
+  "My favorite place is inside your hug, even you leave me",
+  "Bagaimana mungkin aku berpindah jika hanya padamu hatiku bersinggah?",
+  "Kenangan tentangmu sudah seperti rumah bagiku Sehingga setiap kali pikiranku melayang, pasti ujung-ujungnya akan selalu kembali kepadamu",
+  "Kenapa tisue bermanfaat? Karena cinta tak pernah kemarau - Sujiwo Tejo",
+  "Kalau mencintaimu adalah kesalahan, yasudah, biar aku salah terus saja",
+  "Sejak kenal kamu, aku jadi pengen belajar terus deh Belajar jadi yang terbaik buat kamu",
+  "Ada yang bertingkah bodoh hanya untuk melihatmu tersenyum Dan dia merasa bahagia akan hal itu",
+  "Aku bukan orang baik, tapi akan belajar jadi yang terbaik untuk kamu",
+  "Kita tidak mati, tapi lukanya yang membuat kita tidak bisa berjalan seperti dulu lagi",
+  "Keberadaanmu bagaikan secangkir kopi yang aku butuhkan setiap pagi, yang dapat mendorongku untuk tetap bersemangat menjalani hari",
+  "Aku mau banget ngasih dunia ke kamu Namun, karena itu nggak mungkin, maka aku akan kasih hal yang paling penting dalam hidupku, yaitu duniaku",
+  "Mending sing humoris tapi manis, ketimbang sok romantis tapi akhire tragis",
+  "Ben akhire ora kecewa, dewe kudu ngerti kapan waktune berharap lan kapan kudu mandeg",
+  "Aku ki wong Jowo seng ora ngerti artine 'I Love U', tapi aku ngertine mek 'Aku tresno awakmu'",
+  "Ora perlu ayu lan sugihmu, aku cukup mok setiani wes seneng ra karuan",
+  "Cintaku nang awakmu iku koyok kamera, fokus nang awakmu tok liyane mah ngeblur",
+  "Saben dino kegowo ngimpi tapi ora biso nduweni",
+  "Ora ketemu koe 30 dino rasane koyo sewulan",
+  "Aku tanpamu bagaikan sego kucing ilang karete Ambyar",
+  "Pengenku, Aku iso muter wektu Supoyo aku iso nemokne kowe lewih gasik Ben Lewih dowo wektuku kanggo urip bareng sliramu",
+  "Aku ora pernah ngerti opo kui tresno, kajaba sak bare ketemu karo sliramu",
+  "Cinta Aa ka Neng moal leungit-leungit sanajan aa geus kawin deui",
+  "Kasabaran kaula aya batasna, tapi cinta kaula ka anjeun henteu aya seepna",
+  "Kanyaah akang moal luntur najan make Bayclean",
+  "Kenangan endah keur babarengan jeung anjeun ek tuluy diinget-inget nepi ka poho",
+  "Kuring moal bakal tiasa hirup sorangan, butuh bantosan jalmi sejen",
+  "Nyaahna aa ka neg teh jiga tukang bank keur nagih hutang (hayoh mumuntil)",
+  "Kasabaran urang aya batasna, tapi cinta urang ka maneh moal aya beakna",
+  "Hayang rasana kuring ngarangkai kabeh kata cinta anu aya di dunya ieu, terus bade ku kuring kumpulkeun, supaya anjeun nyaho gede pisan rasa cinta kuring ka anjeun",
+  "Tenang wae neng, ari cinta Akang mah sapertos tembang krispatih; Tak lekang oleh waktu",
+  "Abdi sanes jalmi nu sampurna pikeun anjeun, sareng sanes oge nu paling alus kanggo anjeun Tapi nu pasti, abdi jalmi hiji-hijina nu terus emut ka anjeun",
+  "Cukup jaringan aja yang hilang, kamu jangan",
+  "Sering sih dibikin makan hati, tapi menyadari kamu masih di sini bikin bahagia lagi",
+  "Musuhku adalah mereka yang ingin memilikimu juga",
+  "Banyak yang selalu ada, tapi kalo cuma kamu yang aku mau, gimana?",
+  "Jam tidurku hancur dirusak rindu",
+  "Cukup China aja yang jauh, cinta kita jangan",
+  "Yang penting itu kebahagiaan kamu, aku sih gak penting",
+  "Cuma satu keinginanku, dicintai olehmu",
+  "Aku tanpamu bagaikan ambulans tanpa wiuw wiuw wiuw",
+  "Cukup antartika aja yang jauh Antarkita jangan"
+]
+  
 
 
 const bankSoalTeracak = new Map();
@@ -7071,5 +8725,8 @@ module.exports = {
   soalSusunKata,
   soalFamily100,
   soalBendera,
-  tebakgambar
+  tebakgambar,
+  soalMotivasi,
+  soalQuotes,
+  soalBucin
 };
